@@ -347,60 +347,35 @@ MainSection:NewToggle("Delete Map", "Toggle delete map", function(state)
 end)
 
 MainSection:NewButton("Teleport To Lobby", "Teleport to lobby", function()
-    local success = false
-    
     -- In ra thông báo
     game:GetService("StarterGui"):SetCore("SendNotification", {
         Title = "DuongTuan Hub",
-        Text = "Đang dịch chuyển về điểm ban đầu...",
+        Text = "Đang tải lại game...",
         Duration = 2
     })
     
-    -- Phương pháp 1: Teleport đến vị trí spawn mặc định 
-    local spawnLocation = game:GetService("Workspace"):FindFirstChildOfClass("SpawnLocation")
-    if spawnLocation then
-        game.Players.LocalPlayer.Character:SetPrimaryPartCFrame(spawnLocation.CFrame + Vector3.new(0, 5, 0))
-        print("Đã teleport đến vị trí spawn mặc định")
-        success = true
-    end
+    -- Sử dụng TeleportService để reload game
+    local success, errorMsg = pcall(function()
+        -- Phương pháp 1: Teleport đến cùng một place
+        game:GetService("TeleportService"):Teleport(game.PlaceId, game:GetService("Players").LocalPlayer)
+    end)
     
-    -- Phương pháp 2: Tìm vị trí spawn với tên cụ thể
+    -- Nếu phương pháp 1 thất bại, thử phương pháp 2
     if not success then
-        local possibleSpawnNames = {"SpawnLocation", "Spawn", "PlayerSpawn", "StartLocation", "PlayerStart"}
-        for _, name in pairs(possibleSpawnNames) do
-            local spawnPart = game:GetService("Workspace"):FindFirstChild(name)
-            if spawnPart then
-                game.Players.LocalPlayer.Character:SetPrimaryPartCFrame(spawnPart.CFrame + Vector3.new(0, 5, 0))
-                print("Đã teleport đến " .. name)
-                success = true
-                break
-            end
+        print("Phương pháp reload 1 thất bại: " .. errorMsg)
+        success, errorMsg = pcall(function()
+            -- Phương pháp 2: Teleport đến cùng instance
+            game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, game:GetService("Players").LocalPlayer)
+        end)
+        
+        if not success then
+            print("Phương pháp reload 2 thất bại: " .. errorMsg)
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "DuongTuan Hub",
+                Text = "Không thể tải lại game. Vui lòng thử lại sau.",
+                Duration = 3
+            })
         end
-    end
-    
-    -- Phương pháp 3: Teleport đến vị trí 0,0,0 nếu không tìm thấy spawn point
-    if not success then
-        local rootPart = game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-        if rootPart then
-            rootPart.CFrame = CFrame.new(0, 100, 0) -- Teleport to origin with some height
-            print("Đã teleport đến vị trí 0,0,0")
-            success = true
-        end
-    end
-    
-    if success then
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "DuongTuan Hub",
-            Text = "Đã dịch chuyển về điểm ban đầu thành công!",
-            Duration = 3
-        })
-    else
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "DuongTuan Hub",
-            Text = "Không thể dịch chuyển về điểm ban đầu!",
-            Duration = 3
-        })
-        print("Không thể teleport về điểm ban đầu")
     end
 end)
 
