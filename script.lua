@@ -347,73 +347,43 @@ MainSection:NewToggle("Delete Map", "Toggle delete map", function(state)
 end)
 
 MainSection:NewButton("Teleport To Lobby", "Teleport to lobby", function()
-    -- Thử phương pháp 1: Tìm LobbySpawn trong workspace
     local success = false
     
     -- In ra thông báo
     game:GetService("StarterGui"):SetCore("SendNotification", {
         Title = "DuongTuan Hub",
-        Text = "Đang dịch chuyển về lobby...",
+        Text = "Đang dịch chuyển về điểm ban đầu...",
         Duration = 2
     })
     
-    -- Phương pháp 1: Tìm teleport position trong workspace
-    local possibleLobbyNames = {"LobbySpawn", "Lobby", "lobbyspawn", "lobbyPosition", "SpawnLocation", "LobbyLocation"}
-    for _, name in pairs(possibleLobbyNames) do
-        local lobbyPart = game:GetService("Workspace"):FindFirstChild(name)
-        if lobbyPart then
-            game.Players.LocalPlayer.Character:SetPrimaryPartCFrame(lobbyPart.CFrame)
-            print("Teleported to lobby using method 1 with: " .. name)
-            success = true
-            break
-        end
+    -- Phương pháp 1: Teleport đến vị trí spawn mặc định 
+    local spawnLocation = game:GetService("Workspace"):FindFirstChildOfClass("SpawnLocation")
+    if spawnLocation then
+        game.Players.LocalPlayer.Character:SetPrimaryPartCFrame(spawnLocation.CFrame + Vector3.new(0, 5, 0))
+        print("Đã teleport đến vị trí spawn mặc định")
+        success = true
     end
     
-    -- Phương pháp 2: Tìm điểm spawn mặc định
+    -- Phương pháp 2: Tìm vị trí spawn với tên cụ thể
     if not success then
-        for _, spawn in pairs(game:GetService("Workspace"):GetDescendants()) do
-            if spawn:IsA("SpawnLocation") then
-                game.Players.LocalPlayer.Character:SetPrimaryPartCFrame(spawn.CFrame)
-                print("Teleported to lobby using method 2")
+        local possibleSpawnNames = {"SpawnLocation", "Spawn", "PlayerSpawn", "StartLocation", "PlayerStart"}
+        for _, name in pairs(possibleSpawnNames) do
+            local spawnPart = game:GetService("Workspace"):FindFirstChild(name)
+            if spawnPart then
+                game.Players.LocalPlayer.Character:SetPrimaryPartCFrame(spawnPart.CFrame + Vector3.new(0, 5, 0))
+                print("Đã teleport đến " .. name)
                 success = true
                 break
             end
         end
     end
     
-    -- Phương pháp 3: Sử dụng remote event (nếu có)
-    if not success then
-        local remotes = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes")
-        if remotes then
-            local teleportRemote = remotes:FindFirstChild("TeleportToLobby") or remotes:FindFirstChild("Teleport")
-            if teleportRemote then
-                teleportRemote:FireServer("Lobby")
-                print("Teleported to lobby using method 3")
-                success = true
-            end
-        end
-    end
-    
-    -- Phương pháp 4: Tìm nút teleport lobby trong UI và click
-    if not success then
-        for _, button in pairs(game:GetService("Players").LocalPlayer.PlayerGui:GetDescendants()) do
-            if button:IsA("TextButton") and 
-               (button.Text:lower():find("lobby") or button.Text:lower():find("home") or button.Text:lower():find("thoát")) and 
-               button.Visible then
-                firesignal(button.MouseButton1Click)
-                print("Teleported to lobby using method 4")
-                success = true
-                break
-            end
-        end
-    end
-    
-    -- Phương pháp 5: Cố gắng teleport đến vị trí 0,0,0 (thường là lobby)
+    -- Phương pháp 3: Teleport đến vị trí 0,0,0 nếu không tìm thấy spawn point
     if not success then
         local rootPart = game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
         if rootPart then
             rootPart.CFrame = CFrame.new(0, 100, 0) -- Teleport to origin with some height
-            print("Teleported to lobby using method 5")
+            print("Đã teleport đến vị trí 0,0,0")
             success = true
         end
     end
@@ -421,16 +391,16 @@ MainSection:NewButton("Teleport To Lobby", "Teleport to lobby", function()
     if success then
         game:GetService("StarterGui"):SetCore("SendNotification", {
             Title = "DuongTuan Hub",
-            Text = "Đã dịch chuyển về lobby thành công!",
+            Text = "Đã dịch chuyển về điểm ban đầu thành công!",
             Duration = 3
         })
     else
         game:GetService("StarterGui"):SetCore("SendNotification", {
             Title = "DuongTuan Hub",
-            Text = "Không thể dịch chuyển về lobby!",
+            Text = "Không thể dịch chuyển về điểm ban đầu!",
             Duration = 3
         })
-        print("Failed to teleport to lobby")
+        print("Không thể teleport về điểm ban đầu")
     end
 end)
 
