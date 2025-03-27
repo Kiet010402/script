@@ -38,6 +38,40 @@ local Config = {
         Room = 0,
         HardMode = false,
         AutoCastle = false
+    },
+    Shop = {
+        -- Auto Summon
+        SummonMode = "None",
+        SummonBanner = "None",
+        SummonUnit = "None",
+        SummonGems = 0,
+        AutoSummon = false,
+        
+        -- Auto Fuse
+        FuseUnit = "None",
+        AutoFuse = false,
+        
+        -- Auto Sell
+        SellRarity = "None",
+        AutoSell = false,
+        
+        -- Auto Sell Portals
+        SellPortalSelect = "None",
+        SellPortalDifficulty = "None",
+        SellPortalMap = "None",
+        SellPortalAct = "None",
+        AutoSellPortal = false,
+        
+        -- Auto Buy
+        BuyList = "None",
+        AutoBuy = false,
+        
+        -- Auto Roll Trait
+        SelectedTraits = "None",
+        AutoRoll = false,
+        
+        -- Summer Event
+        SummerUnit = "None"
     }
 }
 
@@ -568,7 +602,244 @@ end)
 
 -- M.MAPS Tab Content (có thể thêm sau)
 
--- SHOP Tab Content (có thể thêm sau)
+-- SHOP Tab Content
+local ShopTab = Window:NewTab("SHOP")
+
+-- Shop Tab Sections
+local AutoSummonSection = ShopTab:NewSection("Auto Summon")
+local AutoFuseSection = ShopTab:NewSection("Auto Fuse")
+local AutoSellSection = ShopTab:NewSection("Auto Sell")
+local AutoSellPortalSection = ShopTab:NewSection("Auto Sell Portals")
+local AutoBuySection = ShopTab:NewSection("Auto Buy")
+local AutoRollTraitSection = ShopTab:NewSection("Auto Roll Trait")
+local SummerEventSection = ShopTab:NewSection("Summer Event")
+
+-- Auto Summon Section
+AutoSummonSection:NewDropdown("Summon Mode", "Select summon mode", {"Normal", "Special", "Event"}, function(value)
+    UpdateConfig("Shop", "SummonMode", value)
+    print("Summon Mode set to: "..value)
+end)
+
+AutoSummonSection:NewDropdown("Summon Banner", "Select summon banner", {"Standard", "Premium"}, function(value)
+    UpdateConfig("Shop", "SummonBanner", value)
+    print("Summon Banner set to: "..value)
+end)
+
+AutoSummonSection:NewDropdown("Summon Unit", "Select unit to summon", {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythical"}, function(value)
+    UpdateConfig("Shop", "SummonUnit", value)
+    print("Summon Unit set to: "..value)
+end)
+
+AutoSummonSection:NewTextBox("Summon Gems", "Enter number of gems to use", function(value)
+    local gems = tonumber(value)
+    if gems then
+        UpdateConfig("Shop", "SummonGems", gems)
+        print("Summon Gems set to: "..gems)
+    else
+        print("Invalid gems value")
+    end
+end)
+
+AutoSummonSection:NewToggle("Auto Summon", "Toggle auto summon", function(state)
+    UpdateConfig("Shop", "AutoSummon", state)
+    print("Auto Summon set to: "..tostring(state))
+    
+    if state then
+        spawn(function()
+            while Config.Shop.AutoSummon do
+                -- Logic cho Auto Summon
+                print("Auto Summon running...")
+                
+                -- Tìm nút summon và click
+                for _, button in pairs(game:GetService("Players").LocalPlayer.PlayerGui:GetDescendants()) do
+                    if button:IsA("TextButton") and button.Text:lower():find("summon") and button.Visible then
+                        firesignal(button.MouseButton1Click)
+                        print("Summon button clicked")
+                        break
+                    end
+                end
+                
+                wait(2) -- Đợi 2 giây trước khi summon tiếp
+            end
+        end)
+    end
+end)
+
+-- Auto Fuse Section
+AutoFuseSection:NewDropdown("Fuse Unit", "Select unit to fuse", {"Common", "Uncommon", "Rare", "Epic", "Legendary"}, function(value)
+    UpdateConfig("Shop", "FuseUnit", value)
+    print("Fuse Unit set to: "..value)
+end)
+
+AutoFuseSection:NewToggle("Auto Fuse", "Toggle auto fuse", function(state)
+    UpdateConfig("Shop", "AutoFuse", state)
+    print("Auto Fuse set to: "..tostring(state))
+    
+    if state then
+        spawn(function()
+            while Config.Shop.AutoFuse do
+                -- Logic cho Auto Fuse
+                print("Auto Fuse running...")
+                
+                -- Tìm nút fuse và click
+                for _, button in pairs(game:GetService("Players").LocalPlayer.PlayerGui:GetDescendants()) do
+                    if button:IsA("TextButton") and button.Text:lower():find("fuse") and button.Visible then
+                        firesignal(button.MouseButton1Click)
+                        print("Fuse button clicked")
+                        break
+                    end
+                end
+                
+                wait(2) -- Đợi 2 giây trước khi fuse tiếp
+            end
+        end)
+    end
+end)
+
+-- Auto Sell Section
+AutoSellSection:NewDropdown("Sell Rarity", "Select rarity to auto sell", {"Common", "Uncommon", "Rare", "Epic", "Legendary", "All"}, function(value)
+    UpdateConfig("Shop", "SellRarity", value)
+    print("Sell Rarity set to: "..value)
+end)
+
+AutoSellSection:NewToggle("Auto Sell", "Toggle auto sell", function(state)
+    UpdateConfig("Shop", "AutoSell", state)
+    print("Auto Sell set to: "..tostring(state))
+    
+    if state then
+        spawn(function()
+            while Config.Shop.AutoSell do
+                -- Logic cho Auto Sell
+                print("Auto Sell running...")
+                
+                -- Tìm nút sell và click
+                for _, button in pairs(game:GetService("Players").LocalPlayer.PlayerGui:GetDescendants()) do
+                    if button:IsA("TextButton") and button.Text:lower():find("sell") and button.Visible then
+                        firesignal(button.MouseButton1Click)
+                        print("Sell button clicked")
+                        break
+                    end
+                end
+                
+                wait(2) -- Đợi 2 giây trước khi sell tiếp
+            end
+        end)
+    end
+end)
+
+-- Auto Sell Portal Section
+AutoSellPortalSection:NewDropdown("Sell Portal Select", "Select portal to sell", {"None"}, function(value)
+    UpdateConfig("Shop", "SellPortalSelect", value)
+    print("Sell Portal Select set to: "..value)
+end)
+
+AutoSellPortalSection:NewDropdown("Sell Portal Difficulty", "Select portal difficulty", {"Normal", "Hard", "Nightmare"}, function(value)
+    UpdateConfig("Shop", "SellPortalDifficulty", value)
+    print("Sell Portal Difficulty set to: "..value)
+end)
+
+AutoSellPortalSection:NewDropdown("Sell Portal Map", "Select portal map", {"Central City"}, function(value)
+    UpdateConfig("Shop", "SellPortalMap", value)
+    print("Sell Portal Map set to: "..value)
+end)
+
+AutoSellPortalSection:NewDropdown("Sell Portal Act", "Select portal act", {"1", "2", "3", "4", "5", "6"}, function(value)
+    UpdateConfig("Shop", "SellPortalAct", value)
+    print("Sell Portal Act set to: "..value)
+end)
+
+AutoSellPortalSection:NewToggle("Auto Sell Portal", "Toggle auto sell portal", function(state)
+    UpdateConfig("Shop", "AutoSellPortal", state)
+    print("Auto Sell Portal set to: "..tostring(state))
+    
+    if state then
+        spawn(function()
+            while Config.Shop.AutoSellPortal do
+                -- Logic cho Auto Sell Portal
+                print("Auto Sell Portal running...")
+                
+                -- Tìm nút sell portal và click
+                for _, button in pairs(game:GetService("Players").LocalPlayer.PlayerGui:GetDescendants()) do
+                    if button:IsA("TextButton") and button.Text:lower():find("sell portal") and button.Visible then
+                        firesignal(button.MouseButton1Click)
+                        print("Sell Portal button clicked")
+                        break
+                    end
+                end
+                
+                wait(2) -- Đợi 2 giây trước khi sell portal tiếp
+            end
+        end)
+    end
+end)
+
+-- Auto Buy Section
+AutoBuySection:NewDropdown("Buy List", "Select items to buy", {"Summon Ticket", "XP Potion", "Gold Potion"}, function(value)
+    UpdateConfig("Shop", "BuyList", value)
+    print("Buy List set to: "..value)
+end)
+
+AutoBuySection:NewToggle("Auto Buy", "Toggle auto buy", function(state)
+    UpdateConfig("Shop", "AutoBuy", state)
+    print("Auto Buy set to: "..tostring(state))
+    
+    if state then
+        spawn(function()
+            while Config.Shop.AutoBuy do
+                -- Logic cho Auto Buy
+                print("Auto Buy running...")
+                
+                -- Tìm nút buy và click
+                for _, button in pairs(game:GetService("Players").LocalPlayer.PlayerGui:GetDescendants()) do
+                    if button:IsA("TextButton") and button.Text:lower():find("buy") and button.Visible then
+                        firesignal(button.MouseButton1Click)
+                        print("Buy button clicked")
+                        break
+                    end
+                end
+                
+                wait(2) -- Đợi 2 giây trước khi buy tiếp
+            end
+        end)
+    end
+end)
+
+-- Auto Roll Trait Section
+AutoRollTraitSection:NewDropdown("Selected Traits", "Select traits to roll for", {"Damage", "Range", "Speed", "Defense"}, function(value)
+    UpdateConfig("Shop", "SelectedTraits", value)
+    print("Selected Traits set to: "..value)
+end)
+
+AutoRollTraitSection:NewToggle("Auto Roll", "Toggle auto roll traits", function(state)
+    UpdateConfig("Shop", "AutoRoll", state)
+    print("Auto Roll set to: "..tostring(state))
+    
+    if state then
+        spawn(function()
+            while Config.Shop.AutoRoll do
+                -- Logic cho Auto Roll Trait
+                print("Auto Roll Trait running...")
+                
+                -- Tìm nút roll và click
+                for _, button in pairs(game:GetService("Players").LocalPlayer.PlayerGui:GetDescendants()) do
+                    if button:IsA("TextButton") and button.Text:lower():find("roll") and button.Visible then
+                        firesignal(button.MouseButton1Click)
+                        print("Roll button clicked")
+                        break
+                    end
+                end
+                
+                wait(2) -- Đợi 2 giây trước khi roll tiếp
+            end
+        end)
+    end
+end)
+
+-- Summer Event Section
+SummerEventSection:NewDropdown("Summer Unit", "Select summer event unit", {"None"}, function(value)
+    UpdateConfig("Shop", "SummerUnit", value)
+    print("Summer Unit set to: "..value)
+end)
 
 -- MISC Tab Content
 local MiscSection = MiscTab:NewSection("Cấu hình")
