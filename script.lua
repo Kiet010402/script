@@ -1,6 +1,9 @@
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
 local Window = Library.CreateLib("DuongTuan - Anime Last Stand", "DarkTheme")
 
+-- Tạo tên file cấu hình
+local configFileName = "DuongTuanALS_Config.json"
+
 -- Biến cấu hình
 local Config = {
     AutoJoin = {
@@ -38,6 +41,90 @@ local Config = {
     }
 }
 
+-- Hàm để lưu cấu hình vào file
+local function SaveConfig()
+    -- Kiểm tra xem writefile có tồn tại không
+    if writefile then
+        -- Chuyển đổi bảng Config thành chuỗi JSON
+        local json = game:GetService("HttpService"):JSONEncode(Config)
+        -- Ghi JSON vào file
+        writefile(configFileName, json)
+        
+        print("Đã lưu cấu hình thành công!")
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "DuongTuan Hub",
+            Text = "Đã lưu cấu hình thành công!",
+            Duration = 2
+        })
+    else
+        print("Không thể lưu cấu hình: writefile không được hỗ trợ")
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "DuongTuan Hub",
+            Text = "Không thể lưu cấu hình! (Executor không hỗ trợ)",
+            Duration = 2
+        })
+    end
+end
+
+-- Hàm để tải cấu hình từ file
+local function LoadConfig()
+    -- Kiểm tra xem readfile có tồn tại không và file có tồn tại không
+    if readfile and pcall(function() readfile(configFileName) end) then
+        -- Đọc file và chuyển đổi từ JSON thành bảng
+        local json = readfile(configFileName)
+        local success, loadedConfig = pcall(function()
+            return game:GetService("HttpService"):JSONDecode(json)
+        end)
+        
+        if success and loadedConfig then
+            -- Cập nhật cấu hình từ file đã đọc
+            for category, settings in pairs(loadedConfig) do
+                if Config[category] then
+                    for setting, value in pairs(settings) do
+                        if Config[category][setting] ~= nil then
+                            Config[category][setting] = value
+                        end
+                    end
+                end
+            end
+            
+            print("Đã tải cấu hình thành công!")
+            game:GetService("StarterGui"):SetCore("SendNotification", {
+                Title = "DuongTuan Hub",
+                Text = "Đã tải cấu hình thành công!",
+                Duration = 2
+            })
+            
+            -- Áp dụng cấu hình FOV nếu được bật
+            if Config.Main.FOVEnabled and Config.Main.FOV then
+                local camera = game:GetService("Workspace").CurrentCamera
+                if camera then
+                    pcall(function()
+                        camera.FieldOfView = Config.Main.FOV
+                    end)
+                end
+            end
+            
+            return true
+        end
+    end
+    
+    print("Không tìm thấy cấu hình hoặc không thể tải")
+    return false
+end
+
+-- Tải cấu hình khi khởi động script
+LoadConfig()
+
+-- Cập nhật cấu hình API
+-- Tạo phiên bản mới của function SaveConfig để gọi mỗi khi có thay đổi cài đặt
+local function UpdateConfig(category, setting, value)
+    if Config[category] and Config[category][setting] ~= nil then
+        Config[category][setting] = value
+        SaveConfig() -- Lưu cấu hình ngay sau khi thay đổi
+    end
+end
+
 -- MAIN Tab
 local MainTab = Window:NewTab("MAIN")
 local FarmTab = Window:NewTab("FARM")
@@ -55,42 +142,42 @@ local AutoInfCastleSection = MainTab:NewSection("Auto Infinite Castle")
 
 -- Auto Join Section
 AutoJoinSection:NewDropdown("Join Mode", "Select join mode", {"Raids"}, function(value)
-    Config.AutoJoin.JoinMode = value
+    UpdateConfig("AutoJoin", "JoinMode", value)
     print("Join Mode set to: "..value)
 end)
 
 AutoJoinSection:NewDropdown("Map", "Select map", {"Central City"}, function(value)
-    Config.AutoJoin.Map = value
+    UpdateConfig("AutoJoin", "Map", value)
     print("Map set to: "..value)
 end)
 
 AutoJoinSection:NewDropdown("Act", "Select act", {"6"}, function(value)
-    Config.AutoJoin.Act = value
+    UpdateConfig("AutoJoin", "Act", value)
     print("Act set to: "..value)
 end)
 
 AutoJoinSection:NewDropdown("Difficulty", "Select difficulty", {"Normal"}, function(value)
-    Config.AutoJoin.Difficulty = value
+    UpdateConfig("AutoJoin", "Difficulty", value)
     print("Difficulty set to: "..value)
 end)
 
 AutoJoinSection:NewToggle("Friends Only", "Toggle friends only", function(state)
-    Config.AutoJoin.FriendsOnly = state
+    UpdateConfig("AutoJoin", "FriendsOnly", state)
     print("Friends Only set to: "..tostring(state))
 end)
 
 AutoJoinSection:NewToggle("Auto Join Map", "Toggle auto join map", function(state)
-    Config.AutoJoin.AutoJoinMap = state
+    UpdateConfig("AutoJoin", "AutoJoinMap", state)
     print("Auto Join Map set to: "..tostring(state))
 end)
 
 AutoJoinSection:NewSlider("Auto Start Delay", "Set auto start delay", 60, 0, function(value)
-    Config.AutoJoin.AutoStartDelay = value
+    UpdateConfig("AutoJoin", "AutoStartDelay", value)
     print("Auto Start Delay set to: "..value)
 end)
 
 AutoJoinSection:NewToggle("Auto Start", "Toggle auto start", function(state)
-    Config.AutoJoin.AutoStart = state
+    UpdateConfig("AutoJoin", "AutoStart", state)
     print("Auto Start set to: "..tostring(state))
     
     -- Kích hoạt chức năng Auto Start
@@ -137,18 +224,18 @@ end)
 
 -- Auto Challenge Section
 AutoChallengeSection:NewDropdown("Ignore Challenge Map", "Select ignore challenge map", {"None"}, function(value)
-    Config.AutoChallenge.IgnoreMap = value
+    UpdateConfig("AutoChallenge", "IgnoreMap", value)
     print("Ignore Challenge Map set to: "..value)
 end)
 
 AutoChallengeSection:NewDropdown("Ignore Challenge", "Select ignore challenge", {"None"}, function(value)
-    Config.AutoChallenge.IgnoreChallenge = value
+    UpdateConfig("AutoChallenge", "IgnoreChallenge", value)
     print("Ignore Challenge set to: "..value)
 end)
 
 -- Main Section
 MainSection:NewToggle("Auto Leave", "Toggle auto leave", function(state)
-    Config.Main.AutoLeave = state
+    UpdateConfig("Main", "AutoLeave", state)
     print("Auto Leave set to: "..tostring(state))
     
     if state then
@@ -182,7 +269,7 @@ MainSection:NewToggle("Auto Leave", "Toggle auto leave", function(state)
 end)
 
 MainSection:NewToggle("Auto Replay", "Toggle auto replay", function(state)
-    Config.Main.AutoReplay = state
+    UpdateConfig("Main", "AutoReplay", state)
     print("Auto Replay set to: "..tostring(state))
     
     if state then
@@ -197,17 +284,17 @@ MainSection:NewToggle("Auto Replay", "Toggle auto replay", function(state)
 end)
 
 MainSection:NewToggle("Auto Next", "Toggle auto next", function(state)
-    Config.Main.AutoNext = state
+    UpdateConfig("Main", "AutoNext", state)
     print("Auto Next set to: "..tostring(state))
 end)
 
 MainSection:NewSlider("TP Delay", "Set teleport delay", 60, 0, function(value)
-    Config.Main.TPDelay = value
+    UpdateConfig("Main", "TPDelay", value)
     print("TP Delay set to: "..value.." seconds")
 end)
 
 MainSection:NewToggle("Delete Map", "Toggle delete map", function(state)
-    Config.Main.DeleteMap = state
+    UpdateConfig("Main", "DeleteMap", state)
     print("Delete Map set to: "..tostring(state))
     
     if state then
@@ -314,7 +401,7 @@ MainSection:NewButton("Teleport To Lobby", "Teleport to lobby", function()
 end)
 
 MainSection:NewToggle("Auto Lobby TP on Time", "Toggle auto lobby TP on time", function(state)
-    Config.Main.AutoLobbyTP = state
+    UpdateConfig("Main", "AutoLobbyTP", state)
     print("Auto Lobby TP on Time set to: "..tostring(state))
     
     if state then
@@ -340,7 +427,7 @@ end)
 MainSection:NewTextBox("Auto Lobby Time", "Set auto lobby time", function(value)
     local time = tonumber(value)
     if time then
-        Config.Main.LobbyTime = time
+        UpdateConfig("Main", "LobbyTime", time)
         print("Auto Lobby Time set to: "..time.." minutes")
     else
         print("Invalid time value")
@@ -348,7 +435,7 @@ MainSection:NewTextBox("Auto Lobby Time", "Set auto lobby time", function(value)
 end)
 
 MainSection:NewToggle("Auto 2x/1.5x Game Speed", "Toggle auto game speed", function(state)
-    Config.Main.AutoGameSpeed = state
+    UpdateConfig("Main", "AutoGameSpeed", state)
     print("Auto Game Speed set to: "..tostring(state))
     
     if state then
@@ -375,7 +462,7 @@ MainSection:NewLabel("Camera FOV")
 MainSection:NewTextBox("Nhập FOV (1-120)", "Nhập giá trị FOV (zoom) từ 1-120", function(value)
     local newFOV = tonumber(value)
     if newFOV and newFOV >= 1 and newFOV <= 120 then
-        Config.Main.FOV = newFOV
+        UpdateConfig("Main", "FOV", newFOV)
         print("FOV value set to: "..newFOV)
         
         game:GetService("StarterGui"):SetCore("SendNotification", {
@@ -395,6 +482,7 @@ end)
 
 -- Thêm Button để bật/tắt FOV tự động
 MainSection:NewButton("Kích hoạt FOV", "Áp dụng giá trị FOV đã cài đặt", function()
+    UpdateConfig("Main", "FOVEnabled", true)
     local camera = game:GetService("Workspace").CurrentCamera
     if camera then
         -- Áp dụng FOV đã cài đặt
@@ -414,7 +502,8 @@ end)
 
 -- Thêm Button để reset FOV
 MainSection:NewButton("Reset FOV", "Đặt lại FOV về giá trị mặc định (70)", function()
-    Config.Main.FOV = 70
+    UpdateConfig("Main", "FOV", 70)
+    UpdateConfig("Main", "FOVEnabled", false)
     
     -- Reset camera về FOV mặc định
     local camera = game:GetService("Workspace").CurrentCamera
@@ -437,14 +526,14 @@ end)
 
 -- Auto Infinite Castle Section
 AutoInfCastleSection:NewDropdown("Infinite Castle Type", "Select infinite castle type", {"None"}, function(value)
-    Config.AutoInfCastle.Type = value
+    UpdateConfig("AutoInfCastle", "Type", value)
     print("Infinite Castle Type set to: "..value)
 end)
 
 AutoInfCastleSection:NewTextBox("Infinite Castle Room", "Set infinite castle room", function(value)
     local room = tonumber(value)
     if room then
-        Config.AutoInfCastle.Room = room
+        UpdateConfig("AutoInfCastle", "Room", room)
         print("Infinite Castle Room set to: "..room)
     else
         print("Invalid room value")
@@ -452,12 +541,12 @@ AutoInfCastleSection:NewTextBox("Infinite Castle Room", "Set infinite castle roo
 end)
 
 AutoInfCastleSection:NewToggle("Hard Mode Castle", "Toggle hard mode castle", function(state)
-    Config.AutoInfCastle.HardMode = state
+    UpdateConfig("AutoInfCastle", "HardMode", state)
     print("Hard Mode Castle set to: "..tostring(state))
 end)
 
 AutoInfCastleSection:NewToggle("Auto Castle", "Toggle auto castle", function(state)
-    Config.AutoInfCastle.AutoCastle = state
+    UpdateConfig("AutoInfCastle", "AutoCastle", state)
     print("Auto Castle set to: "..tostring(state))
     
     if state then
@@ -481,7 +570,31 @@ end)
 
 -- SHOP Tab Content (có thể thêm sau)
 
--- MISC Tab Content (có thể thêm sau)
+-- MISC Tab Content
+local MiscSection = MiscTab:NewSection("Cấu hình")
+
+-- Thêm nút lưu cấu hình
+MiscSection:NewButton("Lưu cấu hình", "Lưu tất cả cài đặt hiện tại", function()
+    SaveConfig()
+end)
+
+-- Thêm nút tải cấu hình
+MiscSection:NewButton("Tải cấu hình", "Tải cài đặt đã lưu", function()
+    if LoadConfig() then
+        -- Cập nhật lại UI hiển thị nếu cần
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "DuongTuan Hub",
+            Text = "Đã tải và áp dụng cấu hình!",
+            Duration = 2
+        })
+    else
+        game:GetService("StarterGui"):SetCore("SendNotification", {
+            Title = "DuongTuan Hub",
+            Text = "Không tìm thấy cấu hình đã lưu!",
+            Duration = 2
+        })
+    end
+end)
 
 -- Thông báo khi script được tải
 game:GetService("StarterGui"):SetCore("SendNotification", {
@@ -489,5 +602,14 @@ game:GetService("StarterGui"):SetCore("SendNotification", {
     Text = "Script đã được tải thành công!",
     Duration = 5
 })
+
+-- Thông báo nếu tải được cấu hình
+if readfile and pcall(function() readfile(configFileName) end) then
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "DuongTuan Hub",
+        Text = "Đã tải cấu hình đã lưu!",
+        Duration = 3
+    })
+end
 
 print("Script loaded successfully!")
