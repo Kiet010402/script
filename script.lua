@@ -603,8 +603,6 @@ end)
 -- M.MAPS Tab Content (có thể thêm sau)
 
 -- SHOP Tab Content
-local ShopTab = Window:NewTab("SHOP")
-
 -- Shop Tab Sections
 local AutoSummonSection = ShopTab:NewSection("Auto Summon")
 local AutoFuseSection = ShopTab:NewSection("Auto Fuse")
