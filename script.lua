@@ -218,73 +218,6 @@ local JoinModeDropdown = MainTab:CreateDropdown({
         end
     end,
 })
--- Sửa lại nút Select Map để xử lý lỗi
-local SelectMapButton = MainTab:CreateButton({
-    Name = "Select Map",
-    Callback = function()
-       -- Lấy thông tin map, act và difficulty
-       local selectedMap = getgenv().SelectedMap
-       local actValue = tonumber(getgenv().Act)
-       local difficultyValue = getgenv().Difficulty
-       local friendsOnly = getgenv().FriendsOnly
-       
-       -- Đảm bảo act là số nguyên hợp lệ
-       if not actValue or actValue < 1 or actValue > 6 then
-          Rayfield:Notify({
-             Title = "Lỗi",
-             Content = "Act phải là số từ 1-6",
-             Duration = 3,
-             Image = "x",
-          })
-          return
-       end
-       
-       -- Kiểm tra xem có phải chế độ Story không
-       if getgenv().JoinMode == "Story" then
-          -- Hiển thị thông tin sẽ chọn
-          Rayfield:Notify({
-             Title = "Map Selection",
-             Content = "Đang chọn: " .. selectedMap .. ", Act " .. actValue .. ", " .. difficultyValue,
-             Duration = 3,
-             Image = "check",
-          })
-          
-          -- Gọi remote để chọn map với pcall để bắt lỗi
-          local success, result = pcall(function()
-             return game:GetService("ReplicatedStorage").Remotes.Story.Select:InvokeServer(selectedMap, actValue, difficultyValue, friendsOnly)
-          end)
-          
-          if success then
-             Rayfield:Notify({
-                Title = "Thành công",
-                Content = "Đã chọn map thành công!",
-                Duration = 3,
-                Image = "check",
-             })
-          else
-             Rayfield:Notify({
-                Title = "Lỗi",
-                Content = "Không thể chọn map: " .. tostring(result),
-                Duration = 3,
-                Image = "x",
-             })
-             
-             -- In thông tin debug để khắc phục lỗi
-             print("Debug - Map:", selectedMap)
-             print("Debug - Act:", actValue, type(actValue))
-             print("Debug - Difficulty:", difficultyValue)
-             print("Debug - FriendsOnly:", friendsOnly)
-          end
-       else
-          Rayfield:Notify({
-             Title = "Lưu ý",
-             Content = "Chức năng này chỉ hoạt động ở chế độ Story. Vui lòng chuyển Join Mode sang Story.",
-             Duration = 3,
-             Image = "warning",
-          })
-       end
-    end,
-})
 
 local MapDropdown = MainTab:CreateDropdown({
     Name = "Map",
@@ -294,6 +227,19 @@ local MapDropdown = MainTab:CreateDropdown({
     Flag = "SelectedMap",
     Callback = function(Option)
         getgenv().SelectedMap = Option
+        
+        -- Nếu Auto Join đang bật và ở chế độ Story, thực hiện chọn map mới
+        if getgenv().AutoJoinMap and getgenv().JoinMode == "Story" then
+            -- Lấy thông tin act và difficulty
+            local actValue = tonumber(getgenv().Act) or 1
+            local difficultyValue = getgenv().Difficulty
+            local friendsOnly = getgenv().FriendsOnly
+            
+            -- Gọi remote để cập nhật map
+            pcall(function()
+                game:GetService("ReplicatedStorage").Remotes.Story.Select:InvokeServer(Option, actValue, difficultyValue, friendsOnly)
+            end)
+        end
     end,
 })
 
@@ -408,6 +354,7 @@ local DebugPathButton = MainTab:CreateButton({
        end
     end,
  })
+
 local AutoJoinMapToggle = MainTab:CreateToggle({
     Name = "Auto Join Map",
     CurrentValue = false,
@@ -415,14 +362,60 @@ local AutoJoinMapToggle = MainTab:CreateToggle({
     Callback = function(Value)
         getgenv().AutoJoinMap = Value
         
-        -- Khi bật Auto Join, chỉ kích hoạt teleporter một lần duy nhất
+        -- Khi bật Auto Join
         if Value then
-            activateTeleporter(false) -- Không im lặng, hiển thị thông báo
+            -- Hiển thị thông báo đang chuẩn bị
+            Rayfield:Notify({
+                Title = "Auto Join Map",
+                Content = "Đang chuẩn bị tham gia map trong 5 giây...",
+                Duration = 3,
+                Image = "check",
+            })
             
             -- Tắt loop nếu đang chạy
             if getgenv().JoinMapLoop then
                 getgenv().JoinMapLoop:Disconnect()
                 getgenv().JoinMapLoop = nil
+            end
+            
+            -- Đợi 5 giây trước khi kích hoạt
+            wait(5)
+            
+            -- Kiểm tra xem có phải chế độ Story không
+            if getgenv().JoinMode == "Story" then
+                -- Lấy thông tin map, act và difficulty
+                local selectedMap = getgenv().SelectedMap
+                local actValue = tonumber(getgenv().Act) or 1
+                local difficultyValue = getgenv().Difficulty
+                local friendsOnly = getgenv().FriendsOnly
+                
+                -- Gọi remote để chọn map với pcall để bắt lỗi
+                local success, result = pcall(function()
+                    return game:GetService("ReplicatedStorage").Remotes.Story.Select:InvokeServer(selectedMap, actValue, difficultyValue, friendsOnly)
+                end)
+                
+                if success then
+                    Rayfield:Notify({
+                        Title = "Thành công",
+                        Content = "Đã chọn map: " .. selectedMap .. ", Act " .. actValue,
+                        Duration = 3,
+                        Image = "check",
+                    })
+                    
+                    -- Sau khi chọn map thành công, hãy teleport đến điểm vào map
+                    wait(1)
+                    activateTeleporter(false)
+                else
+                    Rayfield:Notify({
+                        Title = "Lỗi",
+                        Content = "Không thể chọn map: " .. tostring(result),
+                        Duration = 3,
+                        Image = "x",
+                    })
+                end
+            else
+                -- Nếu không phải chế độ Story, chỉ kích hoạt teleporter
+                activateTeleporter(false)
             end
         end
     end,
