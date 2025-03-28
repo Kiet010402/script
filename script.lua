@@ -381,30 +381,89 @@ local AutoJoinMapToggle = MainTab:CreateToggle({
             -- Đợi 5 giây trước khi kích hoạt
             wait(5)
             
-            -- Kiểm tra xem có phải chế độ Story không
-            if getgenv().JoinMode == "Story" then
+            local joinModeString = tostring(getgenv().JoinMode)
+            
+            -- Teleport đến teleporter phù hợp trước
+            -- Kiểm tra xem đã teleport được chưa
+            local teleportSuccess = false
+            
+            -- Thực hiện teleport đến teleporter trước
+            local teleportSuccess = pcall(function()
+                local teleporterFolder = workspace:FindFirstChild("TeleporterFolder")
+                if not teleporterFolder then return false end
+                
+                -- Xác định folderName và doorIndex dựa trên join mode
+                local folderName = nil
+                local doorIndex = nil
+                
+                if joinModeString == "Story" then
+                    folderName = "Story"
+                    doorIndex = 3
+                elseif joinModeString == "Challenge" then
+                    folderName = "Challenge"
+                    doorIndex = 4
+                elseif joinModeString == "Raids" then
+                    folderName = "Raids"
+                    doorIndex = 8
+                else
+                    return false
+                end
+                
+                local folderPath = teleporterFolder:FindFirstChild(folderName)
+                if not folderPath then return false end
+                
+                local children = folderPath:GetChildren()
+                if #children < doorIndex then return false end
+                
+                local teleportObject = children[doorIndex]
+                if not teleportObject then return false end
+                
+                local doorPath = teleportObject:FindFirstChild("Door")
+                if not doorPath then return false end
+                
+                -- Teleport nhân vật đến teleporter
+                local character = player.Character
+                if not character or not character:FindFirstChild("HumanoidRootPart") then
+                    return false
+                end
+                
+                character.HumanoidRootPart.CFrame = doorPath.CFrame + Vector3.new(0, 5, 0)
+                
+                -- Đợi để đảm bảo đã teleport xong
+                wait(2)
+                
+                -- Kích hoạt teleporter nếu có RemoteEvent
+                local remoteEvent = doorPath:FindFirstChild("RemoteEvent")
+                if remoteEvent then
+                    remoteEvent:FireServer()
+                end
+                
+                return true
+            end)
+            
+            -- Đợi thêm để đảm bảo teleport đã hoàn tất
+            wait(3)
+            
+            -- Nếu là chế độ Story, thực hiện chọn map
+            if joinModeString == "Story" then
                 -- Lấy thông tin map, act và difficulty
                 local selectedMap = getgenv().SelectedMap
                 local actValue = tonumber(getgenv().Act) or 1
                 local difficultyValue = getgenv().Difficulty
                 local friendsOnly = getgenv().FriendsOnly
                 
-                -- Gọi remote để chọn map với pcall để bắt lỗi
-                local success, result = pcall(function()
+                -- Gọi remote để chọn map
+                local selectSuccess, result = pcall(function()
                     return game:GetService("ReplicatedStorage").Remotes.Story.Select:InvokeServer(selectedMap, actValue, difficultyValue, friendsOnly)
                 end)
                 
-                if success then
+                if selectSuccess then
                     Rayfield:Notify({
                         Title = "Thành công",
                         Content = "Đã chọn map: " .. selectedMap .. ", Act " .. actValue,
                         Duration = 3,
                         Image = "check",
                     })
-                    
-                    -- Sau khi chọn map thành công, hãy teleport đến điểm vào map
-                    wait(1)
-                    activateTeleporter(false)
                 else
                     Rayfield:Notify({
                         Title = "Lỗi",
@@ -413,9 +472,6 @@ local AutoJoinMapToggle = MainTab:CreateToggle({
                         Image = "x",
                     })
                 end
-            else
-                -- Nếu không phải chế độ Story, chỉ kích hoạt teleporter
-                activateTeleporter(false)
             end
         end
     end,
