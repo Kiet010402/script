@@ -920,6 +920,48 @@ afkRewardsButton.MouseButton1Click:Connect(function()
     if afkRewardsToggle:FindFirstChild("ToggleBackground").BackgroundColor3 == Color3.fromRGB(0, 255, 255) then
         showNotification("Đã bật tự động dịch chuyển đến AFKRewards")
         print("Auto Teleport to AFKRewards: ON")
+        
+        -- Thêm chức năng Auto Teleport to AFKRewards
+        spawn(function()
+            local allowedPlaceId = 87039211657390 -- PlaceId mà script được phép chạy
+            
+            -- Kiểm tra nếu không đúng PlaceId thì dừng script
+            if game.PlaceId ~= allowedPlaceId then
+                return
+            end
+            
+            local TeleportService = game:GetService("TeleportService")
+            local Players = game:GetService("Players")
+            local placeId = 116614712661486 
+            local player = Players.LocalPlayer
+            
+            if not player then
+                repeat
+                    task.wait()
+                    player = Players.LocalPlayer
+                until player
+            end
+            
+            -- Kiểm tra nếu người chơi đã ở nơi cần đến
+            if game.PlaceId == placeId then
+                return -- Dừng script ngay lập tức nếu đã ở đúng nơi
+            end
+            
+            task.wait(30) -- Chờ 30 giây trước khi thực hiện teleport
+            
+            -- Kiểm tra lại nếu toggle vẫn đang bật
+            if afkRewardsToggle and afkRewardsToggle:FindFirstChild("ToggleBackground") and
+               afkRewardsToggle:FindFirstChild("ToggleBackground").BackgroundColor3 == Color3.fromRGB(0, 255, 255) then
+                local success, errorMessage = pcall(function()
+                    TeleportService:Teleport(placeId, player)
+                end)
+                
+                if not success then
+                    warn("Teleport failed: " .. errorMessage)
+                    showNotification("Dịch chuyển thất bại: " .. errorMessage)
+                end
+            end
+        end)
     else
         showNotification("Đã tắt tự động dịch chuyển đến AFKRewards")
         print("Auto Teleport to AFKRewards: OFF")
@@ -1499,20 +1541,177 @@ local autoNotifyToggle, autoNotifyButton = createToggleSwitch(
 -- Set Canvas Size for Webhook Tab
 WebhookTab.CanvasSize = UDim2.new(0, 0, 0, 360)
 
--- Khởi tạo các service cần thiết
+-- Chức năng xử lý webhook
+local webhookConfig = {
+    URL = "",
+    ENABLED = false
+}
+
+-- Sự kiện khi nhấn nút lưu
+saveButton.MouseButton1Click:Connect(function()
+    local newUrl = urlInput.Text
+    if newUrl ~= "" and newUrl ~= webhookConfig.URL then
+        webhookConfig.URL = newUrl
+        CONFIG.WEBHOOK_URL = newUrl -- Cập nhật cả CONFIG mới
+        
+        statusLabel.Text = "Trạng thái: Đã lưu URL mới"
+        statusLabel.TextColor3 = Color3.fromRGB(76, 175, 80)
+        
+        -- Lưu cấu hình và kết nối với RewardsWebhook.lua nếu cần
+        pcall(function() if saveConfig then saveConfig(CONFIG) end end)
+        
+        -- Kết nối với script RewardsWebhook
+        local success, message = pcall(function()
+            -- Kiểm tra nếu biến CONFIG tồn tại từ RewardsWebhook.lua
+            if _G.CONFIG then
+                _G.CONFIG.WEBHOOK_URL = newUrl
+                -- Lưu cấu hình nếu hàm lưu tồn tại
+                if _G.saveConfig then
+                    _G.saveConfig(_G.CONFIG)
+                end
+                return "Đã kết nối và lưu với RewardsWebhook"
+            else
+                -- Nếu chưa tải RewardsWebhook, lưu vào biến cục bộ
+                return "Lưu vào cấu hình cục bộ"
+            end
+        end)
+        
+        -- Lưu vào biến cục bộ và hiển thị thông báo
+        showNotification("Đã lưu URL webhook" .. (success and ": " .. message or ""))
+    else
+        statusLabel.Text = "Trạng thái: URL không thay đổi hoặc trống"
+        statusLabel.TextColor3 = Color3.fromRGB(255, 235, 59)
+    end
+end)
+
+-- Sự kiện khi nhấn nút test
+testButton.MouseButton1Click:Connect(function()
+    if webhookConfig.URL == "" then
+        statusLabel.Text = "Trạng thái: Vui lòng nhập URL trước khi test"
+        statusLabel.TextColor3 = Color3.fromRGB(255, 75, 75)
+        return
+    end
+    
+    statusLabel.Text = "Trạng thái: Đang kiểm tra kết nối..."
+    statusLabel.TextColor3 = Color3.fromRGB(33, 150, 243)
+    
+    -- Ưu tiên sử dụng hàm sendTestWebhook trong script hiện tại
+    local success, result
+    
+    -- Sử dụng hàm sendTestWebhook trong script hiện tại nếu URL được cung cấp
+    if CONFIG.WEBHOOK_URL ~= "YOUR_URL" and CONFIG.WEBHOOK_URL ~= "" then
+        success, result = pcall(function()
+            return sendTestWebhook("Webhook test từ Arise Crossover UI")
+        end)
+    -- Thử kết nối với hàm từ RewardsWebhook.lua nếu hàm trong script hiện tại không khả dụng
+    elseif _G.sendTestWebhook then
+        success, result = pcall(function()
+            return _G.sendTestWebhook("Webhook test từ Arise Crossover UI")
+        end)
+    else
+        -- Giả lập gửi webhook nếu không có tùy chọn nào khả dụng
+        statusLabel.Text = "Trạng thái: Không tìm thấy hàm webhook" 
+        statusLabel.TextColor3 = Color3.fromRGB(255, 75, 75)
+        success = false
+    end
+    
+    -- Hiển thị kết quả
+    if success and result then
+        statusLabel.Text = "Trạng thái: Test webhook thành công!"
+        statusLabel.TextColor3 = Color3.fromRGB(76, 175, 80)
+        showNotification("Webhook test thành công")
+    else
+        statusLabel.Text = "Trạng thái: Test thất bại! Kiểm tra URL và quyền"
+        statusLabel.TextColor3 = Color3.fromRGB(255, 75, 75)
+        showNotification("Webhook test thất bại")
+    end
+end)
+
+-- Sự kiện khi toggle auto notify
+autoNotifyButton.MouseButton1Click:Connect(function()
+    -- Trạng thái sau khi nhấn
+    local enabled = autoNotifyToggle:FindFirstChild("ToggleBackground").BackgroundColor3 == Color3.fromRGB(0, 255, 255)
+    webhookConfig.ENABLED = enabled
+    CONFIG.SHOW_UI = enabled
+    
+    -- Khởi động/dừng theo dõi phần thưởng
+    if enabled then
+        startRewardTracking() 
+    else
+        stopRewardTracking()
+    end
+    
+    -- Kết nối với script RewardsWebhook
+    pcall(function()
+        if _G.CONFIG then
+            _G.CONFIG.SHOW_UI = enabled
+            -- Cập nhật trạng thái và lưu cấu hình
+            if _G.saveConfig then
+                _G.saveConfig(_G.CONFIG)
+            end
+            
+            -- Cập nhật UI nếu có
+            if _G.webhookUI then
+                local mainFrame = _G.webhookUI:FindFirstChild("mainFrame")
+                if mainFrame then
+                    mainFrame.Visible = enabled
+                end
+            end
+        end
+    end)
+    
+    showNotification(enabled and "Đã bật tự động thông báo AFKRewards" or "Đã tắt tự động thông báo AFKRewards")
+end)
+
+-- Tải URL từ RewardsWebhook nếu có
+spawn(function()
+    wait(2) -- Đợi một chút để đảm bảo RewardsWebhook đã được tải
+    pcall(function()
+        if _G.CONFIG and _G.CONFIG.WEBHOOK_URL and _G.CONFIG.WEBHOOK_URL ~= "YOUR_URL" then
+            urlInput.Text = _G.CONFIG.WEBHOOK_URL
+            webhookConfig.URL = _G.CONFIG.WEBHOOK_URL
+            statusLabel.Text = "Trạng thái: Đã tải URL từ cấu hình"
+            statusLabel.TextColor3 = Color3.fromRGB(76, 175, 80)
+            
+            -- Đặt trạng thái toggle theo cấu hình
+            if _G.CONFIG.SHOW_UI then
+                TweenService:Create(autoNotifyToggle:FindFirstChild("ToggleBackground"), TweenInfo.new(0.3), {
+                    BackgroundColor3 = Color3.fromRGB(0, 255, 255)
+                }):Play()
+                
+                TweenService:Create(autoNotifyToggle:FindFirstChild("ToggleBackground"):FindFirstChild("ToggleCircle"), TweenInfo.new(0.3), {
+                    Position = UDim2.new(1, -25, 0.5, -10)
+                }):Play()
+                
+                webhookConfig.ENABLED = true
+            end
+        end
+    end)
+end)
+
+-- Thêm các chức năng từ RewardWebhook.lua trực tiếp vào đây
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 
 -- Sử dụng tên người chơi để tạo file cấu hình riêng cho từng tài khoản
 local playerName = Player.Name:gsub("[^%w_]", "_") -- Loại bỏ ký tự đặc biệt
-local CONFIG_FILE = "AriseWebhook_" .. playerName .. ".json"
 
--- Chức năng xử lý webhook
-local webhookConfig = {
-    URL = "",
-    ENABLED = false
-}
+-- Lấy thông tin về folder chứa script hiện tại để tạo định danh riêng cho mỗi package KRNL
+local scriptPath = debug.getinfo(1, "S").source:sub(2)
+local folderHash = tostring(scriptPath):gsub("[^%w]", ""):sub(1, 8)
+
+-- Tạo CONFIG_FILE với định danh riêng cho mỗi package KRNL
+local CONFIG_FILE = "AriseWebhook_" .. playerName .. "_" .. folderHash .. ".json"
+
+-- Biến kiểm soát trạng thái webhook
+local webhookActive = false
+local receivedRewards = {}
+local isProcessingReward = false
+local lastWebhookTime = 0
+local WEBHOOK_COOLDOWN = 3
+local totalRewards = {}
+local playerItems = {}
 
 -- Đọc cấu hình từ file (nếu có)
 local function loadConfig()
@@ -1555,53 +1754,22 @@ local function saveConfig(config)
     end
 end
 
--- Tạo wrapper an toàn cho saveConfig
-local function safeSaveConfig(config)
-    if type(saveConfig) ~= "function" then
-        print("Cảnh báo: Hàm saveConfig chưa được định nghĩa")
-        return false
-    end
-    
-    local success, result = pcall(function()
-        return saveConfig(config)
-    end)
-    
-    if success then
-        return result
-    else
-        warn("Lỗi khi gọi saveConfig: " .. tostring(result))
-        return false
-    end
-end
-
--- Tạo kiểm tra an toàn trước khi gọi hàm
-local function safeLoadConfig()
-    if type(loadConfig) == "function" then 
-        return loadConfig()
-    else
-        return nil
-    end
-end
-
--- Cấu hình Webhook (đảm bảo được khởi tạo trước khi sử dụng)
+-- Cấu hình Webhook
 local CONFIG = {
     WEBHOOK_URL = "YOUR_URL",
     WEBHOOK_COOLDOWN = 3,
     SHOW_UI = true
 }
 
--- Đảm bảo tương thích với cả hai biến
-webhookConfig.URL = CONFIG.WEBHOOK_URL or "YOUR_URL"
+-- Đảm bảo tương thích với webhookConfig cũ
+webhookConfig.URL = CONFIG.WEBHOOK_URL
 
--- Tải cấu hình từ file nếu có (sử dụng pcall để tránh lỗi)
-local savedConfig
-pcall(function() 
-    savedConfig = safeLoadConfig() 
-    if savedConfig and savedConfig.WEBHOOK_URL then
-        CONFIG.WEBHOOK_URL = savedConfig.WEBHOOK_URL
-        urlInput.Text = savedConfig.WEBHOOK_URL
-    end
-end)
+-- Tải cấu hình từ file (nếu có)
+local savedConfig = loadConfig()
+if savedConfig and savedConfig.WEBHOOK_URL then
+    CONFIG.WEBHOOK_URL = savedConfig.WEBHOOK_URL
+    urlInput.Text = savedConfig.WEBHOOK_URL
+end
 
 -- Hàm trích xuất số lượng trong ngoặc
 local function extractQuantity(text)
@@ -1844,14 +2012,7 @@ local function sendTestWebhook(customMessage)
         return false
     end
     
-    local webhookURL = ""
-    
-    -- Kiểm tra URL từ cả hai nguồn 
-    if CONFIG and CONFIG.WEBHOOK_URL and CONFIG.WEBHOOK_URL ~= "YOUR_URL" and CONFIG.WEBHOOK_URL ~= "" then
-        webhookURL = CONFIG.WEBHOOK_URL
-    elseif webhookConfig and webhookConfig.URL and webhookConfig.URL ~= "" then
-        webhookURL = webhookConfig.URL
-    else
+    if CONFIG.WEBHOOK_URL == "YOUR_URL" or CONFIG.WEBHOOK_URL == "" then
         statusLabel.Text = "Trạng thái: Vui lòng nhập URL webhook trước"
         statusLabel.TextColor3 = Color3.fromRGB(255, 75, 75)
         return false
@@ -1894,7 +2055,7 @@ local function sendTestWebhook(customMessage)
     local success, err = pcall(function()
         if syn and syn.request then
             syn.request({
-                Url = webhookURL,
+                Url = CONFIG.WEBHOOK_URL,
                 Method = "POST",
                 Headers = {
                     ["Content-Type"] = "application/json"
@@ -1903,7 +2064,7 @@ local function sendTestWebhook(customMessage)
             })
         elseif request then
             request({
-                Url = webhookURL,
+                Url = CONFIG.WEBHOOK_URL,
                 Method = "POST",
                 Headers = {
                     ["Content-Type"] = "application/json"
@@ -1912,7 +2073,7 @@ local function sendTestWebhook(customMessage)
             })
         elseif http and http.request then
             http.request({
-                Url = webhookURL,
+                Url = CONFIG.WEBHOOK_URL,
                 Method = "POST",
                 Headers = {
                     ["Content-Type"] = "application/json"
@@ -1920,7 +2081,7 @@ local function sendTestWebhook(customMessage)
                 Body = jsonData
             })
         elseif httppost then
-            httppost(webhookURL, jsonData)
+            httppost(CONFIG.WEBHOOK_URL, jsonData)
         else
             error("Không tìm thấy HTTP API nào được hỗ trợ bởi executor hiện tại")
         end
@@ -1946,6 +2107,7 @@ local function sendWebhook(rewardInfo)
     cleanRewardInfo = cleanRewardInfo:gsub("YOU GOT A NEW REWARD!%s*", "")
     
     if isCashReward(cleanRewardInfo) then return end
+    
     if isProcessingReward then return end
     
     local currentTime = tick()
@@ -1954,21 +2116,13 @@ local function sendWebhook(rewardInfo)
     local rewardId = createUniqueRewardId(cleanRewardInfo)
     if receivedRewards[rewardId] then return end
     
-    local webhookURL = ""
-    -- Kiểm tra URL từ cả hai nguồn 
-    if CONFIG and CONFIG.WEBHOOK_URL and CONFIG.WEBHOOK_URL ~= "YOUR_URL" and CONFIG.WEBHOOK_URL ~= "" then
-        webhookURL = CONFIG.WEBHOOK_URL
-    elseif webhookConfig and webhookConfig.URL and webhookConfig.URL ~= "" then
-        webhookURL = webhookConfig.URL
-    else
-        return -- Không gửi nếu không có URL
-    end
-    
     isProcessingReward = true
     lastWebhookTime = tick()
+    
     receivedRewards[rewardId] = true
     
     readActualItemQuantities()
+    
     updateTotalRewards(cleanRewardInfo)
     
     local data = {
@@ -2012,7 +2166,7 @@ local function sendWebhook(rewardInfo)
     pcall(function()
         if syn and syn.request then
             syn.request({
-                Url = webhookURL,
+                Url = CONFIG.WEBHOOK_URL,
                 Method = "POST",
                 Headers = {
                     ["Content-Type"] = "application/json"
@@ -2021,7 +2175,7 @@ local function sendWebhook(rewardInfo)
             })
         elseif request then
             request({
-                Url = webhookURL,
+                Url = CONFIG.WEBHOOK_URL,
                 Method = "POST",
                 Headers = {
                     ["Content-Type"] = "application/json"
@@ -2030,7 +2184,7 @@ local function sendWebhook(rewardInfo)
             })
         elseif http and http.request then
             http.request({
-                Url = webhookURL,
+                Url = CONFIG.WEBHOOK_URL,
                 Method = "POST",
                 Headers = {
                     ["Content-Type"] = "application/json"
@@ -2038,7 +2192,7 @@ local function sendWebhook(rewardInfo)
                 Body = jsonData
             })
         elseif httppost then
-            httppost(webhookURL, jsonData)
+            httppost(CONFIG.WEBHOOK_URL, jsonData)
         end
     end)
     
@@ -2138,12 +2292,11 @@ _G.sendTestWebhook = sendTestWebhook
 -- Kết nối các chức năng với giao diện
 saveButton.MouseButton1Click:Connect(function()
     local newUrl = urlInput.Text
-    if newUrl ~= "" and newUrl ~= (CONFIG and CONFIG.WEBHOOK_URL or webhookConfig.URL) then
-        webhookConfig.URL = newUrl
-        if CONFIG then CONFIG.WEBHOOK_URL = newUrl end -- Kiểm tra nil trước khi gán
+    if newUrl ~= "" and newUrl ~= CONFIG.WEBHOOK_URL then
+        CONFIG.WEBHOOK_URL = newUrl
         
-        -- Lưu vào file cấu hình sử dụng wrapper an toàn
-        if safeSaveConfig(CONFIG) then
+        -- Lưu vào file cấu hình
+        if saveConfig(CONFIG) then
             statusLabel.Text = "Trạng thái: Đã lưu URL mới cho " .. playerName
         else
             statusLabel.Text = "Trạng thái: Đã lưu URL mới (không lưu được file)"
@@ -2158,24 +2311,10 @@ saveButton.MouseButton1Click:Connect(function()
 end)
 
 testButton.MouseButton1Click:Connect(function()
-    -- Kiểm tra hàm sendTestWebhook trước khi gọi
-    if type(sendTestWebhook) ~= "function" then
-        statusLabel.Text = "Trạng thái: Lỗi - hàm webhook chưa được định nghĩa"
-        statusLabel.TextColor3 = Color3.fromRGB(255, 75, 75)
-        showNotification("Webhook test thất bại: hàm không được định nghĩa!")
-        return
-    end
-    
-    -- Sử dụng pcall để tránh lỗi khi gọi hàm
-    local success, result = pcall(function()
-        return sendTestWebhook("Kiểm tra kết nối từ Arise Crossover UI")
-    end)
-    
-    if success and result then
+    local success = sendTestWebhook("Kiểm tra kết nối từ Arise Crossover UI")
+    if success then
         showNotification("Webhook test thành công")
     else
-        statusLabel.Text = "Trạng thái: Lỗi - " .. tostring(result or "không xác định")
-        statusLabel.TextColor3 = Color3.fromRGB(255, 75, 75)
         showNotification("Webhook test thất bại!")
     end
 end)
@@ -2184,11 +2323,10 @@ end)
 autoNotifyButton.MouseButton1Click:Connect(function()
     -- Trạng thái sau khi nhấn
     local enabled = autoNotifyToggle:FindFirstChild("ToggleBackground").BackgroundColor3 == Color3.fromRGB(0, 255, 255)
-    webhookConfig.ENABLED = enabled
-    if CONFIG then CONFIG.SHOW_UI = enabled end -- Kiểm tra nil trước khi gán
+    CONFIG.SHOW_UI = enabled
     
-    -- Lưu cấu hình sử dụng wrapper an toàn
-    pcall(function() if CONFIG then safeSaveConfig(CONFIG) end end)
+    -- Lưu cấu hình
+    saveConfig(CONFIG)
     
     if enabled then
         startRewardTracking()
@@ -2222,10 +2360,4 @@ end)
 
 -- Thông báo tích hợp hoàn tất
 print("Đã tích hợp thành công RewardWebhook vào Script-AC")
-
--- Xuất các hàm ra biến toàn cục để tích hợp với UI (bảo vệ với kiểm tra nil)
-pcall(function()
-    if CONFIG then _G.CONFIG = CONFIG end
-    if saveConfig then _G.saveConfig = saveConfig end
-    if sendTestWebhook then _G.sendTestWebhook = sendTestWebhook end
-end)
+print("Đang sử dụng cấu hình riêng biệt: " .. CONFIG_FILE)
