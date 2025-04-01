@@ -1499,11 +1499,89 @@ local autoNotifyToggle, autoNotifyButton = createToggleSwitch(
 -- Set Canvas Size for Webhook Tab
 WebhookTab.CanvasSize = UDim2.new(0, 0, 0, 360)
 
+-- Khởi tạo các service cần thiết
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+local Player = Players.LocalPlayer
+
+-- Sử dụng tên người chơi để tạo file cấu hình riêng cho từng tài khoản
+local playerName = Player.Name:gsub("[^%w_]", "_") -- Loại bỏ ký tự đặc biệt
+local CONFIG_FILE = "AriseWebhook_" .. playerName .. ".json"
+
 -- Chức năng xử lý webhook
 local webhookConfig = {
     URL = "",
     ENABLED = false
 }
+
+-- Đọc cấu hình từ file (nếu có)
+local function loadConfig()
+    local success, result = pcall(function()
+        if readfile and isfile and isfile(CONFIG_FILE) then
+            return HttpService:JSONDecode(readfile(CONFIG_FILE))
+        end
+        return nil
+    end)
+    
+    if success and result then
+        print("Đã tải cấu hình từ file cho tài khoản " .. playerName)
+        return result
+    else
+        print("Không tìm thấy file cấu hình cho tài khoản " .. playerName)
+        return nil
+    end
+end
+
+-- Lưu cấu hình xuống file
+local function saveConfig(config)
+    local success, err = pcall(function()
+        if writefile then
+            writefile(CONFIG_FILE, HttpService:JSONEncode(config))
+            return true
+        end
+        return false
+    end)
+    
+    if success then
+        print("Đã lưu cấu hình vào file " .. CONFIG_FILE)
+        statusLabel.Text = "Trạng thái: Đã lưu URL thành công"
+        statusLabel.TextColor3 = Color3.fromRGB(76, 175, 80)
+        return true
+    else
+        warn("Lỗi khi lưu cấu hình: " .. tostring(err))
+        statusLabel.Text = "Trạng thái: Lỗi khi lưu cấu hình"
+        statusLabel.TextColor3 = Color3.fromRGB(255, 75, 75)
+        return false
+    end
+end
+
+-- Tạo wrapper an toàn cho saveConfig
+local function safeSaveConfig(config)
+    if type(saveConfig) ~= "function" then
+        print("Cảnh báo: Hàm saveConfig chưa được định nghĩa")
+        return false
+    end
+    
+    local success, result = pcall(function()
+        return saveConfig(config)
+    end)
+    
+    if success then
+        return result
+    else
+        warn("Lỗi khi gọi saveConfig: " .. tostring(result))
+        return false
+    end
+end
+
+-- Tạo kiểm tra an toàn trước khi gọi hàm
+local function safeLoadConfig()
+    if type(loadConfig) == "function" then 
+        return loadConfig()
+    else
+        return nil
+    end
+end
 
 -- Cấu hình Webhook (đảm bảo được khởi tạo trước khi sử dụng)
 local CONFIG = {
@@ -1515,12 +1593,15 @@ local CONFIG = {
 -- Đảm bảo tương thích với cả hai biến
 webhookConfig.URL = CONFIG.WEBHOOK_URL or "YOUR_URL"
 
--- Tải cấu hình từ file (nếu có)
-local savedConfig = loadConfig()
-if savedConfig and savedConfig.WEBHOOK_URL then
-    CONFIG.WEBHOOK_URL = savedConfig.WEBHOOK_URL
-    urlInput.Text = savedConfig.WEBHOOK_URL
-end
+-- Tải cấu hình từ file nếu có (sử dụng pcall để tránh lỗi)
+local savedConfig
+pcall(function() 
+    savedConfig = safeLoadConfig() 
+    if savedConfig and savedConfig.WEBHOOK_URL then
+        CONFIG.WEBHOOK_URL = savedConfig.WEBHOOK_URL
+        urlInput.Text = savedConfig.WEBHOOK_URL
+    end
+end)
 
 -- Hàm trích xuất số lượng trong ngoặc
 local function extractQuantity(text)
@@ -2061,8 +2142,8 @@ saveButton.MouseButton1Click:Connect(function()
         webhookConfig.URL = newUrl
         if CONFIG then CONFIG.WEBHOOK_URL = newUrl end -- Kiểm tra nil trước khi gán
         
-        -- Lưu vào file cấu hình
-        if saveConfig(CONFIG) then
+        -- Lưu vào file cấu hình sử dụng wrapper an toàn
+        if safeSaveConfig(CONFIG) then
             statusLabel.Text = "Trạng thái: Đã lưu URL mới cho " .. playerName
         else
             statusLabel.Text = "Trạng thái: Đã lưu URL mới (không lưu được file)"
@@ -2077,11 +2158,24 @@ saveButton.MouseButton1Click:Connect(function()
 end)
 
 testButton.MouseButton1Click:Connect(function()
-    -- Sử dụng hàm sendTestWebhook đã được sửa đổi với kiểm tra nil
-    local success = sendTestWebhook("Kiểm tra kết nối từ Arise Crossover UI")
-    if success then
+    -- Kiểm tra hàm sendTestWebhook trước khi gọi
+    if type(sendTestWebhook) ~= "function" then
+        statusLabel.Text = "Trạng thái: Lỗi - hàm webhook chưa được định nghĩa"
+        statusLabel.TextColor3 = Color3.fromRGB(255, 75, 75)
+        showNotification("Webhook test thất bại: hàm không được định nghĩa!")
+        return
+    end
+    
+    -- Sử dụng pcall để tránh lỗi khi gọi hàm
+    local success, result = pcall(function()
+        return sendTestWebhook("Kiểm tra kết nối từ Arise Crossover UI")
+    end)
+    
+    if success and result then
         showNotification("Webhook test thành công")
     else
+        statusLabel.Text = "Trạng thái: Lỗi - " .. tostring(result or "không xác định")
+        statusLabel.TextColor3 = Color3.fromRGB(255, 75, 75)
         showNotification("Webhook test thất bại!")
     end
 end)
@@ -2093,8 +2187,8 @@ autoNotifyButton.MouseButton1Click:Connect(function()
     webhookConfig.ENABLED = enabled
     if CONFIG then CONFIG.SHOW_UI = enabled end -- Kiểm tra nil trước khi gán
     
-    -- Lưu cấu hình (với kiểm tra nil)
-    pcall(function() if CONFIG and saveConfig then saveConfig(CONFIG) end end)
+    -- Lưu cấu hình sử dụng wrapper an toàn
+    pcall(function() if CONFIG then safeSaveConfig(CONFIG) end end)
     
     if enabled then
         startRewardTracking()
