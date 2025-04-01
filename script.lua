@@ -1505,216 +1505,15 @@ local webhookConfig = {
     ENABLED = false
 }
 
--- Sự kiện khi nhấn nút lưu
-saveButton.MouseButton1Click:Connect(function()
-    local newUrl = urlInput.Text
-    if newUrl ~= "" and newUrl ~= webhookConfig.URL then
-        webhookConfig.URL = newUrl
-        CONFIG.WEBHOOK_URL = newUrl -- Cập nhật cả CONFIG mới
-        
-        statusLabel.Text = "Trạng thái: Đã lưu URL mới"
-        statusLabel.TextColor3 = Color3.fromRGB(76, 175, 80)
-        
-        -- Lưu cấu hình và kết nối với RewardsWebhook.lua nếu cần
-        pcall(function() if saveConfig then saveConfig(CONFIG) end end)
-        
-        -- Kết nối với script RewardsWebhook
-        local success, message = pcall(function()
-            -- Kiểm tra nếu biến CONFIG tồn tại từ RewardsWebhook.lua
-            if _G.CONFIG then
-                _G.CONFIG.WEBHOOK_URL = newUrl
-                -- Lưu cấu hình nếu hàm lưu tồn tại
-                if _G.saveConfig then
-                    _G.saveConfig(_G.CONFIG)
-                end
-                return "Đã kết nối và lưu với RewardsWebhook"
-            else
-                -- Nếu chưa tải RewardsWebhook, lưu vào biến cục bộ
-                return "Lưu vào cấu hình cục bộ"
-            end
-        end)
-        
-        -- Lưu vào biến cục bộ và hiển thị thông báo
-        showNotification("Đã lưu URL webhook" .. (success and ": " .. message or ""))
-    else
-        statusLabel.Text = "Trạng thái: URL không thay đổi hoặc trống"
-        statusLabel.TextColor3 = Color3.fromRGB(255, 235, 59)
-    end
-end)
-
--- Sự kiện khi nhấn nút test
-testButton.MouseButton1Click:Connect(function()
-    if webhookConfig.URL == "" then
-        statusLabel.Text = "Trạng thái: Vui lòng nhập URL trước khi test"
-        statusLabel.TextColor3 = Color3.fromRGB(255, 75, 75)
-        return
-    end
-    
-    statusLabel.Text = "Trạng thái: Đang kiểm tra kết nối..."
-    statusLabel.TextColor3 = Color3.fromRGB(33, 150, 243)
-    
-    -- Ưu tiên sử dụng hàm sendTestWebhook trong script hiện tại
-    local success, result
-    
-    -- Sử dụng hàm sendTestWebhook trong script hiện tại nếu URL được cung cấp
-    if CONFIG.WEBHOOK_URL ~= "YOUR_URL" and CONFIG.WEBHOOK_URL ~= "" then
-        success, result = pcall(function()
-            return sendTestWebhook("Webhook test từ Arise Crossover UI")
-        end)
-    -- Thử kết nối với hàm từ RewardsWebhook.lua nếu hàm trong script hiện tại không khả dụng
-    elseif _G.sendTestWebhook then
-        success, result = pcall(function()
-            return _G.sendTestWebhook("Webhook test từ Arise Crossover UI")
-        end)
-    else
-        -- Giả lập gửi webhook nếu không có tùy chọn nào khả dụng
-        statusLabel.Text = "Trạng thái: Không tìm thấy hàm webhook" 
-        statusLabel.TextColor3 = Color3.fromRGB(255, 75, 75)
-        success = false
-    end
-    
-    -- Hiển thị kết quả
-    if success and result then
-        statusLabel.Text = "Trạng thái: Test webhook thành công!"
-        statusLabel.TextColor3 = Color3.fromRGB(76, 175, 80)
-        showNotification("Webhook test thành công")
-    else
-        statusLabel.Text = "Trạng thái: Test thất bại! Kiểm tra URL và quyền"
-        statusLabel.TextColor3 = Color3.fromRGB(255, 75, 75)
-        showNotification("Webhook test thất bại")
-    end
-end)
-
--- Sự kiện khi toggle auto notify
-autoNotifyButton.MouseButton1Click:Connect(function()
-    -- Trạng thái sau khi nhấn
-    local enabled = autoNotifyToggle:FindFirstChild("ToggleBackground").BackgroundColor3 == Color3.fromRGB(0, 255, 255)
-    webhookConfig.ENABLED = enabled
-    CONFIG.SHOW_UI = enabled
-    
-    -- Khởi động/dừng theo dõi phần thưởng
-    if enabled then
-        startRewardTracking() 
-    else
-        stopRewardTracking()
-    end
-    
-    -- Kết nối với script RewardsWebhook
-    pcall(function()
-        if _G.CONFIG then
-            _G.CONFIG.SHOW_UI = enabled
-            -- Cập nhật trạng thái và lưu cấu hình
-            if _G.saveConfig then
-                _G.saveConfig(_G.CONFIG)
-            end
-            
-            -- Cập nhật UI nếu có
-            if _G.webhookUI then
-                local mainFrame = _G.webhookUI:FindFirstChild("mainFrame")
-                if mainFrame then
-                    mainFrame.Visible = enabled
-                end
-            end
-        end
-    end)
-    
-    showNotification(enabled and "Đã bật tự động thông báo AFKRewards" or "Đã tắt tự động thông báo AFKRewards")
-end)
-
--- Tải URL từ RewardsWebhook nếu có
-spawn(function()
-    wait(2) -- Đợi một chút để đảm bảo RewardsWebhook đã được tải
-    pcall(function()
-        if _G.CONFIG and _G.CONFIG.WEBHOOK_URL and _G.CONFIG.WEBHOOK_URL ~= "YOUR_URL" then
-            urlInput.Text = _G.CONFIG.WEBHOOK_URL
-            webhookConfig.URL = _G.CONFIG.WEBHOOK_URL
-            statusLabel.Text = "Trạng thái: Đã tải URL từ cấu hình"
-            statusLabel.TextColor3 = Color3.fromRGB(76, 175, 80)
-            
-            -- Đặt trạng thái toggle theo cấu hình
-            if _G.CONFIG.SHOW_UI then
-                TweenService:Create(autoNotifyToggle:FindFirstChild("ToggleBackground"), TweenInfo.new(0.3), {
-                    BackgroundColor3 = Color3.fromRGB(0, 255, 255)
-                }):Play()
-                
-                TweenService:Create(autoNotifyToggle:FindFirstChild("ToggleBackground"):FindFirstChild("ToggleCircle"), TweenInfo.new(0.3), {
-                    Position = UDim2.new(1, -25, 0.5, -10)
-                }):Play()
-                
-                webhookConfig.ENABLED = true
-            end
-        end
-    end)
-end)
-
--- Thêm các chức năng từ RewardWebhook.lua trực tiếp vào đây
-local HttpService = game:GetService("HttpService")
-local Players = game:GetService("Players")
-local Player = Players.LocalPlayer
-
--- Sử dụng tên người chơi để tạo file cấu hình riêng cho từng tài khoản
-local playerName = Player.Name:gsub("[^%w_]", "_") -- Loại bỏ ký tự đặc biệt
-local CONFIG_FILE = "AriseWebhook_" .. playerName .. ".json"
-
--- Biến kiểm soát trạng thái webhook
-local webhookActive = false
-local receivedRewards = {}
-local isProcessingReward = false
-local lastWebhookTime = 0
-local WEBHOOK_COOLDOWN = 3
-local totalRewards = {}
-local playerItems = {}
-
--- Đọc cấu hình từ file (nếu có)
-local function loadConfig()
-    local success, result = pcall(function()
-        if readfile and isfile and isfile(CONFIG_FILE) then
-            return HttpService:JSONDecode(readfile(CONFIG_FILE))
-        end
-        return nil
-    end)
-    
-    if success and result then
-        print("Đã tải cấu hình từ file cho tài khoản " .. playerName)
-        return result
-    else
-        print("Không tìm thấy file cấu hình cho tài khoản " .. playerName)
-        return nil
-    end
-end
-
--- Lưu cấu hình xuống file
-local function saveConfig(config)
-    local success, err = pcall(function()
-        if writefile then
-            writefile(CONFIG_FILE, HttpService:JSONEncode(config))
-            return true
-        end
-        return false
-    end)
-    
-    if success then
-        print("Đã lưu cấu hình vào file " .. CONFIG_FILE)
-        statusLabel.Text = "Trạng thái: Đã lưu URL thành công"
-        statusLabel.TextColor3 = Color3.fromRGB(76, 175, 80)
-        return true
-    else
-        warn("Lỗi khi lưu cấu hình: " .. tostring(err))
-        statusLabel.Text = "Trạng thái: Lỗi khi lưu cấu hình"
-        statusLabel.TextColor3 = Color3.fromRGB(255, 75, 75)
-        return false
-    end
-end
-
--- Cấu hình Webhook
+-- Cấu hình Webhook (đảm bảo được khởi tạo trước khi sử dụng)
 local CONFIG = {
     WEBHOOK_URL = "YOUR_URL",
     WEBHOOK_COOLDOWN = 3,
     SHOW_UI = true
 }
 
--- Đảm bảo tương thích với webhookConfig cũ
-webhookConfig.URL = CONFIG.WEBHOOK_URL
+-- Đảm bảo tương thích với cả hai biến
+webhookConfig.URL = CONFIG.WEBHOOK_URL or "YOUR_URL"
 
 -- Tải cấu hình từ file (nếu có)
 local savedConfig = loadConfig()
@@ -1964,7 +1763,14 @@ local function sendTestWebhook(customMessage)
         return false
     end
     
-    if CONFIG.WEBHOOK_URL == "YOUR_URL" or CONFIG.WEBHOOK_URL == "" then
+    local webhookURL = ""
+    
+    -- Kiểm tra URL từ cả hai nguồn 
+    if CONFIG and CONFIG.WEBHOOK_URL and CONFIG.WEBHOOK_URL ~= "YOUR_URL" and CONFIG.WEBHOOK_URL ~= "" then
+        webhookURL = CONFIG.WEBHOOK_URL
+    elseif webhookConfig and webhookConfig.URL and webhookConfig.URL ~= "" then
+        webhookURL = webhookConfig.URL
+    else
         statusLabel.Text = "Trạng thái: Vui lòng nhập URL webhook trước"
         statusLabel.TextColor3 = Color3.fromRGB(255, 75, 75)
         return false
@@ -2007,7 +1813,7 @@ local function sendTestWebhook(customMessage)
     local success, err = pcall(function()
         if syn and syn.request then
             syn.request({
-                Url = CONFIG.WEBHOOK_URL,
+                Url = webhookURL,
                 Method = "POST",
                 Headers = {
                     ["Content-Type"] = "application/json"
@@ -2016,7 +1822,7 @@ local function sendTestWebhook(customMessage)
             })
         elseif request then
             request({
-                Url = CONFIG.WEBHOOK_URL,
+                Url = webhookURL,
                 Method = "POST",
                 Headers = {
                     ["Content-Type"] = "application/json"
@@ -2025,7 +1831,7 @@ local function sendTestWebhook(customMessage)
             })
         elseif http and http.request then
             http.request({
-                Url = CONFIG.WEBHOOK_URL,
+                Url = webhookURL,
                 Method = "POST",
                 Headers = {
                     ["Content-Type"] = "application/json"
@@ -2033,7 +1839,7 @@ local function sendTestWebhook(customMessage)
                 Body = jsonData
             })
         elseif httppost then
-            httppost(CONFIG.WEBHOOK_URL, jsonData)
+            httppost(webhookURL, jsonData)
         else
             error("Không tìm thấy HTTP API nào được hỗ trợ bởi executor hiện tại")
         end
@@ -2059,7 +1865,6 @@ local function sendWebhook(rewardInfo)
     cleanRewardInfo = cleanRewardInfo:gsub("YOU GOT A NEW REWARD!%s*", "")
     
     if isCashReward(cleanRewardInfo) then return end
-    
     if isProcessingReward then return end
     
     local currentTime = tick()
@@ -2068,13 +1873,21 @@ local function sendWebhook(rewardInfo)
     local rewardId = createUniqueRewardId(cleanRewardInfo)
     if receivedRewards[rewardId] then return end
     
+    local webhookURL = ""
+    -- Kiểm tra URL từ cả hai nguồn 
+    if CONFIG and CONFIG.WEBHOOK_URL and CONFIG.WEBHOOK_URL ~= "YOUR_URL" and CONFIG.WEBHOOK_URL ~= "" then
+        webhookURL = CONFIG.WEBHOOK_URL
+    elseif webhookConfig and webhookConfig.URL and webhookConfig.URL ~= "" then
+        webhookURL = webhookConfig.URL
+    else
+        return -- Không gửi nếu không có URL
+    end
+    
     isProcessingReward = true
     lastWebhookTime = tick()
-    
     receivedRewards[rewardId] = true
     
     readActualItemQuantities()
-    
     updateTotalRewards(cleanRewardInfo)
     
     local data = {
@@ -2118,7 +1931,7 @@ local function sendWebhook(rewardInfo)
     pcall(function()
         if syn and syn.request then
             syn.request({
-                Url = CONFIG.WEBHOOK_URL,
+                Url = webhookURL,
                 Method = "POST",
                 Headers = {
                     ["Content-Type"] = "application/json"
@@ -2127,7 +1940,7 @@ local function sendWebhook(rewardInfo)
             })
         elseif request then
             request({
-                Url = CONFIG.WEBHOOK_URL,
+                Url = webhookURL,
                 Method = "POST",
                 Headers = {
                     ["Content-Type"] = "application/json"
@@ -2136,7 +1949,7 @@ local function sendWebhook(rewardInfo)
             })
         elseif http and http.request then
             http.request({
-                Url = CONFIG.WEBHOOK_URL,
+                Url = webhookURL,
                 Method = "POST",
                 Headers = {
                     ["Content-Type"] = "application/json"
@@ -2144,7 +1957,7 @@ local function sendWebhook(rewardInfo)
                 Body = jsonData
             })
         elseif httppost then
-            httppost(CONFIG.WEBHOOK_URL, jsonData)
+            httppost(webhookURL, jsonData)
         end
     end)
     
@@ -2244,8 +2057,9 @@ _G.sendTestWebhook = sendTestWebhook
 -- Kết nối các chức năng với giao diện
 saveButton.MouseButton1Click:Connect(function()
     local newUrl = urlInput.Text
-    if newUrl ~= "" and newUrl ~= CONFIG.WEBHOOK_URL then
-        CONFIG.WEBHOOK_URL = newUrl
+    if newUrl ~= "" and newUrl ~= (CONFIG and CONFIG.WEBHOOK_URL or webhookConfig.URL) then
+        webhookConfig.URL = newUrl
+        if CONFIG then CONFIG.WEBHOOK_URL = newUrl end -- Kiểm tra nil trước khi gán
         
         -- Lưu vào file cấu hình
         if saveConfig(CONFIG) then
@@ -2263,6 +2077,7 @@ saveButton.MouseButton1Click:Connect(function()
 end)
 
 testButton.MouseButton1Click:Connect(function()
+    -- Sử dụng hàm sendTestWebhook đã được sửa đổi với kiểm tra nil
     local success = sendTestWebhook("Kiểm tra kết nối từ Arise Crossover UI")
     if success then
         showNotification("Webhook test thành công")
@@ -2275,10 +2090,11 @@ end)
 autoNotifyButton.MouseButton1Click:Connect(function()
     -- Trạng thái sau khi nhấn
     local enabled = autoNotifyToggle:FindFirstChild("ToggleBackground").BackgroundColor3 == Color3.fromRGB(0, 255, 255)
-    CONFIG.SHOW_UI = enabled
+    webhookConfig.ENABLED = enabled
+    if CONFIG then CONFIG.SHOW_UI = enabled end -- Kiểm tra nil trước khi gán
     
-    -- Lưu cấu hình
-    saveConfig(CONFIG)
+    -- Lưu cấu hình (với kiểm tra nil)
+    pcall(function() if CONFIG and saveConfig then saveConfig(CONFIG) end end)
     
     if enabled then
         startRewardTracking()
@@ -2312,3 +2128,10 @@ end)
 
 -- Thông báo tích hợp hoàn tất
 print("Đã tích hợp thành công RewardWebhook vào Script-AC")
+
+-- Xuất các hàm ra biến toàn cục để tích hợp với UI (bảo vệ với kiểm tra nil)
+pcall(function()
+    if CONFIG then _G.CONFIG = CONFIG end
+    if saveConfig then _G.saveConfig = saveConfig end
+    if sendTestWebhook then _G.sendTestWebhook = sendTestWebhook end
+end)
