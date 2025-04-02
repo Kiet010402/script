@@ -300,6 +300,33 @@ local ClearButton = RewardsTab:CreateButton({
 -- Tab Teleport
 local TeleportTab = Window:CreateTab("Teleport", "navigation") -- Sử dụng icon Lucide cho teleport
 
+-- Lấy lại cài đặt từ Global sau khi teleport
+local function loadGlobalSettings()
+    if _G and _G.AriseWebhookSettings then
+        local settings = _G.AriseWebhookSettings
+        CONFIG.AUTO_TP_TO_AFK = settings.AUTO_TP_TO_AFK
+        
+        -- Cập nhật các cài đặt khác nếu có
+        if settings.WEBHOOK_URL then CONFIG.WEBHOOK_URL = settings.WEBHOOK_URL end
+        if settings.WEBHOOK_COOLDOWN then CONFIG.WEBHOOK_COOLDOWN = settings.WEBHOOK_COOLDOWN end
+        if settings.TELEPORT_COOLDOWN then CONFIG.TELEPORT_COOLDOWN = settings.TELEPORT_COOLDOWN end
+        
+        -- Cập nhật UI
+        if AutoTPToggle then
+            -- Sử dụng pcall để tránh lỗi khi gọi
+            pcall(function()
+                AutoTPToggle:Set(CONFIG.AUTO_TP_TO_AFK)
+            end)
+        end
+        
+        -- Lưu cấu hình
+        saveConfig(CONFIG)
+        
+        -- Xóa cài đặt toàn cục sau khi đã sử dụng
+        _G.AriseWebhookSettings = nil
+    end
+end
+
 -- Tạo section thông tin
 local TeleportInfo = TeleportTab:CreateSection("Teleport to AFK Area")
 
@@ -397,6 +424,57 @@ local ShutdownButton = SettingsTab:CreateButton({
 local autoTeleportRunning = false
 local teleportConnection = nil
 
+-- Hàm thực hiện teleport
+function performTeleport()
+    local TeleportService = game:GetService("TeleportService")
+    local Players = game:GetService("Players")
+    local placeId = 116614712661486
+    local player = Players.LocalPlayer
+    
+    -- Lưu trạng thái Auto TP trước khi teleport
+    local autoTPEnabled = CONFIG.AUTO_TP_TO_AFK
+    
+    -- Lưu cấu hình trước khi teleport
+    saveConfig(CONFIG)
+    
+    -- Kiểm tra nếu người chơi đã ở nơi cần đến
+    if game.PlaceId == placeId then
+        Rayfield:Notify({
+            Title = "Thông báo",
+            Content = "Bạn đã ở trong khu vực AFK",
+            Duration = 3,
+            Image = "check", -- Lucide icon
+        })
+        return -- Dừng ngay lập tức nếu đã ở đúng nơi
+    end
+    
+    -- Lưu cài đặt vào GlobalSettings trước khi teleport
+    if _G then
+        _G.AriseWebhookSettings = {
+            AUTO_TP_TO_AFK = autoTPEnabled,
+            WEBHOOK_URL = CONFIG.WEBHOOK_URL,
+            WEBHOOK_COOLDOWN = CONFIG.WEBHOOK_COOLDOWN,
+            TELEPORT_COOLDOWN = CONFIG.TELEPORT_COOLDOWN
+        }
+        print("Đã lưu cài đặt Auto TP: " .. tostring(autoTPEnabled))
+    end
+    
+    -- Thực hiện teleport với pcall để bắt lỗi
+    local success, errorMessage = pcall(function()
+        TeleportService:Teleport(placeId, player)
+    end)
+    
+    if not success then
+        warn("Teleport failed: " .. tostring(errorMessage))
+        Rayfield:Notify({
+            Title = "Lỗi teleport",
+            Content = "Không thể teleport: " .. tostring(errorMessage),
+            Duration = 5,
+            Image = "alert-triangle", -- Lucide icon
+        })
+    end
+end
+
 -- Hàm bắt đầu quá trình auto teleport
 function startAutoTeleport()
     if autoTeleportRunning then return end
@@ -407,7 +485,7 @@ function startAutoTeleport()
     spawn(function()
         while scriptRunning and CONFIG.AUTO_TP_TO_AFK and autoTeleportRunning do
             -- Kiểm tra nếu không đúng PlaceId thì dừng script
-            if game.PlaceId ~= allowedPlaceId then
+            if game.PlaceId ~= allowedPlaceId and game.PlaceId ~= 116614712661486 then
                 autoTeleportRunning = false
                 break
             end
@@ -472,45 +550,6 @@ function startAutoTeleport()
     end)
     
     table.insert(connections, teleportConnection)
-end
-
--- Hàm thực hiện teleport
-function performTeleport()
-    local TeleportService = game:GetService("TeleportService")
-    local Players = game:GetService("Players")
-    local placeId = 116614712661486
-    local player = Players.LocalPlayer
-    
-    -- Kiểm tra nếu người chơi đã ở nơi cần đến
-    if game.PlaceId == placeId then
-        Rayfield:Notify({
-            Title = "Thông báo",
-            Content = "Bạn đã ở trong khu vực AFK",
-            Duration = 3,
-            Image = "check", -- Lucide icon
-        })
-        return -- Dừng ngay lập tức nếu đã ở đúng nơi
-    end
-    
-    local success, errorMessage = pcall(function()
-        Rayfield:Notify({
-            Title = "Teleport",
-            Content = "Đang chuyển đến khu vực AFK...",
-            Duration = 3,
-            Image = "loader", -- Lucide icon
-        })
-        TeleportService:Teleport(placeId, player)
-    end)
-    
-    if not success then
-        warn("Teleport failed: " .. errorMessage)
-        Rayfield:Notify({
-            Title = "Lỗi teleport",
-            Content = "Không thể teleport: " .. errorMessage,
-            Duration = 5,
-            Image = "alert-triangle", -- Lucide icon
-        })
-    end
 end
 
 -- Tìm UI phần thưởng
@@ -1715,14 +1754,21 @@ shutdownScript = function()
     -- Dừng auto teleport
     autoTeleportRunning = false
     
-    -- Gọi hàm tắt script gốc
-    originalShutdownScript()
+    -- Gọi hàm tắt script gốc bằng pcall để tránh lỗi
+    pcall(function()
+        originalShutdownScript()
+    end)
 end
 
 -- Khởi động auto teleport nếu đã được bật trước đó
-if CONFIG.AUTO_TP_TO_AFK then
-    spawn(function()
-        wait(5) -- Đợi script khởi động hoàn tất
+spawn(function()
+    wait(5) -- Đợi script khởi động hoàn tất
+    
+    -- Tải cài đặt từ Global nếu có
+    loadGlobalSettings()
+    
+    -- Khởi động auto teleport nếu được bật
+    if CONFIG.AUTO_TP_TO_AFK then
         startAutoTeleport()
-    end)
-end 
+    end
+end) 
