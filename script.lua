@@ -397,39 +397,6 @@ local ShutdownButton = SettingsTab:CreateButton({
 local autoTeleportRunning = false
 local teleportConnection = nil
 
--- Hàm thực hiện teleport
-function performTeleport()
-    local TeleportService = game:GetService("TeleportService")
-    local Players = game:GetService("Players")
-    local placeId = 116614712661486
-    local player = Players.LocalPlayer
-    
-    -- Kiểm tra nếu người chơi đã ở nơi cần đến
-    if game.PlaceId == placeId then
-        Rayfield:Notify({
-            Title = "Thông báo",
-            Content = "Bạn đã ở trong khu vực AFK",
-            Duration = 3,
-            Image = "check", -- Lucide icon
-        })
-        return -- Dừng ngay lập tức nếu đã ở đúng nơi
-    end
-    
-    local success, errorMessage = pcall(function()
-        TeleportService:Teleport(placeId, player)
-    end)
-    
-    if not success then
-        warn("Teleport failed: " .. errorMessage)
-        Rayfield:Notify({
-            Title = "Lỗi teleport",
-            Content = "Không thể teleport: " .. errorMessage,
-            Duration = 5,
-            Image = "alert-triangle", -- Lucide icon
-        })
-    end
-end
-
 -- Hàm bắt đầu quá trình auto teleport
 function startAutoTeleport()
     if autoTeleportRunning then return end
@@ -443,6 +410,19 @@ function startAutoTeleport()
             if game.PlaceId ~= allowedPlaceId then
                 autoTeleportRunning = false
                 break
+            end
+            
+            -- Kiểm tra nếu đã ở khu vực AFK thì đợi và kiểm tra lại
+            if game.PlaceId == 116614712661486 then
+                -- Đã ở khu vực AFK, đợi một thời gian rồi kiểm tra lại
+                Rayfield:Notify({
+                    Title = "Auto TP",
+                    Content = "Bạn đã ở trong khu vực AFK, sẽ kiểm tra lại sau " .. CONFIG.TELEPORT_COOLDOWN .. " giây",
+                    Duration = 3,
+                    Image = "check", -- Lucide icon
+                })
+                task.wait(CONFIG.TELEPORT_COOLDOWN)
+                continue
             end
             
             -- Đếm ngược thời gian
@@ -469,53 +449,68 @@ function startAutoTeleport()
             -- Thực hiện teleport
             performTeleport()
             
-            -- Dừng auto teleport sau khi đã teleport
-            autoTeleportRunning = false
+            -- Đợi một khoảng thời gian rồi bắt đầu lại vòng lặp
+            task.wait(5)
         end
+        
+        autoTeleportRunning = false
     end)
     
-    -- Thêm connection vào danh sách để có thể hủy khi tắt script
+    -- Xử lý trường hợp script bị tắt
     if teleportConnection then
         teleportConnection:Disconnect()
     end
     
-    -- Lắng nghe sự kiện PlaceId thay đổi để dừng auto teleport
-    teleportConnection = game:GetPropertyChangedSignal("PlaceId"):Connect(function()
-        if game.PlaceId == 116614712661486 then
-            -- Đã đến nơi cần đến, tắt auto teleport
-            CONFIG.AUTO_TP_TO_AFK = false
+    -- Thêm connection vào danh sách để có thể hủy khi tắt script
+    teleportConnection = Players.PlayerRemoving:Connect(function(plr)
+        if plr == Player then
             autoTeleportRunning = false
-            
-            -- Cập nhật UI
-            if AutoTPToggle then
-                AutoTPToggle:Set(false)
+            if teleportConnection then
+                teleportConnection:Disconnect()
             end
-            
-            -- Lưu cấu hình
-            saveConfig(CONFIG)
         end
     end)
     
-    -- Thêm connection vào danh sách để có thể hủy khi tắt script
     table.insert(connections, teleportConnection)
 end
 
--- Cập nhật hàm shutdownScript để hủy auto teleport
-local originalShutdownScript = shutdownScript
-shutdownScript = function()
-    -- Dừng auto teleport
-    autoTeleportRunning = false
+-- Hàm thực hiện teleport
+function performTeleport()
+    local TeleportService = game:GetService("TeleportService")
+    local Players = game:GetService("Players")
+    local placeId = 116614712661486
+    local player = Players.LocalPlayer
     
-    -- Gọi hàm tắt script gốc
-    originalShutdownScript()
-end
-
--- Khởi động auto teleport nếu đã được bật trước đó
-if CONFIG.AUTO_TP_TO_AFK then
-    spawn(function()
-        wait(5) -- Đợi script khởi động hoàn tất
-        startAutoTeleport()
+    -- Kiểm tra nếu người chơi đã ở nơi cần đến
+    if game.PlaceId == placeId then
+        Rayfield:Notify({
+            Title = "Thông báo",
+            Content = "Bạn đã ở trong khu vực AFK",
+            Duration = 3,
+            Image = "check", -- Lucide icon
+        })
+        return -- Dừng ngay lập tức nếu đã ở đúng nơi
+    end
+    
+    local success, errorMessage = pcall(function()
+        Rayfield:Notify({
+            Title = "Teleport",
+            Content = "Đang chuyển đến khu vực AFK...",
+            Duration = 3,
+            Image = "loader", -- Lucide icon
+        })
+        TeleportService:Teleport(placeId, player)
     end)
+    
+    if not success then
+        warn("Teleport failed: " .. errorMessage)
+        Rayfield:Notify({
+            Title = "Lỗi teleport",
+            Content = "Không thể teleport: " .. errorMessage,
+            Duration = 5,
+            Image = "alert-triangle", -- Lucide icon
+        })
+    end
 end
 
 -- Tìm UI phần thưởng
@@ -1712,4 +1707,22 @@ local function createWebhookUI()
     end)
     
     return nil -- Không cần trả về UI nữa
+end
+
+-- Cập nhật hàm shutdownScript để hủy auto teleport
+local originalShutdownScript = shutdownScript
+shutdownScript = function()
+    -- Dừng auto teleport
+    autoTeleportRunning = false
+    
+    -- Gọi hàm tắt script gốc
+    originalShutdownScript()
+end
+
+-- Khởi động auto teleport nếu đã được bật trước đó
+if CONFIG.AUTO_TP_TO_AFK then
+    spawn(function()
+        wait(5) -- Đợi script khởi động hoàn tất
+        startAutoTeleport()
+    end)
 end 
