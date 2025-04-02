@@ -1680,55 +1680,36 @@ print("- Hỗ trợ phát hiện đặc biệt cho TIGER, TWIN PRISM BLADES và 
 
 -- Gửi thông tin đến Discord webhook (sử dụng HTTP request từ executor)
 local function sendWebhook(rewardInfo, rewardObject, isNewReward)
-    -- Kiểm tra tham số đầu vào
-    if not rewardInfo or type(rewardInfo) ~= "string" then
-        warn("Không thể gửi webhook: rewardInfo không hợp lệ")
-        return false
-    end
-
-    -- Thông báo bắt đầu
-    print("Chuẩn bị gửi webhook với thông tin: " .. rewardInfo)
+    print("DEBUG: Đang chuẩn bị gửi webhook cho phần thưởng: " .. rewardInfo)
     
     -- Loại bỏ các tiền tố không cần thiết
     local cleanRewardInfo = rewardInfo:gsub("RECEIVED:%s*", "")
     cleanRewardInfo = cleanRewardInfo:gsub("YOU GOT A NEW REWARD!%s*", "")
     
     -- Bỏ qua nếu phần thưởng là CASH
-    local isCash = false
-    pcall(function()
-        isCash = isCashReward(cleanRewardInfo)
-    end)
-    
-    if isCash then
+    if isCashReward(cleanRewardInfo) then
         print("Bỏ qua gửi webhook cho CASH: " .. cleanRewardInfo)
-        return false
+        return
     end
     
     -- Kiểm tra xem có đang xử lý phần thưởng khác không
     if isProcessingReward then
         print("Đang xử lý phần thưởng khác, bỏ qua...")
-        return false
+        return
     end
     
     -- Kiểm tra cooldown
     if not canSendWebhook() then
         print("Cooldown webhook còn " .. math.floor(WEBHOOK_COOLDOWN - (tick() - lastWebhookTime)) .. " giây, bỏ qua...")
-        return false
+        return
     end
     
     -- Tạo ID duy nhất và kiểm tra trùng lặp
-    local rewardId = ""
-    pcall(function()
-        rewardId = createUniqueRewardId(cleanRewardInfo)
-    end)
-    
-    if rewardId == "" then
-        rewardId = "reward_" .. tostring(tick())
-    end
-    
+    local rewardId = createUniqueRewardId(cleanRewardInfo)
+    print("DEBUG: ID phần thưởng: " .. rewardId)
     if receivedRewards[rewardId] then
         print("Phần thưởng này đã được gửi trước đó: " .. cleanRewardInfo)
-        return false
+        return
     end
     
     -- Đánh dấu đang xử lý
@@ -1739,48 +1720,22 @@ local function sendWebhook(rewardInfo, rewardObject, isNewReward)
     receivedRewards[rewardId] = true
     
     -- Đọc số lượng item thực tế trước khi gửi webhook
-    pcall(function()
-        readActualItemQuantities()
-    end)
+    readActualItemQuantities()
     
     local title = "🎁 Arise Crossover - AFKRewards"
     local description = "Phần thưởng mới đã nhận được!"
     
     -- Cập nhật tổng phần thưởng
-    pcall(function()
-        updateTotalRewards(cleanRewardInfo)
-    end)
+    updateTotalRewards(cleanRewardInfo)
 
     -- Kiểm tra xem phần thưởng có chứa ZIRU G không để ping @everyone (chỉ lần đầu tiên)
-    local hasZiruG = cleanRewardInfo:find("ZIRU G") ~= nil
-    if not hasZiruG and playerItems["ZIRU G"] then
-        hasZiruG = playerItems["ZIRU G"] > 0
-    end
-    
+    local hasZiruG = cleanRewardInfo:find("ZIRU G") ~= nil or (playerItems["ZIRU G"] ~= nil and playerItems["ZIRU G"] > 0)
     local shouldPingEveryone = hasZiruG and not hasAlreadyPingedZiruG
     
     -- Nếu phát hiện ZIRU G, đánh dấu đã ping để không ping lần sau
     if hasZiruG and not hasAlreadyPingedZiruG then
         hasAlreadyPingedZiruG = true
         print("Đánh dấu đã ping ZIRU G lần đầu tiên, sẽ không ping lần sau")
-    end
-    
-    local latestRewardsText = ""
-    pcall(function()
-        latestRewardsText = getLatestRewardsText(cleanRewardInfo)
-    end)
-    
-    if latestRewardsText == "" then
-        latestRewardsText = "Phần thưởng mới:\n- " .. cleanRewardInfo
-    end
-    
-    local totalRewardsDisplay = ""
-    pcall(function()
-        totalRewardsDisplay = getTotalRewardsText()
-    end)
-    
-    if totalRewardsDisplay == "" then
-        totalRewardsDisplay = "Tổng phần thưởng:\n- Không có dữ liệu"
     end
     
     local data = {
@@ -1793,7 +1748,7 @@ local function sendWebhook(rewardInfo, rewardObject, isNewReward)
                 fields = {
                     {
                         name = "Thông tin phần thưởng",
-                        value = latestRewardsText,
+                        value = getLatestRewardsText(cleanRewardInfo),
                         inline = false
                     },
                     {
@@ -1808,55 +1763,32 @@ local function sendWebhook(rewardInfo, rewardObject, isNewReward)
                     },
                     {
                         name = "Tổng hợp phần thưởng",
-                        value = totalRewardsDisplay,
+                        value = getTotalRewardsText(),
                         inline = false
                     }
                 },
                 footer = {
-                    text = "Arise Crossover Rewards Tracker - Webhook độc quyền của DuongTuan"
+                    text = "Arise Crossover Rewards Tracker"
                 }
             }
         }
     }
     
-    -- Chuyển đổi dữ liệu thành chuỗi JSON
-    local jsonData = ""
-    pcall(function()
-        jsonData = HttpService:JSONEncode(data)
-    end)
+    print("DEBUG: Đang tạo dữ liệu JSON và gửi webhook...")
     
-    if jsonData == "" then
-        warn("Không thể tạo dữ liệu JSON cho webhook")
-        isProcessingReward = false
-        return false
-    end
+    -- Chuyển đổi dữ liệu thành chuỗi JSON
+    local jsonData = HttpService:JSONEncode(data)
     
     -- Cập nhật URL từ cấu hình
     local currentWebhookUrl = CONFIG.WEBHOOK_URL
     
-    if not currentWebhookUrl or currentWebhookUrl == "" or currentWebhookUrl == "YOUR_URL" then
-        warn("URL webhook không hợp lệ: " .. tostring(currentWebhookUrl))
-        
-        -- Hiển thị thông báo lỗi trong Rayfield
-        pcall(function()
-            Rayfield:Notify({
-                Title = "Lỗi webhook",
-                Content = "URL webhook không hợp lệ, vui lòng cập nhật URL",
-                Duration = 5,
-                Image = "alert-triangle", -- Lucide icon
-            })
-        end)
-        
-        isProcessingReward = false
-        return false
-    end
-    
-    print("Chuẩn bị gửi webhook đến: " .. currentWebhookUrl:sub(1, 30) .. "...")
+    print("DEBUG: URL webhook: " .. (currentWebhookUrl:sub(1, 30) .. "..."))
     
     -- Sử dụng HTTP request từ executor thay vì HttpService
     local success, err = pcall(function()
         -- Synapse X
         if syn and syn.request then
+            print("DEBUG: Sử dụng syn.request")
             syn.request({
                 Url = currentWebhookUrl,
                 Method = "POST",
@@ -1865,10 +1797,9 @@ local function sendWebhook(rewardInfo, rewardObject, isNewReward)
                 },
                 Body = jsonData
             })
-            print("Đã gửi webhook qua syn.request")
-            return true
         -- KRNL, Script-Ware và nhiều executor khác
         elseif request then
+            print("DEBUG: Sử dụng request")
             request({
                 Url = currentWebhookUrl,
                 Method = "POST",
@@ -1877,10 +1808,9 @@ local function sendWebhook(rewardInfo, rewardObject, isNewReward)
                 },
                 Body = jsonData
             })
-            print("Đã gửi webhook qua request")
-            return true
         -- Các Executor khác
         elseif http and http.request then
+            print("DEBUG: Sử dụng http.request")
             http.request({
                 Url = currentWebhookUrl,
                 Method = "POST",
@@ -1889,13 +1819,10 @@ local function sendWebhook(rewardInfo, rewardObject, isNewReward)
                 },
                 Body = jsonData
             })
-            print("Đã gửi webhook qua http.request")
-            return true
         -- JJSploit và một số executor khác
         elseif httppost then
+            print("DEBUG: Sử dụng httppost")
             httppost(currentWebhookUrl, jsonData)
-            print("Đã gửi webhook qua httppost")
-            return true
         else
             error("Không tìm thấy HTTP API nào được hỗ trợ bởi executor hiện tại")
         end
@@ -1908,50 +1835,95 @@ local function sendWebhook(rewardInfo, rewardObject, isNewReward)
         end
         
         -- Hiển thị thông báo Rayfield khi nhận phần thưởng
-        pcall(function()
-            Rayfield:Notify({
-                Title = "Phần thưởng mới!",
-                Content = cleanRewardInfo,
-                Duration = 5,
-                Image = "gift", -- Lucide icon
-            })
-        end)
+        Rayfield:Notify({
+            Title = "Phần thưởng mới!",
+            Content = cleanRewardInfo,
+            Duration = 5,
+            Image = "gift", -- Lucide icon
+        })
         
         -- Cập nhật thông tin hiển thị trong UI
-        pcall(function()
-            if TotalRewardsLabel then
-                local rewardsText = getTotalRewardsText()
-                TotalRewardsText = rewardsText
-                TotalRewardsLabel:Set({
-                    Title = "Tổng phần thưởng hiện có", 
-                    Content = rewardsText
-                })
-            end
-        end)
-        
-        -- Kết thúc xử lý
-        wait(0.5) -- Chờ một chút để tránh xử lý quá nhanh
-        isProcessingReward = false
-        return true
+        if TotalRewardsLabel then
+            local rewardsText = getTotalRewardsText()
+            TotalRewardsText = rewardsText
+            TotalRewardsLabel:Set({
+                Title = "Tổng phần thưởng hiện có", 
+                Content = rewardsText
+            })
+        end
     else
         warn("Lỗi gửi webhook: " .. tostring(err))
         
         -- Hiển thị thông báo lỗi trong Rayfield
-        pcall(function()
+        Rayfield:Notify({
+            Title = "Lỗi gửi webhook",
+            Content = "Không thể gửi thông tin phần thưởng: " .. tostring(err),
+            Duration = 5,
+            Image = "alert-triangle", -- Lucide icon
+        })
+    end
+    
+    -- Kết thúc xử lý
+    wait(0.5) -- Chờ một chút để tránh xử lý quá nhanh
+    isProcessingReward = false
+end
+
+-- Tạo nút để gửi webhook thủ công với phần thưởng hiện tại - phiên bản đơn giản hơn
+local SendCurrentButton = RewardsTab:CreateButton({
+    Name = "Gửi webhook phần thưởng hiện tại",
+    Callback = function()
+        -- Hiển thị thông báo đang gửi
+        Rayfield:Notify({
+            Title = "Đang gửi",
+            Content = "Đang gửi thông tin phần thưởng hiện tại...",
+            Duration = 2,
+            Image = "loader", -- Lucide icon
+        })
+        
+        -- Đọc lại dữ liệu phần thưởng hiện tại
+        readActualItemQuantities()
+        
+        -- Kiểm tra URL webhook
+        if not CONFIG.WEBHOOK_URL or CONFIG.WEBHOOK_URL == "YOUR_URL" or CONFIG.WEBHOOK_URL == "" then
             Rayfield:Notify({
-                Title = "Lỗi gửi webhook",
-                Content = "Không thể gửi thông tin phần thưởng: " .. tostring(err),
+                Title = "Lỗi URL",
+                Content = "URL webhook chưa được cấu hình. Vui lòng nhập URL trong tab Webhook.",
                 Duration = 5,
                 Image = "alert-triangle", -- Lucide icon
             })
+            return
+        end
+        
+        -- Tạo phần thưởng giả
+        local fakeReward = "2000 GEMS"
+        if playerItems and playerItems["GEMS"] then
+            fakeReward = playerItems["GEMS"] .. " GEMS"
+        end
+        
+        print("Đang gửi webhook thủ công với phần thưởng: " .. fakeReward)
+        
+        -- Gọi hàm gửi webhook với phần thưởng hiện có
+        local success = pcall(function()
+            sendWebhook(fakeReward, nil, true)
         end)
         
-        -- Kết thúc xử lý
-        wait(0.5) -- Chờ một chút để tránh xử lý quá nhanh
-        isProcessingReward = false
-        return false
-    end
-end
+        if success then
+            Rayfield:Notify({
+                Title = "Thành công",
+                Content = "Đã gửi thông tin phần thưởng hiện tại qua webhook",
+                Duration = 3,
+                Image = "check", -- Lucide icon
+            })
+        else
+            Rayfield:Notify({
+                Title = "Lỗi",
+                Content = "Không thể gửi webhook, vui lòng kiểm tra console",
+                Duration = 5,
+                Image = "x", -- Lucide icon
+            })
+        end
+    end,
+})
 
 -- Set này dùng để theo dõi đã gửi webhook của phần thưởng
 local sentRewards = {}
