@@ -1,5 +1,14 @@
 -- Arise Crossover - Discord Webhook cho AFKRewards
 local allowedPlaceId = 87039211657390 -- PlaceId mà script được phép chạy
+
+-- Kiểm tra PlaceID ngay từ đầu để chỉ chạy trên đúng game
+if game.PlaceId ~= allowedPlaceId then
+    local placeName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name or "Không xác định"
+    print("❌ Script Arise Webhook chỉ hoạt động trên game với PlaceID: " .. allowedPlaceId)
+    print("❌ Game hiện tại: " .. placeName .. " (PlaceID: " .. game.PlaceId .. ")")
+    return -- Dừng script ngay lập tức
+end
+
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
