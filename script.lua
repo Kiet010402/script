@@ -91,7 +91,9 @@ local CONFIG = {
     WEBHOOK_COOLDOWN = 3,
     SHOW_UI = true,
     UI_POSITION = UDim2.new(0.7, 0, 0.05, 0),
-    ACCOUNT_NAME = playerName -- Lưu tên tài khoản vào cấu hình
+    ACCOUNT_NAME = playerName, -- Lưu tên tài khoản vào cấu hình
+    AUTO_TP_TO_AFK = false, -- Mặc định tắt auto TP
+    TELEPORT_COOLDOWN = 30  -- Thời gian chờ trước khi teleport (giây)
 }
 
 -- Lưu cấu hình hiện tại
@@ -295,6 +297,72 @@ local ClearButton = RewardsTab:CreateButton({
     end,
 })
 
+-- Tab Teleport
+local TeleportTab = Window:CreateTab("Teleport", "navigation") -- Sử dụng icon Lucide cho teleport
+
+-- Tạo section thông tin
+local TeleportInfo = TeleportTab:CreateSection("Teleport to AFK Area")
+
+-- Tạo toggle cho Auto TP to AFK
+local AutoTPToggle = TeleportTab:CreateToggle({
+    Name = "Auto TP to AFK",
+    CurrentValue = CONFIG.AUTO_TP_TO_AFK or false,
+    Flag = "AutoTPToAFK",
+    Callback = function(Value)
+        CONFIG.AUTO_TP_TO_AFK = Value
+        saveConfig(CONFIG)
+        
+        if Value then
+            Rayfield:Notify({
+                Title = "Auto TP đã bật",
+                Content = "Sẽ tự động teleport sau " .. CONFIG.TELEPORT_COOLDOWN .. " giây",
+                Duration = 5,
+                Image = "navigation", -- Lucide icon
+            })
+            
+            -- Bắt đầu quá trình teleport
+            startAutoTeleport()
+        else
+            Rayfield:Notify({
+                Title = "Auto TP đã tắt",
+                Content = "Đã hủy tự động teleport",
+                Duration = 3,
+                Image = "navigation-off", -- Lucide icon
+            })
+        end
+    end,
+})
+
+-- Tạo slider để điều chỉnh thời gian chờ trước khi teleport
+local TeleportCooldownSlider = TeleportTab:CreateSlider({
+    Name = "Thời gian chờ trước khi teleport",
+    Range = {5, 60},
+    Increment = 5,
+    Suffix = "giây",
+    CurrentValue = CONFIG.TELEPORT_COOLDOWN or 30,
+    Flag = "TeleportCooldown",
+    Callback = function(Value)
+        CONFIG.TELEPORT_COOLDOWN = Value
+        saveConfig(CONFIG)
+    end,
+})
+
+-- Tạo button để teleport ngay lập tức
+local TeleportNowButton = TeleportTab:CreateButton({
+    Name = "Teleport Ngay",
+    Callback = function()
+        Rayfield:Notify({
+            Title = "Đang teleport",
+            Content = "Đang chuyển đến khu vực AFK...",
+            Duration = 3,
+            Image = "loader", -- Lucide icon
+        })
+        
+        -- Thực hiện teleport ngay lập tức
+        performTeleport()
+    end,
+})
+
 -- Tab cài đặt
 local SettingsTab = Window:CreateTab("Cài đặt", "settings") -- Sử dụng icon Lucide
 
@@ -325,79 +393,129 @@ local ShutdownButton = SettingsTab:CreateButton({
     end,
 })
 
--- Tạo UI cấu hình Webhook (thay thế hàm cũ bằng các phần tử Rayfield)
-local function createWebhookUI()
-    -- Không cần tạo UI tùy chỉnh nữa vì đã dùng Rayfield
-    print("Đã chuyển sang sử dụng Rayfield UI")
+-- Biến kiểm soát auto teleport
+local autoTeleportRunning = false
+local teleportConnection = nil
+
+-- Hàm thực hiện teleport
+function performTeleport()
+    local TeleportService = game:GetService("TeleportService")
+    local Players = game:GetService("Players")
+    local placeId = 116614712661486
+    local player = Players.LocalPlayer
     
-    -- Đọc số lượng item hiện tại và cập nhật hiển thị
-    spawn(function()
-        wait(1) -- Chờ UI khởi tạo xong
-        readActualItemQuantities()
-        local rewardsText = getTotalRewardsText()
-        TotalRewardsText = rewardsText
-        TotalRewardsLabel:Set({
-            Title = "Tổng phần thưởng hiện có", 
-            Content = rewardsText
+    -- Kiểm tra nếu người chơi đã ở nơi cần đến
+    if game.PlaceId == placeId then
+        Rayfield:Notify({
+            Title = "Thông báo",
+            Content = "Bạn đã ở trong khu vực AFK",
+            Duration = 3,
+            Image = "check", -- Lucide icon
         })
+        return -- Dừng ngay lập tức nếu đã ở đúng nơi
+    end
+    
+    local success, errorMessage = pcall(function()
+        TeleportService:Teleport(placeId, player)
     end)
     
-    return nil -- Không cần trả về UI nữa
-end
-
--- Mẫu regex để trích xuất số lượng trong ngoặc
-local function extractQuantity(text)
-    -- Tìm số lượng trong ngoặc, ví dụ: GEMS(10)
-    local quantity = text:match("%((%d+)%)")
-    if quantity then
-        return tonumber(quantity)
+    if not success then
+        warn("Teleport failed: " .. errorMessage)
+        Rayfield:Notify({
+            Title = "Lỗi teleport",
+            Content = "Không thể teleport: " .. errorMessage,
+            Duration = 5,
+            Image = "alert-triangle", -- Lucide icon
+        })
     end
-    return nil
 end
 
--- Tạo một ID duy nhất cho phần thưởng mà không dùng timestamp
-local function createUniqueRewardId(rewardText)
-    -- Loại bỏ khoảng trắng và chuyển về chữ thường để so sánh nhất quán
-    local id = rewardText:gsub("%s+", ""):lower()
+-- Hàm bắt đầu quá trình auto teleport
+function startAutoTeleport()
+    if autoTeleportRunning then return end
     
-    -- Loại bỏ tiền tố "RECEIVED:" nếu có
-    id = id:gsub("received:", "")
+    autoTeleportRunning = true
     
-    -- Loại bỏ tiền tố "YOU GOT A NEW REWARD!" nếu có
-    id = id:gsub("yougotanewreward!", "")
-    
-    return id
-end
-
--- Kiểm tra xem một phần thưởng có phải là CASH không
-local function isCashReward(rewardText)
-    return rewardText:upper():find("CASH") ~= nil
-end
-
--- Phân tích chuỗi phần thưởng để lấy số lượng và loại
-local function parseReward(rewardText)
-    -- Loại bỏ các tiền tố không cần thiết
-    rewardText = rewardText:gsub("RECEIVED:%s*", "")
-    rewardText = rewardText:gsub("YOU GOT A NEW REWARD!%s*", "")
-    
-    -- Tìm số lượng và loại phần thưởng từ text
-    local amount, itemType = rewardText:match("(%d+)%s+([%w%s]+)")
-    
-    if amount and itemType then
-        amount = tonumber(amount)
-        itemType = itemType:gsub("^%s+", ""):gsub("%s+$", "") -- Xóa khoảng trắng thừa
-        
-        -- Kiểm tra xem có số lượng trong ngoặc không
-        local quantityInBrackets = itemType:match("%((%d+)%)$")
-        if quantityInBrackets then
-            -- Loại bỏ phần số lượng trong ngoặc khỏi tên item
-            itemType = itemType:gsub("%(%d+%)$", ""):gsub("%s+$", "")
+    -- Tạo một task mới để thực hiện teleport
+    spawn(function()
+        while scriptRunning and CONFIG.AUTO_TP_TO_AFK and autoTeleportRunning do
+            -- Kiểm tra nếu không đúng PlaceId thì dừng script
+            if game.PlaceId ~= allowedPlaceId then
+                autoTeleportRunning = false
+                break
+            end
+            
+            -- Đếm ngược thời gian
+            local countdown = CONFIG.TELEPORT_COOLDOWN
+            while countdown > 0 and CONFIG.AUTO_TP_TO_AFK and autoTeleportRunning do
+                if countdown == CONFIG.TELEPORT_COOLDOWN or countdown == 10 or countdown <= 5 then
+                    Rayfield:Notify({
+                        Title = "Auto TP",
+                        Content = "Sẽ teleport sau " .. countdown .. " giây",
+                        Duration = 1.5,
+                        Image = "clock", -- Lucide icon
+                    })
+                end
+                task.wait(1)
+                countdown = countdown - 1
+            end
+            
+            -- Nếu đã tắt auto TP hoặc script đã dừng
+            if not CONFIG.AUTO_TP_TO_AFK or not autoTeleportRunning or not scriptRunning then
+                autoTeleportRunning = false
+                break
+            end
+            
+            -- Thực hiện teleport
+            performTeleport()
+            
+            -- Dừng auto teleport sau khi đã teleport
+            autoTeleportRunning = false
         end
-        
-        return amount, itemType
-    else
-        return nil, rewardText
+    end)
+    
+    -- Thêm connection vào danh sách để có thể hủy khi tắt script
+    if teleportConnection then
+        teleportConnection:Disconnect()
     end
+    
+    -- Lắng nghe sự kiện PlaceId thay đổi để dừng auto teleport
+    teleportConnection = game:GetPropertyChangedSignal("PlaceId"):Connect(function()
+        if game.PlaceId == 116614712661486 then
+            -- Đã đến nơi cần đến, tắt auto teleport
+            CONFIG.AUTO_TP_TO_AFK = false
+            autoTeleportRunning = false
+            
+            -- Cập nhật UI
+            if AutoTPToggle then
+                AutoTPToggle:Set(false)
+            end
+            
+            -- Lưu cấu hình
+            saveConfig(CONFIG)
+        end
+    end)
+    
+    -- Thêm connection vào danh sách để có thể hủy khi tắt script
+    table.insert(connections, teleportConnection)
+end
+
+-- Cập nhật hàm shutdownScript để hủy auto teleport
+local originalShutdownScript = shutdownScript
+shutdownScript = function()
+    -- Dừng auto teleport
+    autoTeleportRunning = false
+    
+    -- Gọi hàm tắt script gốc
+    originalShutdownScript()
+end
+
+-- Khởi động auto teleport nếu đã được bật trước đó
+if CONFIG.AUTO_TP_TO_AFK then
+    spawn(function()
+        wait(5) -- Đợi script khởi động hoàn tất
+        startAutoTeleport()
+    end)
 end
 
 -- Tìm UI phần thưởng
@@ -1236,7 +1354,7 @@ local function sendInitialReceivedWebhook()
         end
         
         -- Kết thúc xử lý
-        wait(0.5)
+        wait(0.5) -- Chờ một chút để tránh xử lý quá nhanh
         isProcessingReward = false
         lastWebhookTime = tick() -- Cập nhật thời gian gửi webhook cuối cùng
     end
@@ -1279,6 +1397,7 @@ print("- Không hiển thị và không gửi webhook cho CASH")
 print("- Kiểm tra số lượng item thực tế từ RECEIVED")
 print("- Hiển thị tổng phần thưởng chính xác trong webhook")
 print("- Ping @everyone khi phát hiện ZIRU G lần đầu tiên")
+print("- Chức năng tự động teleport đến khu vực AFK")
 print("- Cấu hình riêng biệt cho từng tài khoản: " .. CONFIG_FILE)
 print("- Giám sát phần thưởng mới với cooldown " .. WEBHOOK_COOLDOWN .. " giây")
 print("- Hỗ trợ phát hiện đặc biệt cho TIGER, TWIN PRISM BLADES và ZIRU G")
@@ -1573,4 +1692,24 @@ checkReceivedRewards = function(receivedContainer)
             })
         end
     end
+end
+
+-- Tạo UI cấu hình Webhook (thay thế hàm cũ bằng các phần tử Rayfield)
+local function createWebhookUI()
+    -- Không cần tạo UI tùy chỉnh nữa vì đã dùng Rayfield
+    print("Đã chuyển sang sử dụng Rayfield UI")
+    
+    -- Đọc số lượng item hiện tại và cập nhật hiển thị
+    spawn(function()
+        wait(1) -- Chờ UI khởi tạo xong
+        readActualItemQuantities()
+        local rewardsText = getTotalRewardsText()
+        TotalRewardsText = rewardsText
+        TotalRewardsLabel:Set({
+            Title = "Tổng phần thưởng hiện có", 
+            Content = rewardsText
+        })
+    end)
+    
+    return nil -- Không cần trả về UI nữa
 end 
