@@ -594,6 +594,11 @@ end
 
 -- Tìm UI phần thưởng
 findRewardsUI = function()
+    if not Player or not Player:FindFirstChild("PlayerGui") then
+        warn("Không tìm thấy PlayerGui")
+        return nil
+    end
+    
     -- Tìm trong PlayerGui
     for _, gui in pairs(Player.PlayerGui:GetChildren()) do
         if gui:IsA("ScreenGui") then
@@ -619,100 +624,129 @@ findReceivedFrame = function()
     -- Thêm thông báo debug
     print("Đang tìm kiếm UI RECEIVED...")
     
-    for _, gui in pairs(Player.PlayerGui:GetChildren()) do
-        if gui:IsA("ScreenGui") then
-            -- Phương pháp 1: Tìm trực tiếp label RECEIVED
-            for _, obj in pairs(gui:GetDescendants()) do
-                if obj:IsA("TextLabel") and obj.Text == "RECEIVED" then
-                    print("Đã tìm thấy label RECEIVED qua TextLabel")
-                    return obj.Parent
-                end
-            end
-            
-            -- Phương pháp 2: Tìm ImageLabel hoặc Frame có tên là RECEIVED
-            local receivedFrame = gui:FindFirstChild("RECEIVED", true)
-            if receivedFrame then
-                print("Đã tìm thấy RECEIVED qua FindFirstChild")
-                return receivedFrame.Parent
-            end
-            
-            -- Phương pháp 3: Tìm các Frame chứa phần thưởng 
-            for _, frame in pairs(gui:GetDescendants()) do
-                if (frame:IsA("Frame") or frame:IsA("ScrollingFrame")) and
-                   (frame.Name:upper():find("RECEIVED") or 
-                    (frame.Name:upper():find("REWARD") and not frame.Name:upper():find("REWARDS"))) then
-                    print("Đã tìm thấy RECEIVED qua tên Frame: " .. frame.Name)
-                    return frame
-                end
-            end
-            
-            -- Phương pháp 4: Tìm các phần thưởng đặc trưng trong RECEIVED
-            for _, frame in pairs(gui:GetDescendants()) do
-                if frame:IsA("Frame") or frame:IsA("ImageLabel") then
-                    -- Đếm số lượng item trong frame
-                    local itemCount = 0
-                    local hasPercentage = false
-                    
-                    for _, child in pairs(frame:GetDescendants()) do
-                        if child:IsA("TextLabel") then
-                            -- Kiểm tra phần trăm (dấu hiệu của item)
-                            if child.Text:match("^%d+%.?%d*%%$") then
-                                hasPercentage = true
-                            end
-                            
-                            -- Kiểm tra "POWDER", "GEMS", "TICKETS" (dấu hiệu của item)
-                            if child.Text:find("POWDER") or child.Text:find("GEMS") or child.Text:find("TICKETS") then
-                                itemCount = itemCount + 1
-                            end
-                        end
+    if not Player or not Player:FindFirstChild("PlayerGui") then
+        warn("Không tìm thấy PlayerGui")
+        return nil
+    end
+    
+    -- Sử dụng pcall để bắt lỗi
+    local success, result = pcall(function()
+        for _, gui in pairs(Player.PlayerGui:GetChildren()) do
+            if gui:IsA("ScreenGui") then
+                -- Phương pháp 1: Tìm trực tiếp label RECEIVED
+                for _, obj in pairs(gui:GetDescendants()) do
+                    if obj:IsA("TextLabel") and obj.Text == "RECEIVED" then
+                        print("Đã tìm thấy label RECEIVED qua TextLabel")
+                        return obj.Parent
                     end
-                    
-                    -- Nếu frame chứa nhiều loại item và có phần trăm, có thể là RECEIVED
-                    if itemCount >= 2 and hasPercentage and not frame.Name:upper():find("REWARDS") then
-                        print("Đã tìm thấy RECEIVED qua việc phân tích nội dung: " .. frame.Name)
+                end
+                
+                -- Phương pháp 2: Tìm ImageLabel hoặc Frame có tên là RECEIVED
+                local receivedFrame = gui:FindFirstChild("RECEIVED", true)
+                if receivedFrame then
+                    print("Đã tìm thấy RECEIVED qua FindFirstChild")
+                    return receivedFrame.Parent
+                end
+                
+                -- Phương pháp 3: Tìm các Frame chứa phần thưởng 
+                for _, frame in pairs(gui:GetDescendants()) do
+                    if (frame:IsA("Frame") or frame:IsA("ScrollingFrame")) and
+                       (frame.Name:upper():find("RECEIVED") or 
+                        (frame.Name:upper():find("REWARD") and not frame.Name:upper():find("REWARDS"))) then
+                        print("Đã tìm thấy RECEIVED qua tên Frame: " .. frame.Name)
                         return frame
                     end
                 end
-            end
-        end
-    end
-    
-    print("KHÔNG thể tìm thấy UI RECEIVED, tiếp tục tìm với cách khác...")
-    
-    -- Phương pháp cuối: Tìm một frame bất kỳ chứa TextLabel "POWDER", không thuộc REWARDS
-    for _, gui in pairs(Player.PlayerGui:GetChildren()) do
-        if gui:IsA("ScreenGui") then
-            for _, frame in pairs(gui:GetDescendants()) do
-                if (frame:IsA("Frame") or frame:IsA("ImageLabel")) and not frame.Name:upper():find("REWARDS") then
-                    for _, child in pairs(frame:GetDescendants()) do
-                        if child:IsA("TextLabel") and 
-                           (child.Text:find("POWDER") or child.Text:find("GEMS")) and
-                           not frame:FindFirstChild("REWARDS", true) then
-                            local parentName = frame.Parent and frame.Parent.Name or "unknown"
-                            print("Tìm thấy frame có thể là RECEIVED: " .. frame.Name .. " (Parent: " .. parentName .. ")")
+                
+                -- Phương pháp 4: Tìm các phần thưởng đặc trưng trong RECEIVED
+                for _, frame in pairs(gui:GetDescendants()) do
+                    if frame:IsA("Frame") or frame:IsA("ImageLabel") then
+                        -- Đếm số lượng item trong frame
+                        local itemCount = 0
+                        local hasPercentage = false
+                        
+                        for _, child in pairs(frame:GetDescendants()) do
+                            if child:IsA("TextLabel") then
+                                -- Kiểm tra phần trăm (dấu hiệu của item)
+                                if child.Text:match("^%d+%.?%d*%%$") then
+                                    hasPercentage = true
+                                end
+                                
+                                -- Kiểm tra "POWDER", "GEMS", "TICKETS" (dấu hiệu của item)
+                                if child.Text:find("POWDER") or child.Text:find("GEMS") or child.Text:find("TICKETS") then
+                                    itemCount = itemCount + 1
+                                end
+                            end
+                        end
+                        
+                        -- Nếu frame chứa nhiều loại item và có phần trăm, có thể là RECEIVED
+                        if itemCount >= 2 and hasPercentage and not frame.Name:upper():find("REWARDS") then
+                            print("Đã tìm thấy RECEIVED qua việc phân tích nội dung: " .. frame.Name)
                             return frame
                         end
                     end
                 end
             end
         end
+        
+        print("KHÔNG thể tìm thấy UI RECEIVED, tiếp tục tìm với cách khác...")
+        
+        -- Phương pháp cuối: Tìm một frame bất kỳ chứa TextLabel "POWDER", không thuộc REWARDS
+        for _, gui in pairs(Player.PlayerGui:GetChildren()) do
+            if gui:IsA("ScreenGui") then
+                for _, frame in pairs(gui:GetDescendants()) do
+                    if (frame:IsA("Frame") or frame:IsA("ImageLabel")) and not frame.Name:upper():find("REWARDS") then
+                        for _, child in pairs(frame:GetDescendants()) do
+                            if child:IsA("TextLabel") and 
+                               (child.Text:find("POWDER") or child.Text:find("GEMS")) and
+                               not frame:FindFirstChild("REWARDS", true) then
+                                local parentName = frame.Parent and frame.Parent.Name or "unknown"
+                                print("Tìm thấy frame có thể là RECEIVED: " .. frame.Name .. " (Parent: " .. parentName .. ")")
+                                return frame
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        
+        return nil
+    end)
+    
+    if not success then
+        warn("Lỗi khi tìm kiếm RECEIVED Frame: " .. tostring(result))
+        return nil
     end
     
-    return nil
+    return result
 end
 
 -- Tìm frame thông báo phần thưởng mới "YOU GOT A NEW REWARD!"
 findNewRewardNotification = function()
-    for _, gui in pairs(Player.PlayerGui:GetChildren()) do
-        if gui:IsA("ScreenGui") then
-            for _, obj in pairs(gui:GetDescendants()) do
-                if obj:IsA("TextLabel") and obj.Text:find("YOU GOT A NEW REWARD") then
-                    return obj.Parent
+    if not Player or not Player:FindFirstChild("PlayerGui") then
+        warn("Không tìm thấy PlayerGui")
+        return nil
+    end
+    
+    local success, result = pcall(function()
+        for _, gui in pairs(Player.PlayerGui:GetChildren()) do
+            if gui:IsA("ScreenGui") then
+                for _, obj in pairs(gui:GetDescendants()) do
+                    if obj:IsA("TextLabel") and obj.Text:find("YOU GOT A NEW REWARD") then
+                        return obj.Parent
+                    end
                 end
             end
         end
+        return nil
+    end)
+    
+    if not success then
+        warn("Lỗi khi tìm kiếm New Reward Notification: " .. tostring(result))
+        return nil
     end
-    return nil
+    
+    return result
 end
 
 -- Đọc số lượng item thực tế từ UI RECEIVED
@@ -725,238 +759,249 @@ readActualItemQuantities = function()
     
     print("Đang đọc phần thưởng từ RECEIVED UI: " .. receivedUI:GetFullName())
     
-    -- Reset playerItems để cập nhật lại
-    playerItems = {}
-    local foundAnyItem = false
-    
-    -- Debug: In ra tất cả con của receivedUI
-    print("Các phần tử con của RECEIVED UI:")
-    for i, child in pairs(receivedUI:GetChildren()) do
-        print("  " .. i .. ": " .. child.Name .. " [" .. child.ClassName .. "]")
-    end
-    
-    for _, itemFrame in pairs(receivedUI:GetChildren()) do
-        if itemFrame:IsA("Frame") or itemFrame:IsA("ImageLabel") then
-            local itemType = ""
-            local baseQuantity = 0
-            local multiplier = 1
-            
-            -- Debug: In thông tin từng frame
-            print("Đang phân tích frame: " .. itemFrame.Name)
-            
-            -- Tìm tên item và số lượng
-            for _, child in pairs(itemFrame:GetDescendants()) do
-                if child:IsA("TextLabel") then
-                    local text = child.Text
-                    print("  TextLabel: '" .. text .. "'")
-                    
-                    -- Cải thiện: Kiểm tra văn bản chứa TIGER
-                    if text:find("TIGER") then
-                        itemType = "TIGER"
-                        print("    Phát hiện TIGER item")
-                        
-                        -- Tìm số lượng trong ngoặc - ví dụ: TIGER(1)
-                        local foundQuantity = extractQuantity(text)
-                        if foundQuantity then
-                            multiplier = foundQuantity
-                            print("    Số lượng TIGER: " .. multiplier)
-                        end
-                        
-                        -- Nếu không tìm được số lượng, giả định là 1
-                        if multiplier <= 0 then
-                            multiplier = 1
-                        end
-                        
-                        -- Nếu không có baseQuantity, giả định là 1
-                        if baseQuantity <= 0 then
-                            baseQuantity = 1
-                        end
-                    -- Thêm xử lý cho TWIN PRISM BLADES
-                    elseif text:find("TWIN PRISM BLADES") then
-                        itemType = "TWIN PRISM BLADES"
-                        print("    Phát hiện TWIN PRISM BLADES item")
-                        
-                        -- Tìm số lượng trong ngoặc - ví dụ: TWIN PRISM BLADES(1)
-                        local foundQuantity = extractQuantity(text)
-                        if foundQuantity then
-                            multiplier = foundQuantity
-                            print("    Số lượng TWIN PRISM BLADES: " .. multiplier)
-                        end
-                        
-                        -- Nếu không tìm được số lượng, giả định là 1
-                        if multiplier <= 0 then
-                            multiplier = 1
-                        end
-                        
-                        -- Nếu không có baseQuantity, giả định là 1
-                        if baseQuantity <= 0 then
-                            baseQuantity = 1
-                        end
-                    -- Thêm xử lý cho ZIRU G
-                    elseif text:find("ZIRU G") then
-                        itemType = "ZIRU G"
-                        print("    Phát hiện ZIRU G item")
-                        
-                        -- Tìm số lượng trong ngoặc - ví dụ: ZIRU G(1)
-                        local foundQuantity = extractQuantity(text)
-                        if foundQuantity then
-                            multiplier = foundQuantity
-                            print("    Số lượng ZIRU G: " .. multiplier)
-                        end
-                        
-                        -- Nếu không tìm được số lượng, giả định là 1
-                        if multiplier <= 0 then
-                            multiplier = 1
-                        end
-                        
-                        -- Nếu không có baseQuantity, giả định là 1
-                        if baseQuantity <= 0 then
-                            baseQuantity = 1
-                        end
-                    end
-                    
-                    -- Tìm loại item (GEMS, POWDER, TICKETS, v.v.)
-                    local foundItemType = text:match("(%w+)%s*%(%d+%)") or text:match("(%w+)%s*$")
-                    if foundItemType then
-                        itemType = foundItemType
-                        print("    Phát hiện loại item: " .. itemType)
-                    end
-                    
-                    -- Tìm số lượng trong ngoặc - ví dụ: GEMS(1)
-                    local foundQuantity = extractQuantity(text)
-                    if foundQuantity then
-                        multiplier = foundQuantity
-                        print("    Phát hiện số lượng từ ngoặc (multiplier): " .. multiplier)
-                    end
-                    
-                    -- Tìm số lượng đứng trước tên item - ví dụ: 500 GEMS
-                    local amountPrefix = text:match("^(%d+)%s+%w+")
-                    if amountPrefix then
-                        baseQuantity = tonumber(amountPrefix)
-                        print("    Phát hiện số lượng cơ bản: " .. baseQuantity)
-                    end
-                end
-            end
-            
-            -- Tính toán số lượng thực tế bằng cách nhân số lượng cơ bản với hệ số từ ngoặc
-            local finalQuantity = baseQuantity * multiplier
-            print("    Số lượng cuối cùng: " .. baseQuantity .. " x " .. multiplier .. " = " .. finalQuantity)
-            
-            -- Chỉ lưu các phần thưởng không phải CASH
-            if itemType ~= "" and finalQuantity > 0 and not isCashReward(itemType) then
-                playerItems[itemType] = (playerItems[itemType] or 0) + finalQuantity
-                print("Đã đọc item: " .. finalQuantity .. " " .. itemType .. " (từ " .. baseQuantity .. " x " .. multiplier .. ")")
-                foundAnyItem = true
-            elseif itemType ~= "" and finalQuantity > 0 then
-                print("Bỏ qua item CASH: " .. finalQuantity .. " " .. itemType)
-            end
-        end
-    end
-    
-    -- Cố gắng đọc theo cách khác nếu không tìm thấy item nào
-    if not foundAnyItem then
-        print("Không tìm thấy item nào bằng phương pháp thông thường, thử phương pháp thay thế...")
+    -- Bảo vệ lỗi với pcall
+    local success, result = pcall(function()
+        -- Reset playerItems để cập nhật lại
+        playerItems = {}
+        local foundAnyItem = false
         
-        -- Tìm tất cả TextLabel trong receivedUI có chứa GEMS, POWDER, TICKETS, TIGER
-        for _, child in pairs(receivedUI:GetDescendants()) do
-            if child:IsA("TextLabel") then
-                local text = child.Text
+        -- Debug: In ra tất cả con của receivedUI
+        print("Các phần tử con của RECEIVED UI:")
+        for i, child in pairs(receivedUI:GetChildren()) do
+            print("  " .. i .. ": " .. child.Name .. " [" .. child.ClassName .. "]")
+        end
+        
+        for _, itemFrame in pairs(receivedUI:GetChildren()) do
+            if itemFrame:IsA("Frame") or itemFrame:IsA("ImageLabel") then
+                local itemType = ""
+                local baseQuantity = 0
+                local multiplier = 1
                 
-                -- Tìm item có pattern X ITEM_TYPE(Y) hoặc ITEM_TYPE(Y)
-                local baseAmount, itemType, multiplier = text:match("(%d+)%s+([%w%s]+)%((%d+)%)")
-                if baseAmount and itemType and multiplier then
-                    baseAmount = tonumber(baseAmount)
-                    multiplier = tonumber(multiplier)
-                    local finalAmount = baseAmount * multiplier
-                    
-                    if not isCashReward(itemType) then
-                        playerItems[itemType] = (playerItems[itemType] or 0) + finalAmount
-                        print("Phương pháp thay thế - Đã đọc item: " .. finalAmount .. " " .. itemType .. " (từ " .. baseAmount .. " x " .. multiplier .. ")")
-                        foundAnyItem = true
-                    end
-                else
-                    -- Kiểm tra văn bản có chứa TIGER(X), TWIN PRISM BLADES(X) hoặc ZIRU G(X)
-                    local itemType, multiplier = text:match("([%w%s]+)%((%d+)%)")
-                    if itemType and multiplier then
-                        if itemType == "TIGER" or text:find("TIGER") or
-                           itemType == "TWIN PRISM BLADES" or text:find("TWIN PRISM BLADES") or
-                           itemType == "ZIRU G" or text:find("ZIRU G") then
+                -- Debug: In thông tin từng frame
+                print("Đang phân tích frame: " .. itemFrame.Name)
+                
+                -- Tìm tên item và số lượng
+                for _, child in pairs(itemFrame:GetDescendants()) do
+                    if child:IsA("TextLabel") then
+                        local text = child.Text
+                        print("  TextLabel: '" .. text .. "'")
+                        
+                        -- Cải thiện: Kiểm tra văn bản chứa TIGER
+                        if text:find("TIGER") then
+                            itemType = "TIGER"
+                            print("    Phát hiện TIGER item")
                             
-                            multiplier = tonumber(multiplier)
-                            if multiplier and multiplier > 0 and not isCashReward(itemType) then
-                                playerItems[itemType] = (playerItems[itemType] or 0) + multiplier
-                                print("Phương pháp thay thế - Đã đọc item đặc biệt: " .. multiplier .. " " .. itemType)
-                                foundAnyItem = true
+                            -- Tìm số lượng trong ngoặc - ví dụ: TIGER(1)
+                            local foundQuantity = extractQuantity(text)
+                            if foundQuantity then
+                                multiplier = foundQuantity
+                                print("    Số lượng TIGER: " .. multiplier)
+                            end
+                            
+                            -- Nếu không tìm được số lượng, giả định là 1
+                            if multiplier <= 0 then
+                                multiplier = 1
+                            end
+                            
+                            -- Nếu không có baseQuantity, giả định là 1
+                            if baseQuantity <= 0 then
+                                baseQuantity = 1
+                            end
+                        -- Thêm xử lý cho TWIN PRISM BLADES
+                        elseif text:find("TWIN PRISM BLADES") then
+                            itemType = "TWIN PRISM BLADES"
+                            print("    Phát hiện TWIN PRISM BLADES item")
+                            
+                            -- Tìm số lượng trong ngoặc - ví dụ: TWIN PRISM BLADES(1)
+                            local foundQuantity = extractQuantity(text)
+                            if foundQuantity then
+                                multiplier = foundQuantity
+                                print("    Số lượng TWIN PRISM BLADES: " .. multiplier)
+                            end
+                            
+                            -- Nếu không tìm được số lượng, giả định là 1
+                            if multiplier <= 0 then
+                                multiplier = 1
+                            end
+                            
+                            -- Nếu không có baseQuantity, giả định là 1
+                            if baseQuantity <= 0 then
+                                baseQuantity = 1
+                            end
+                        -- Thêm xử lý cho ZIRU G
+                        elseif text:find("ZIRU G") then
+                            itemType = "ZIRU G"
+                            print("    Phát hiện ZIRU G item")
+                            
+                            -- Tìm số lượng trong ngoặc - ví dụ: ZIRU G(1)
+                            local foundQuantity = extractQuantity(text)
+                            if foundQuantity then
+                                multiplier = foundQuantity
+                                print("    Số lượng ZIRU G: " .. multiplier)
+                            end
+                            
+                            -- Nếu không tìm được số lượng, giả định là 1
+                            if multiplier <= 0 then
+                                multiplier = 1
+                            end
+                            
+                            -- Nếu không có baseQuantity, giả định là 1
+                            if baseQuantity <= 0 then
+                                baseQuantity = 1
                             end
                         end
+                        
+                        -- Tìm loại item (GEMS, POWDER, TICKETS, v.v.)
+                        local foundItemType = text:match("(%w+)%s*%(%d+%)") or text:match("(%w+)%s*$")
+                        if foundItemType then
+                            itemType = foundItemType
+                            print("    Phát hiện loại item: " .. itemType)
+                        end
+                        
+                        -- Tìm số lượng trong ngoặc - ví dụ: GEMS(1)
+                        local foundQuantity = extractQuantity(text)
+                        if foundQuantity then
+                            multiplier = foundQuantity
+                            print("    Phát hiện số lượng từ ngoặc (multiplier): " .. multiplier)
+                        end
+                        
+                        -- Tìm số lượng đứng trước tên item - ví dụ: 500 GEMS
+                        local amountPrefix = text:match("^(%d+)%s+%w+")
+                        if amountPrefix then
+                            baseQuantity = tonumber(amountPrefix)
+                            print("    Phát hiện số lượng cơ bản: " .. baseQuantity)
+                        end
                     end
+                end
+                
+                -- Tính toán số lượng thực tế bằng cách nhân số lượng cơ bản với hệ số từ ngoặc
+                local finalQuantity = baseQuantity * multiplier
+                print("    Số lượng cuối cùng: " .. baseQuantity .. " x " .. multiplier .. " = " .. finalQuantity)
+                
+                -- Chỉ lưu các phần thưởng không phải CASH
+                if itemType ~= "" and finalQuantity > 0 and not isCashReward(itemType) then
+                    playerItems[itemType] = (playerItems[itemType] or 0) + finalQuantity
+                    print("Đã đọc item: " .. finalQuantity .. " " .. itemType .. " (từ " .. baseQuantity .. " x " .. multiplier .. ")")
+                    foundAnyItem = true
+                elseif itemType ~= "" and finalQuantity > 0 then
+                    print("Bỏ qua item CASH: " .. finalQuantity .. " " .. itemType)
+                end
+            end
+        end
+        
+        -- Cố gắng đọc theo cách khác nếu không tìm thấy item nào
+        if not foundAnyItem then
+            print("Không tìm thấy item nào bằng phương pháp thông thường, thử phương pháp thay thế...")
+            
+            -- Tìm tất cả TextLabel trong receivedUI có chứa GEMS, POWDER, TICKETS, TIGER
+            for _, child in pairs(receivedUI:GetDescendants()) do
+                if child:IsA("TextLabel") then
+                    local text = child.Text
                     
-                    -- Phương pháp đơn giản hơn: tìm tên item đặc biệt mà không có định dạng
-                    if text:find("TWIN PRISM BLADES") and not playerItems["TWIN PRISM BLADES"] then
-                        playerItems["TWIN PRISM BLADES"] = (playerItems["TWIN PRISM BLADES"] or 0) + 1
-                        print("Phương pháp thay thế - Đã đọc TWIN PRISM BLADES")
-                        foundAnyItem = true
-                    elseif text:find("ZIRU G") and not playerItems["ZIRU G"] then
-                        playerItems["ZIRU G"] = (playerItems["ZIRU G"] or 0) + 1
-                        print("Phương pháp thay thế - Đã đọc ZIRU G")
-                        foundAnyItem = true
+                    -- Tìm item có pattern X ITEM_TYPE(Y) hoặc ITEM_TYPE(Y)
+                    local baseAmount, itemType, multiplier = text:match("(%d+)%s+([%w%s]+)%((%d+)%)")
+                    if baseAmount and itemType and multiplier then
+                        baseAmount = tonumber(baseAmount)
+                        multiplier = tonumber(multiplier)
+                        local finalAmount = baseAmount * multiplier
+                        
+                        if not isCashReward(itemType) then
+                            playerItems[itemType] = (playerItems[itemType] or 0) + finalAmount
+                            print("Phương pháp thay thế - Đã đọc item: " .. finalAmount .. " " .. itemType .. " (từ " .. baseAmount .. " x " .. multiplier .. ")")
+                            foundAnyItem = true
+                        end
+                    else
+                        -- Kiểm tra văn bản có chứa TIGER(X), TWIN PRISM BLADES(X) hoặc ZIRU G(X)
+                        local itemType, multiplier = text:match("([%w%s]+)%((%d+)%)")
+                        if itemType and multiplier then
+                            if itemType == "TIGER" or text:find("TIGER") or
+                               itemType == "TWIN PRISM BLADES" or text:find("TWIN PRISM BLADES") or
+                               itemType == "ZIRU G" or text:find("ZIRU G") then
+                                
+                                multiplier = tonumber(multiplier)
+                                if multiplier and multiplier > 0 and not isCashReward(itemType) then
+                                    playerItems[itemType] = (playerItems[itemType] or 0) + multiplier
+                                    print("Phương pháp thay thế - Đã đọc item đặc biệt: " .. multiplier .. " " .. itemType)
+                                    foundAnyItem = true
+                                end
+                            end
+                        end
+                        
+                        -- Phương pháp đơn giản hơn: tìm tên item đặc biệt mà không có định dạng
+                        if text:find("TWIN PRISM BLADES") and not playerItems["TWIN PRISM BLADES"] then
+                            playerItems["TWIN PRISM BLADES"] = (playerItems["TWIN PRISM BLADES"] or 0) + 1
+                            print("Phương pháp thay thế - Đã đọc TWIN PRISM BLADES")
+                            foundAnyItem = true
+                        elseif text:find("ZIRU G") and not playerItems["ZIRU G"] then
+                            playerItems["ZIRU G"] = (playerItems["ZIRU G"] or 0) + 1
+                            print("Phương pháp thay thế - Đã đọc ZIRU G")
+                            foundAnyItem = true
+                        end
                     end
                 end
             end
         end
-    end
-    
-    -- Thêm: Kiểm tra đặc biệt cho TIGER nếu vẫn chưa thấy
-    if not playerItems["TIGER"] then
-        for _, child in pairs(receivedUI:GetDescendants()) do
-            if child:IsA("TextLabel") and child.Text:find("TIGER") then
-                print("Phát hiện TIGER thông qua kiểm tra đặc biệt: " .. child.Text)
-                -- Tìm số lượng trong ngoặc nếu có
-                local quantity = extractQuantity(child.Text) or 1
-                playerItems["TIGER"] = (playerItems["TIGER"] or 0) + quantity
-                foundAnyItem = true
+        
+        -- Thêm: Kiểm tra đặc biệt cho TIGER nếu vẫn chưa thấy
+        if not playerItems["TIGER"] then
+            for _, child in pairs(receivedUI:GetDescendants()) do
+                if child:IsA("TextLabel") and child.Text:find("TIGER") then
+                    print("Phát hiện TIGER thông qua kiểm tra đặc biệt: " .. child.Text)
+                    -- Tìm số lượng trong ngoặc nếu có
+                    local quantity = extractQuantity(child.Text) or 1
+                    playerItems["TIGER"] = (playerItems["TIGER"] or 0) + quantity
+                    foundAnyItem = true
+                end
             end
         end
-    end
-    
-    -- Thêm: Kiểm tra đặc biệt cho TWIN PRISM BLADES nếu vẫn chưa thấy
-    if not playerItems["TWIN PRISM BLADES"] then
-        for _, child in pairs(receivedUI:GetDescendants()) do
-            if child:IsA("TextLabel") and child.Text:find("TWIN PRISM BLADES") then
-                print("Phát hiện TWIN PRISM BLADES thông qua kiểm tra đặc biệt: " .. child.Text)
-                -- Tìm số lượng trong ngoặc nếu có
-                local quantity = extractQuantity(child.Text) or 1
-                playerItems["TWIN PRISM BLADES"] = (playerItems["TWIN PRISM BLADES"] or 0) + quantity
-                foundAnyItem = true
+        
+        -- Thêm: Kiểm tra đặc biệt cho TWIN PRISM BLADES nếu vẫn chưa thấy
+        if not playerItems["TWIN PRISM BLADES"] then
+            for _, child in pairs(receivedUI:GetDescendants()) do
+                if child:IsA("TextLabel") and child.Text:find("TWIN PRISM BLADES") then
+                    print("Phát hiện TWIN PRISM BLADES thông qua kiểm tra đặc biệt: " .. child.Text)
+                    -- Tìm số lượng trong ngoặc nếu có
+                    local quantity = extractQuantity(child.Text) or 1
+                    playerItems["TWIN PRISM BLADES"] = (playerItems["TWIN PRISM BLADES"] or 0) + quantity
+                    foundAnyItem = true
+                end
             end
         end
-    end
-    
-    -- Thêm: Kiểm tra đặc biệt cho ZIRU G nếu vẫn chưa thấy
-    if not playerItems["ZIRU G"] then
-        for _, child in pairs(receivedUI:GetDescendants()) do
-            if child:IsA("TextLabel") and child.Text:find("ZIRU G") then
-                print("Phát hiện ZIRU G thông qua kiểm tra đặc biệt: " .. child.Text)
-                -- Tìm số lượng trong ngoặc nếu có
-                local quantity = extractQuantity(child.Text) or 1
-                playerItems["ZIRU G"] = (playerItems["ZIRU G"] or 0) + quantity
-                foundAnyItem = true
+        
+        -- Thêm: Kiểm tra đặc biệt cho ZIRU G nếu vẫn chưa thấy
+        if not playerItems["ZIRU G"] then
+            for _, child in pairs(receivedUI:GetDescendants()) do
+                if child:IsA("TextLabel") and child.Text:find("ZIRU G") then
+                    print("Phát hiện ZIRU G thông qua kiểm tra đặc biệt: " .. child.Text)
+                    -- Tìm số lượng trong ngoặc nếu có
+                    local quantity = extractQuantity(child.Text) or 1
+                    playerItems["ZIRU G"] = (playerItems["ZIRU G"] or 0) + quantity
+                    foundAnyItem = true
+                end
             end
         end
-    end
-    
-    -- Hiển thị tất cả các item đã đọc được
-    print("----- Danh sách item hiện có (không bao gồm CASH) -----")
-    if next(playerItems) ~= nil then
-        for itemType, amount in pairs(playerItems) do
-            print(itemType .. ": " .. amount)
+        
+        -- Hiển thị tất cả các item đã đọc được
+        print("----- Danh sách item hiện có (không bao gồm CASH) -----")
+        if next(playerItems) ~= nil then
+            for itemType, amount in pairs(playerItems) do
+                print(itemType .. ": " .. amount)
+            end
+        else
+            print("Không đọc được bất kỳ item nào từ UI RECEIVED!")
         end
-    else
-        print("Không đọc được bất kỳ item nào từ UI RECEIVED!")
-    end
-    print("------------------------------------------------------")
+        print("------------------------------------------------------")
+        
+        return playerItems
+    end)
     
-    return playerItems
+    if not success then
+        warn("Lỗi khi đọc số lượng item: " .. tostring(result))
+        -- Trả về playerItems hiện tại nếu có lỗi
+        return playerItems
+    end
+    
+    return result or playerItems
 end
 
 -- Cập nhật tổng phần thưởng
@@ -1151,36 +1196,55 @@ end
 -- Tìm kiếm các phần tử UI ban đầu
 local function findAllUIElements()
     print("Đang tìm kiếm các phần tử UI...")
-    local rewardsUI = findRewardsUI()
-    local receivedUI = findReceivedFrame()
-    local newRewardUI = findNewRewardNotification()
     
-    -- Đọc số lượng item hiện tại
-    readActualItemQuantities()
-    
-    -- Kiểm tra thông báo phần thưởng mới trước tiên
-    if newRewardUI then
-        print("Đã tìm thấy thông báo YOU GOT A NEW REWARD!")
-        checkNewRewardNotification(newRewardUI)
-    else
-        print("Chưa tìm thấy thông báo phần thưởng mới")
+    -- Sử dụng pcall để bắt lỗi
+    local success, result = pcall(function()
+        local rewardsUI = findRewardsUI()
+        local receivedUI = findReceivedFrame()
+        local newRewardUI = findNewRewardNotification()
         
-        -- Nếu không có thông báo NEW REWARD, kiểm tra REWARDS
-        if rewardsUI then
-            print("Đã tìm thấy UI phần thưởng")
-            checkNewRewards(rewardsUI)
+        -- Đọc số lượng item hiện tại
+        pcall(function()
+            readActualItemQuantities()
+        end)
+        
+        -- Kiểm tra thông báo phần thưởng mới trước tiên
+        if newRewardUI then
+            print("Đã tìm thấy thông báo YOU GOT A NEW REWARD!")
+            pcall(function()
+                checkNewRewardNotification(newRewardUI)
+            end)
         else
-            warn("Không tìm thấy UI phần thưởng")
+            print("Chưa tìm thấy thông báo phần thưởng mới")
+            
+            -- Nếu không có thông báo NEW REWARD, kiểm tra REWARDS
+            if rewardsUI then
+                print("Đã tìm thấy UI phần thưởng")
+                pcall(function()
+                    checkNewRewards(rewardsUI)
+                end)
+            else
+                warn("Không tìm thấy UI phần thưởng")
+            end
         end
+        
+        -- Luôn đọc RECEIVED để cập nhật số lượng item hiện tại
+        if receivedUI then
+            print("Đã tìm thấy UI RECEIVED")
+            pcall(function()
+                checkReceivedRewards(receivedUI)
+            end)
+        end
+        
+        return rewardsUI, receivedUI, newRewardUI
+    end)
+    
+    if not success then
+        warn("Lỗi khi tìm kiếm UI phần thưởng: " .. tostring(result))
+        return nil, nil, nil
     end
     
-    -- Luôn đọc RECEIVED để cập nhật số lượng item hiện tại
-    if receivedUI then
-        print("Đã tìm thấy UI RECEIVED")
-        checkReceivedRewards(receivedUI)
-    end
-    
-    return rewardsUI, receivedUI, newRewardUI
+    return result
 end
 
 -- Theo dõi thay đổi trong PlayerGui
