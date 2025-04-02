@@ -1,1717 +1,21 @@
--- Arise Crossover - UI Glassmorphic
-
-local player = game.Players.LocalPlayer
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-
--- Tạo ScreenGui chính
-local AriseUI = Instance.new("ScreenGui")
-AriseUI.Name = "AriseUI"
-AriseUI.Parent = player:WaitForChild("PlayerGui")
-AriseUI.ResetOnSpawn = false
-AriseUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-
--- Nền mờ cho toàn màn hình
-local BlurBackground = Instance.new("Frame")
-BlurBackground.Name = "BlurBackground"
-BlurBackground.Parent = AriseUI
-BlurBackground.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-BlurBackground.BackgroundTransparency = 1
-BlurBackground.Position = UDim2.new(0, 0, 0, 0)
-BlurBackground.Size = UDim2.new(1, 0, 1, 0)
-
--- Tạo hiệu ứng mờ nền
-local BlurEffect = Instance.new("BlurEffect")
-BlurEffect.Name = "BlurEffect"
-BlurEffect.Parent = game:GetService("Lighting")
-BlurEffect.Size = 0
-
--- Tạo Main Frame với hiệu ứng kính trong suốt
-local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Parent = AriseUI
-MainFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-MainFrame.BackgroundTransparency = 0.9
-MainFrame.BorderSizePixel = 0
-MainFrame.Position = UDim2.new(0.5, -300, 0.5, -200)
-MainFrame.Size = UDim2.new(0, 600, 0, 400)
-MainFrame.ClipsDescendants = true
-
--- Tạo hiệu ứng bo tròn cho frame chính
-local UICorner = Instance.new("UICorner")
-UICorner.CornerRadius = UDim.new(0, 15)
-UICorner.Parent = MainFrame
-
--- Tạo hiệu ứng viền sáng
-local Stroke = Instance.new("UIStroke")
-Stroke.Parent = MainFrame
-Stroke.Color = Color3.fromRGB(255, 255, 255)
-Stroke.Transparency = 0.7
-Stroke.Thickness = 1.5
-
--- Tạo gradient màu cho nền
-local UIGradient = Instance.new("UIGradient")
-UIGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(60, 120, 255)),
-    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(100, 70, 255)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(180, 80, 255))
-})
-UIGradient.Rotation = 45
-UIGradient.Parent = MainFrame
-
--- Tạo TopBar
-local TopBar = Instance.new("Frame")
-TopBar.Name = "TopBar"
-TopBar.Parent = MainFrame
-TopBar.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-TopBar.BackgroundTransparency = 0.9
-TopBar.BorderSizePixel = 0
-TopBar.Size = UDim2.new(1, 0, 0, 40)
-
--- Tạo viền cho TopBar
-local TopBarStroke = Instance.new("UIStroke")
-TopBarStroke.Parent = TopBar
-TopBarStroke.Color = Color3.fromRGB(255, 255, 255)
-TopBarStroke.Transparency = 0.8
-TopBarStroke.Thickness = 1
-TopBarStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-
--- Tạo hiệu ứng bo tròn cho TopBar
-local UICornerTopBar = Instance.new("UICorner")
-UICornerTopBar.CornerRadius = UDim.new(0, 15)
-UICornerTopBar.Parent = TopBar
-
--- Logo Game
-local LogoFrame = Instance.new("Frame")
-LogoFrame.Name = "LogoFrame"
-LogoFrame.Parent = TopBar
-LogoFrame.BackgroundTransparency = 1
-LogoFrame.Position = UDim2.new(0, 10, 0, 0)
-LogoFrame.Size = UDim2.new(0, 40, 0, 40)
-
--- Logo hình ảnh
-local LogoImage = Instance.new("ImageLabel")
-LogoImage.Name = "LogoImage"
-LogoImage.Parent = LogoFrame
-LogoImage.BackgroundTransparency = 1
-LogoImage.Position = UDim2.new(0, 0, 0, 0)
-LogoImage.Size = UDim2.new(1, 0, 1, 0)
-LogoImage.Image = "rbxassetid://14513361054" -- Logo giả định, thay bằng ID ảnh thực tế
-LogoImage.ImageTransparency = 0.1
-
--- Tên Game
-local GameTitle = Instance.new("TextLabel")
-GameTitle.Name = "GameTitle"
-GameTitle.Parent = TopBar
-GameTitle.BackgroundTransparency = 1
-GameTitle.Position = UDim2.new(0, 60, 0, 0)
-GameTitle.Size = UDim2.new(0, 200, 1, 0)
-GameTitle.Font = Enum.Font.GothamBold
-GameTitle.Text = "ARISE CROSSOVER"
-GameTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-GameTitle.TextSize = 18
-GameTitle.TextXAlignment = Enum.TextXAlignment.Left
-
--- Nút đóng
-local CloseButton = Instance.new("ImageButton")
-CloseButton.Name = "CloseButton"
-CloseButton.Parent = TopBar
-CloseButton.BackgroundTransparency = 1
-CloseButton.Position = UDim2.new(1, -40, 0.5, -15)
-CloseButton.Size = UDim2.new(0, 30, 0, 30)
-CloseButton.Image = "rbxassetid://7734010488" -- X icon
-CloseButton.ImageColor3 = Color3.fromRGB(255, 255, 255)
-CloseButton.ImageTransparency = 0.3
-
--- Nút thu nhỏ
-local MinimizeButton = Instance.new("ImageButton")
-MinimizeButton.Name = "MinimizeButton"
-MinimizeButton.Parent = TopBar
-MinimizeButton.BackgroundTransparency = 1
-MinimizeButton.Position = UDim2.new(1, -80, 0.5, -15)
-MinimizeButton.Size = UDim2.new(0, 30, 0, 30)
-MinimizeButton.Image = "rbxassetid://7734053495" -- Minimize icon
-MinimizeButton.ImageColor3 = Color3.fromRGB(255, 255, 255)
-MinimizeButton.ImageTransparency = 0.3
-
--- Container cho nội dung
-local ContentContainer = Instance.new("Frame")
-ContentContainer.Name = "ContentContainer"
-ContentContainer.Parent = MainFrame
-ContentContainer.BackgroundTransparency = 1
-ContentContainer.Position = UDim2.new(0, 0, 0, 40)
-ContentContainer.Size = UDim2.new(1, 0, 1, -40)
-
--- Sidebar
-local Sidebar = Instance.new("Frame")
-Sidebar.Name = "Sidebar"
-Sidebar.Parent = ContentContainer
-Sidebar.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-Sidebar.BackgroundTransparency = 0.9
-Sidebar.BorderSizePixel = 0
-Sidebar.Position = UDim2.new(0, 0, 0, 0)
-Sidebar.Size = UDim2.new(0, 150, 1, 0)
-
--- Hiệu ứng bo tròn cho Sidebar
-local UICornerSidebar = Instance.new("UICorner")
-UICornerSidebar.CornerRadius = UDim.new(0, 15)
-UICornerSidebar.Parent = Sidebar
-
--- Tạo cắt góc cho Sidebar chỉ bo tròn bên phải
-local SidebarCutout = Instance.new("Frame")
-SidebarCutout.Name = "SidebarCutout"
-SidebarCutout.Parent = Sidebar
-SidebarCutout.BackgroundColor3 = Sidebar.BackgroundColor3
-SidebarCutout.BackgroundTransparency = Sidebar.BackgroundTransparency
-SidebarCutout.BorderSizePixel = 0
-SidebarCutout.Position = UDim2.new(0, 0, 0, 0)
-SidebarCutout.Size = UDim2.new(0.5, 0, 1, 0)
-
--- Tạo danh sách tab
-local TabButtons = {}
-local TabFrames = {}
-local tabList = {"General", "Dungeon", "Jeju Island", "Extra", "Teleport", "Webhook"}
-
--- Container cho tab buttons trên sidebar
-local TabsContainer = Instance.new("Frame")
-TabsContainer.Name = "TabsContainer"
-TabsContainer.Parent = Sidebar
-TabsContainer.BackgroundTransparency = 1
-TabsContainer.Position = UDim2.new(0, 0, 0, 20)
-TabsContainer.Size = UDim2.new(1, 0, 0, #tabList * 50)
-
--- Tạo các tab
-for i, tabName in ipairs(tabList) do
-    -- Tab button
-    local TabButton = Instance.new("TextButton")
-    TabButton.Name = tabName.."Tab"
-    TabButton.Parent = TabsContainer
-    TabButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    TabButton.BackgroundTransparency = 0.95
-    TabButton.Position = UDim2.new(0, 10, 0, (i-1) * 50)
-    TabButton.Size = UDim2.new(1, -20, 0, 40)
-    TabButton.Font = Enum.Font.GothamSemibold
-    TabButton.Text = tabName
-    TabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TabButton.TextSize = 14
-    TabButton.TextTransparency = 0.2
-    
-    -- Bo tròn cho button
-    local TabButtonCorner = Instance.new("UICorner")
-    TabButtonCorner.CornerRadius = UDim.new(0, 10)
-    TabButtonCorner.Parent = TabButton
-    
-    -- Tab content frame
-    local TabContent = Instance.new("ScrollingFrame")
-    TabContent.Name = tabName.."Content"
-    TabContent.Parent = ContentContainer
-    TabContent.BackgroundTransparency = 1
-    TabContent.Position = UDim2.new(0, 160, 0, 10)
-    TabContent.Size = UDim2.new(1, -170, 1, -20)
-    TabContent.CanvasSize = UDim2.new(0, 0, 0, 0)
-    TabContent.ScrollBarThickness = 4
-    TabContent.ScrollBarImageColor3 = Color3.fromRGB(255, 255, 255)
-    TabContent.ScrollBarImageTransparency = 0.5
-    TabContent.Visible = (i == 1) -- Chỉ hiển thị tab đầu tiên
-    
-    -- Thêm vào bảng để dễ quản lý
-    TabButtons[tabName] = TabButton
-    TabFrames[tabName] = TabContent
-    
-    -- Thêm hiệu ứng cho nút tab
-    local function updateTabButtonState()
-        for name, button in pairs(TabButtons) do
-            if name == tabName and TabFrames[name].Visible then
-                -- Nút được chọn
-                TweenService:Create(button, TweenInfo.new(0.3), {
-                    BackgroundTransparency = 0.8,
-                    TextTransparency = 0
-                }):Play()
-            else
-                -- Nút không được chọn
-                TweenService:Create(button, TweenInfo.new(0.3), {
-                    BackgroundTransparency = 0.95,
-                    TextTransparency = 0.4
-                }):Play()
-            end
-        end
-    end
-    
-    -- Tab switch logic
-    TabButton.MouseButton1Click:Connect(function()
-        for _, frame in pairs(TabFrames) do
-            frame.Visible = false
-        end
-        
-        TabFrames[tabName].Visible = true
-        updateTabButtonState()
-    end)
-    
-    -- Khởi tạo trạng thái ban đầu
-    updateTabButtonState()
-end
-
--- Tạo hàm giúp tạo dropdown
-local function createDropdown(parent, position, size, options, defaultText)
-    -- Container chính
-    local dropdown = Instance.new("Frame")
-    dropdown.Name = "Dropdown"
-    dropdown.Parent = parent
-    dropdown.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-    dropdown.BackgroundTransparency = 0.5
-    dropdown.Position = position
-    dropdown.Size = size
-    dropdown.ClipsDescendants = true
-    
-    -- Bo tròn
-    local UICornerDropdown = Instance.new("UICorner")
-    UICornerDropdown.CornerRadius = UDim.new(0, 8)
-    UICornerDropdown.Parent = dropdown
-    
-    -- Viền
-    local UIStrokeDropdown = Instance.new("UIStroke")
-    UIStrokeDropdown.Parent = dropdown
-    UIStrokeDropdown.Color = Color3.fromRGB(0, 255, 255)
-    UIStrokeDropdown.Transparency = 0.8
-    UIStrokeDropdown.Thickness = 1
-    
-    -- Nút chính
-    local dropdownButton = Instance.new("TextButton")
-    dropdownButton.Name = "DropdownButton"
-    dropdownButton.Parent = dropdown
-    dropdownButton.BackgroundTransparency = 1
-    dropdownButton.Size = UDim2.new(1, 0, 1, 0)
-    dropdownButton.Font = Enum.Font.GothamSemibold
-    dropdownButton.Text = defaultText
-    dropdownButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    dropdownButton.TextSize = 14
-    
-    -- Icon mũi tên
-    local arrowIcon = Instance.new("TextLabel")
-    arrowIcon.Name = "ArrowIcon"
-    arrowIcon.Parent = dropdown
-    arrowIcon.BackgroundTransparency = 1
-    arrowIcon.Position = UDim2.new(1, -30, 0, 0)
-    arrowIcon.Size = UDim2.new(0, 30, 1, 0)
-    arrowIcon.Font = Enum.Font.GothamBold
-    arrowIcon.Text = "▼"
-    arrowIcon.TextColor3 = Color3.fromRGB(255, 255, 255)
-    arrowIcon.TextSize = 14
-    
-    -- Tạo dropdown items container
-    local itemsContainer = Instance.new("Frame")
-    itemsContainer.Name = "ItemsContainer"
-    itemsContainer.Parent = dropdown
-    itemsContainer.BackgroundColor3 = dropdown.BackgroundColor3
-    itemsContainer.BackgroundTransparency = 0.3
-    itemsContainer.Position = UDim2.new(0, 0, 1, 5)
-    itemsContainer.Size = UDim2.new(1, 0, 0, #options * 30)
-    itemsContainer.Visible = false
-    itemsContainer.ZIndex = 10
-    
-    -- Bo tròn
-    local UICornerItems = Instance.new("UICorner")
-    UICornerItems.CornerRadius = UDim.new(0, 8)
-    UICornerItems.Parent = itemsContainer
-    
-    -- Viền
-    local UIStrokeItems = Instance.new("UIStroke")
-    UIStrokeItems.Parent = itemsContainer
-    UIStrokeItems.Color = UIStrokeDropdown.Color
-    UIStrokeItems.Transparency = UIStrokeDropdown.Transparency
-    UIStrokeItems.Thickness = UIStrokeDropdown.Thickness
-    
-    -- Tạo các option
-    for i, option in ipairs(options) do
-        local optionButton = Instance.new("TextButton")
-        optionButton.Name = "Option"..i
-        optionButton.Parent = itemsContainer
-        optionButton.BackgroundTransparency = 1
-        optionButton.Position = UDim2.new(0, 0, 0, (i-1) * 30)
-        optionButton.Size = UDim2.new(1, 0, 0, 30)
-        optionButton.Font = Enum.Font.Gotham
-        optionButton.Text = option
-        optionButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-        optionButton.TextSize = 14
-        optionButton.ZIndex = 10
-        
-        -- Hiệu ứng hover
-        optionButton.MouseEnter:Connect(function()
-            TweenService:Create(optionButton, TweenInfo.new(0.3), {
-                BackgroundTransparency = 0.9
-            }):Play()
-        end)
-        
-        optionButton.MouseLeave:Connect(function()
-            TweenService:Create(optionButton, TweenInfo.new(0.3), {
-                BackgroundTransparency = 1
-            }):Play()
-        end)
-        
-        -- Khi click vào option
-        optionButton.MouseButton1Click:Connect(function()
-            dropdownButton.Text = option
-            itemsContainer.Visible = false
-        end)
-    end
-    
-    -- Hiệu ứng đóng mở dropdown
-    local dropdownOpen = false
-    dropdownButton.MouseButton1Click:Connect(function()
-        dropdownOpen = not dropdownOpen
-        itemsContainer.Visible = dropdownOpen
-        
-        if dropdownOpen then
-            TweenService:Create(arrowIcon, TweenInfo.new(0.3), {
-                Rotation = 180
-            }):Play()
-        else
-            TweenService:Create(arrowIcon, TweenInfo.new(0.3), {
-                Rotation = 0
-            }):Play()
-        end
-    end)
-    
-    return dropdown, dropdownButton
-end
-
--- Tạo hàm giúp tạo toggle switch
-local function createToggleSwitch(parent, position, text)
-    -- Container chính
-    local toggleContainer = Instance.new("Frame")
-    toggleContainer.Name = "ToggleContainer"
-    toggleContainer.Parent = parent
-    toggleContainer.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
-    toggleContainer.BackgroundTransparency = 0.5
-    toggleContainer.Position = position
-    toggleContainer.Size = UDim2.new(1, -10, 0, 40)
-    
-    -- Bo tròn
-    local UICornerToggle = Instance.new("UICorner")
-    UICornerToggle.CornerRadius = UDim.new(0, 8)
-    UICornerToggle.Parent = toggleContainer
-    
-    -- Viền 
-    local UIStrokeToggle = Instance.new("UIStroke")
-    UIStrokeToggle.Parent = toggleContainer
-    UIStrokeToggle.Color = Color3.fromRGB(0, 255, 255)
-    UIStrokeToggle.Transparency = 0.8
-    UIStrokeToggle.Thickness = 1
-    
-    -- Label
-    local toggleLabel = Instance.new("TextLabel")
-    toggleLabel.Name = "ToggleLabel"
-    toggleLabel.Parent = toggleContainer
-    toggleLabel.BackgroundTransparency = 1
-    toggleLabel.Position = UDim2.new(0, 10, 0, 0)
-    toggleLabel.Size = UDim2.new(1, -90, 1, 0)
-    toggleLabel.Font = Enum.Font.GothamSemibold
-    toggleLabel.Text = text
-    toggleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    toggleLabel.TextSize = 14
-    toggleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    
-    -- Toggle Background
-    local toggleBackground = Instance.new("Frame")
-    toggleBackground.Name = "ToggleBackground"
-    toggleBackground.Parent = toggleContainer
-    toggleBackground.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
-    toggleBackground.Position = UDim2.new(1, -80, 0.5, -15)
-    toggleBackground.Size = UDim2.new(0, 70, 0, 30)
-    
-    -- Bo tròn
-    local UICornerToggleBG = Instance.new("UICorner")
-    UICornerToggleBG.CornerRadius = UDim.new(1, 0)
-    UICornerToggleBG.Parent = toggleBackground
-    
-    -- Circle
-    local toggleCircle = Instance.new("Frame")
-    toggleCircle.Name = "ToggleCircle"
-    toggleCircle.Parent = toggleBackground
-    toggleCircle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    toggleCircle.Position = UDim2.new(0, 5, 0.5, -10)
-    toggleCircle.Size = UDim2.new(0, 20, 0, 20)
-    
-    -- Bo tròn
-    local UICornerCircle = Instance.new("UICorner")
-    UICornerCircle.CornerRadius = UDim.new(1, 0)
-    UICornerCircle.Parent = toggleCircle
-    
-    -- Tạo toggle button
-    local toggleButton = Instance.new("TextButton")
-    toggleButton.Name = "ToggleButton"
-    toggleButton.Parent = toggleBackground
-    toggleButton.BackgroundTransparency = 1
-    toggleButton.Size = UDim2.new(1, 0, 1, 0)
-    toggleButton.Text = ""
-    
-    -- Toggle state
-    local toggleEnabled = false
-    
-    -- Toggle logic
-    toggleButton.MouseButton1Click:Connect(function()
-        toggleEnabled = not toggleEnabled
-        
-        if toggleEnabled then
-            TweenService:Create(toggleBackground, TweenInfo.new(0.3), {
-                BackgroundColor3 = Color3.fromRGB(0, 255, 255)
-            }):Play()
-            
-            TweenService:Create(toggleCircle, TweenInfo.new(0.3), {
-                Position = UDim2.new(1, -25, 0.5, -10)
-            }):Play()
-        else
-            TweenService:Create(toggleBackground, TweenInfo.new(0.3), {
-                BackgroundColor3 = Color3.fromRGB(40, 40, 60)
-            }):Play()
-            
-            TweenService:Create(toggleCircle, TweenInfo.new(0.3), {
-                Position = UDim2.new(0, 5, 0.5, -10)
-            }):Play()
-        end
-    end)
-    
-    return toggleContainer, toggleButton, toggleEnabled
-end
-
--- ===== TAB GENERAL =====
-local GeneralTab = TabFrames["General"]
-
--- Island Dropdown
-local islandOptions = {"Leveling City", "Grass Village", "Brum Island", "Faceheal Town", "Lucky Kingdom", "Nipon City", "Mori Town"}
-local islandDropdown, islandButton = createDropdown(
-    GeneralTab, 
-    UDim2.new(0, 0, 0, 10), 
-    UDim2.new(1, -10, 0, 40), 
-    islandOptions, 
-    "Select Island : Leveling City"
-)
-
--- Enemy Dropdown
-local enemyOptions = {"None", "Marine", "Prisoner", "Marine Officer", "Warden"}
-local enemyDropdown, enemyButton = createDropdown(
-    GeneralTab, 
-    UDim2.new(0, 0, 0, 60), 
-    UDim2.new(1, -10, 0, 40), 
-    enemyOptions, 
-    "Select Enemy : [ None ]"
-)
-
--- Method Dropdown
-local methodOptions = {"Running", "Tween", "Teleport"}
-local methodDropdown, methodButton = createDropdown(
-    GeneralTab, 
-    UDim2.new(0, 0, 0, 110), 
-    UDim2.new(1, -10, 0, 40), 
-    methodOptions, 
-    "Select Method : Running"
-)
-
--- Result Dropdown
-local resultOptions = {"Destroy", "Arise", "Collect"}
-local resultDropdown, resultButton = createDropdown(
-    GeneralTab, 
-    UDim2.new(0, 0, 0, 160), 
-    UDim2.new(1, -10, 0, 40), 
-    resultOptions, 
-    "Select Result : Destroy"
-)
-
--- Auto Farm Enemy Toggle
-local autoFarmToggle, autoFarmButton = createToggleSwitch(
-    GeneralTab,
-    UDim2.new(0, 0, 0, 210),
-    "Auto Farm Enemy"
-)
-
--- Send Pet To Enemy Toggle
-local sendPetToggle, sendPetButton = createToggleSwitch(
-    GeneralTab,
-    UDim2.new(0, 0, 0, 260),
-    "Send Pet To Enemy"
-)
-
--- Set Canvas Size for General Tab
-GeneralTab.CanvasSize = UDim2.new(0, 0, 0, 310)
-
--- ===== TAB DUNGEON =====
-local DungeonTab = TabFrames["Dungeon"]
-
--- Header Info
-local islandInfoLabel = Instance.new("TextLabel")
-islandInfoLabel.Name = "IslandInfoLabel"
-islandInfoLabel.Parent = DungeonTab
-islandInfoLabel.BackgroundTransparency = 1
-islandInfoLabel.Position = UDim2.new(0, 5, 0, 10)
-islandInfoLabel.Size = UDim2.new(1, -10, 0, 30)
-islandInfoLabel.Font = Enum.Font.GothamBold
-islandInfoLabel.Text = "Island : N/a , Rank : N/a"
-islandInfoLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-islandInfoLabel.TextSize = 16
-islandInfoLabel.TextXAlignment = Enum.TextXAlignment.Left
-
--- Rank Dropdown
-local rankOptions = {"None", "Bronze", "Silver", "Gold", "Platinum"}
-local rankDropdown, rankButton = createDropdown(
-    DungeonTab, 
-    UDim2.new(0, 0, 0, 50), 
-    UDim2.new(1, -10, 0, 40), 
-    rankOptions, 
-    "Select Rank : [ None ]"
-)
-
--- Map Dropdown
-local mapOptions = {"None", "Ninja Village", "Pirate Island", "Hero City"}
-local mapDropdown, mapButton = createDropdown(
-    DungeonTab, 
-    UDim2.new(0, 0, 0, 100), 
-    UDim2.new(1, -10, 0, 40), 
-    mapOptions, 
-    "Select Map : [ None ]"
-)
-
--- Auto Join Dungeon Toggle
-local autoJoinToggle, autoJoinButton = createToggleSwitch(
-    DungeonTab,
-    UDim2.new(0, 0, 0, 150),
-    "Auto Join Dungeon"
-)
-
--- Separator
-local separator1 = Instance.new("Frame")
-separator1.Name = "Separator1"
-separator1.Parent = DungeonTab
-separator1.BackgroundColor3 = Color3.fromRGB(0, 255, 255)
-separator1.BackgroundTransparency = 0.8
-separator1.Position = UDim2.new(0, 0, 0, 200)
-separator1.Size = UDim2.new(1, -10, 0, 1)
-
--- Currency Dropdown
-local currencyOptions = {"Gems", "Coins", "Tickets"}
-local currencyDropdown, currencyButton = createDropdown(
-    DungeonTab, 
-    UDim2.new(0, 0, 0, 210), 
-    UDim2.new(1, -10, 0, 40), 
-    currencyOptions, 
-    "Select Buy : Gems"
-)
-
--- Auto Buy Ticket Toggle
-local autoBuyToggle, autoBuyButton = createToggleSwitch(
-    DungeonTab,
-    UDim2.new(0, 0, 0, 260),
-    "Auto Buy Ticket"
-)
-
--- Separator
-local separator2 = Instance.new("Frame")
-separator2.Name = "Separator2"
-separator2.Parent = DungeonTab
-separator2.BackgroundColor3 = Color3.fromRGB(0, 255, 255)
-separator2.BackgroundTransparency = 0.8
-separator2.Position = UDim2.new(0, 0, 0, 310)
-separator2.Size = UDim2.new(1, -10, 0, 1)
-
--- Auto Farm Dungeon Toggle
-local farmDungeonToggle, farmDungeonButton = createToggleSwitch(
-    DungeonTab,
-    UDim2.new(0, 0, 0, 320),
-    "Auto Farm Dungeon"
-)
-
--- Send Pet Toggle
-local dungeonPetToggle, dungeonPetButton = createToggleSwitch(
-    DungeonTab,
-    UDim2.new(0, 0, 0, 370),
-    "Send Pet To Enemy"
-)
-
--- Result Dropdown
-local dungeonResultOptions = {"Destroy", "Arise", "Collect"}
-local dungeonResultDropdown, dungeonResultButton = createDropdown(
-    DungeonTab, 
-    UDim2.new(0, 0, 0, 420), 
-    UDim2.new(1, -10, 0, 40), 
-    dungeonResultOptions, 
-    "Select Result : Destroy"
-)
-
--- Set Canvas Size for Dungeon Tab
-DungeonTab.CanvasSize = UDim2.new(0, 0, 0, 470)
-
--- ===== TAB JEJU ISLAND =====
-local JejuTab = TabFrames["Jeju Island"]
-
--- Method Dropdown
-local jejuMethodOptions = {"Running", "Tween", "Teleport"}
-local jejuMethodDropdown, jejuMethodButton = createDropdown(
-    JejuTab, 
-    UDim2.new(0, 0, 0, 10), 
-    UDim2.new(1, -10, 0, 40), 
-    jejuMethodOptions, 
-    "Select Method : Tween"
-)
-
--- Kill Method Dropdown
-local killMethodOptions = {"None", "Normal", "Skill"}
-local killMethodDropdown, killMethodButton = createDropdown(
-    JejuTab, 
-    UDim2.new(0, 0, 0, 60), 
-    UDim2.new(1, -10, 0, 40), 
-    killMethodOptions, 
-    "Select Method [Kill] : [ None ]"
-)
-
--- Result Dropdown
-local jejuResultOptions = {"Destroy", "Arise", "Collect"}
-local jejuResultDropdown, jejuResultButton = createDropdown(
-    JejuTab, 
-    UDim2.new(0, 0, 0, 110), 
-    UDim2.new(1, -10, 0, 40), 
-    jejuResultOptions, 
-    "Select Result : Arise"
-)
-
--- Auto Farm Jeju Toggle
-local autoFarmJejuToggle, autoFarmJejuButton = createToggleSwitch(
-    JejuTab,
-    UDim2.new(0, 0, 0, 160),
-    "Auto Farm Jeju"
-)
-
--- Send Pet To Enemy Toggle
-local jejuPetToggle, jejuPetButton = createToggleSwitch(
-    JejuTab,
-    UDim2.new(0, 0, 0, 210),
-    "Send Pet To Enemy"
-)
-
--- Info Text
-local infoLabel = Instance.new("TextLabel")
-infoLabel.Name = "InfoLabel"
-infoLabel.Parent = JejuTab
-infoLabel.BackgroundTransparency = 1
-infoLabel.Position = UDim2.new(0, 5, 0, 260)
-infoLabel.Size = UDim2.new(1, -10, 0, 30)
-infoLabel.Font = Enum.Font.GothamSemibold
-infoLabel.Text = "Can use other func at same time"
-infoLabel.TextColor3 = Color3.fromRGB(0, 255, 255)
-infoLabel.TextSize = 14
-infoLabel.TextXAlignment = Enum.TextXAlignment.Left
-
--- Set Canvas Size for Jeju Tab
-JejuTab.CanvasSize = UDim2.new(0, 0, 0, 300)
-
--- ===== TAB EXTRA =====
-local ExtraTab = TabFrames["Extra"]
-
--- Auto Attack Toggle
-local autoAttackToggle, autoAttackButton = createToggleSwitch(
-    ExtraTab,
-    UDim2.new(0, 0, 0, 10),
-    "Auto Attack (Send Pet, Click)"
-)
-
--- Auto Take Result Toggle
-local autoTakeToggle, autoTakeButton = createToggleSwitch(
-    ExtraTab,
-    UDim2.new(0, 0, 0, 60),
-    "Auto Take Result (Use With Auto Attack Only)"
-)
-
--- Result Dropdown
-local attackResultOptions = {"Destroy", "Arise", "Collect"}
-local attackResultDropdown, attackResultButton = createDropdown(
-    ExtraTab, 
-    UDim2.new(0, 0, 0, 110), 
-    UDim2.new(1, -10, 0, 40), 
-    attackResultOptions, 
-    "Select Result : Arise"
-)
-
--- Attack Type Dropdown
-local attackTypeOptions = {"Animation", "Normal", "Special"}
-local attackTypeDropdown, attackTypeButton = createDropdown(
-    ExtraTab, 
-    UDim2.new(0, 0, 0, 160), 
-    UDim2.new(1, -10, 0, 40), 
-    attackTypeOptions, 
-    "Select Attack Type : Animation"
-)
-
--- Separator
-local separator3 = Instance.new("Frame")
-separator3.Name = "Separator3"
-separator3.Parent = ExtraTab
-separator3.BackgroundColor3 = Color3.fromRGB(0, 255, 255)
-separator3.BackgroundTransparency = 0.8
-separator3.Position = UDim2.new(0, 0, 0, 210)
-separator3.Size = UDim2.new(1, -10, 0, 1)
-
--- Auto Upgrade Rank Toggle
-local autoUpgradeToggle, autoUpgradeButton = createToggleSwitch(
-    ExtraTab,
-    UDim2.new(0, 0, 0, 220),
-    "Auto Upgrade Rank"
-)
-
--- Auto Find Mount Toggle
-local autoMountToggle, autoMountButton = createToggleSwitch(
-    ExtraTab,
-    UDim2.new(0, 0, 0, 270),
-    "Auto Find Mount"
-)
-
--- Separator
-local separator4 = Instance.new("Frame")
-separator4.Name = "Separator4"
-separator4.Parent = ExtraTab
-separator4.BackgroundColor3 = Color3.fromRGB(0, 255, 255)
-separator4.BackgroundTransparency = 0.8
-separator4.Position = UDim2.new(0, 0, 0, 320)
-separator4.Size = UDim2.new(1, -10, 0, 1)
-
--- Dash No CD Toggle
-local dashNoCDToggle, dashNoCDButton = createToggleSwitch(
-    ExtraTab,
-    UDim2.new(0, 0, 0, 330),
-    "Dash No CD"
-)
-
--- Set default to enabled with cyan color
-TweenService:Create(dashNoCDToggle:FindFirstChild("ToggleBackground"), TweenInfo.new(0.3), {
-    BackgroundColor3 = Color3.fromRGB(0, 255, 255)
-}):Play()
-
-TweenService:Create(dashNoCDToggle:FindFirstChild("ToggleBackground"):FindFirstChild("ToggleCircle"), TweenInfo.new(0.3), {
-    Position = UDim2.new(1, -25, 0.5, -10)
-}):Play()
-
--- Attack No CD Toggle
-local attackNoCDToggle, attackNoCDButton = createToggleSwitch(
-    ExtraTab,
-    UDim2.new(0, 0, 0, 380),
-    "Attack No CD (Just For Fun :D)"
-)
-
--- Set Canvas Size for Extra Tab
-ExtraTab.CanvasSize = UDim2.new(0, 0, 0, 430)
-
--- Chức năng tự động farm
-local function setupAutoFarm()
-    -- Mã logic cho tự động farm sẽ được thêm vào đây sau
-    print("Auto Farm đã được thiết lập")
-end
-
--- Kết nối chức năng với các nút
-autoFarmButton.MouseButton1Click:Connect(setupAutoFarm)
-autoJoinButton.MouseButton1Click:Connect(setupAutoFarm)
-autoFarmJejuButton.MouseButton1Click:Connect(setupAutoFarm)
-autoAttackButton.MouseButton1Click:Connect(setupAutoFarm)
-
--- Thay đổi giao diện/nội dung của GameTitle
-GameTitle.Text = "Arise Crossover"
-
--- ===== TAB TELEPORT =====
-local TeleportTab = TabFrames["Teleport"]
-
--- Tiêu đề Teleport
-local TeleportTitle = Instance.new("TextLabel")
-TeleportTitle.Name = "TeleportTitle"
-TeleportTitle.Parent = TeleportTab
-TeleportTitle.BackgroundTransparency = 1
-TeleportTitle.Position = UDim2.new(0, 0, 0, 0)
-TeleportTitle.Size = UDim2.new(1, 0, 0, 40)
-TeleportTitle.Font = Enum.Font.GothamBold
-TeleportTitle.Text = "Teleport To Islands"
-TeleportTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-TeleportTitle.TextSize = 20
-TeleportTitle.TextXAlignment = Enum.TextXAlignment.Left
-
--- Danh sách các địa điểm
-local teleportLocations = {
-    "Leveling City",
-    "Grass Village",
-    "Brum Island",
-    "Faceheal Town",
-    "Lucky Kingdom",
-    "Nipon City",
-    "Mori Town"
-}
-
--- Hàm tạo nút teleport
-local function createTeleportButton(text, parent, position)
-    local teleportButton = Instance.new("TextButton")
-    teleportButton.Name = text.."TeleportButton"
-    teleportButton.Parent = parent
-    teleportButton.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
-    teleportButton.BackgroundTransparency = 0.5
-    teleportButton.Position = position
-    teleportButton.Size = UDim2.new(1, -10, 0, 50)
-    teleportButton.Font = Enum.Font.GothamSemibold
-    teleportButton.Text = "Teleport To " .. text
-    teleportButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    teleportButton.TextSize = 16
-    
-    -- Bo tròn cho nút
-    local buttonCorner = Instance.new("UICorner")
-    buttonCorner.CornerRadius = UDim.new(0, 8)
-    buttonCorner.Parent = teleportButton
-    
-    -- Viền cho nút
-    local buttonStroke = Instance.new("UIStroke")
-    buttonStroke.Parent = teleportButton
-    buttonStroke.Color = Color3.fromRGB(0, 255, 255)
-    buttonStroke.Transparency = 0.8
-    buttonStroke.Thickness = 1
-    
-    -- Hiệu ứng hover
-    teleportButton.MouseEnter:Connect(function()
-        TweenService:Create(teleportButton, TweenInfo.new(0.3), {
-            BackgroundTransparency = 0.3
-        }):Play()
-    end)
-    
-    teleportButton.MouseLeave:Connect(function()
-        TweenService:Create(teleportButton, TweenInfo.new(0.3), {
-            BackgroundTransparency = 0.5
-        }):Play()
-    end)
-    
-    -- Hiệu ứng click
-    teleportButton.MouseButton1Down:Connect(function()
-        teleportButton.BackgroundColor3 = Color3.fromRGB(0, 200, 200)
-    end)
-    
-    teleportButton.MouseButton1Up:Connect(function()
-        teleportButton.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
-        print("Teleporting to " .. text)
-        showNotification("Đang dịch chuyển đến " .. text)
-    end)
-    
-    return teleportButton
-end
-
--- Tạo các nút teleport
-for i, location in ipairs(teleportLocations) do
-    createTeleportButton(location, TeleportTab, UDim2.new(0, 0, 0, i * 60 - 10))
-end
-
--- Thêm đường phân cách trước toggle AFKRewards
-local separatorAFK = Instance.new("Frame")
-separatorAFK.Name = "SeparatorAFK"
-separatorAFK.Parent = TeleportTab
-separatorAFK.BackgroundColor3 = Color3.fromRGB(0, 255, 255)
-separatorAFK.BackgroundTransparency = 0.8
-separatorAFK.Position = UDim2.new(0, 0, 0, (#teleportLocations * 60) + 10)
-separatorAFK.Size = UDim2.new(1, -10, 0, 1)
-
--- Thay thế nút AFKRewards bằng toggle switch
-local afkRewardsToggle, afkRewardsButton = createToggleSwitch(
-    TeleportTab,
-    UDim2.new(0, 0, 0, (#teleportLocations * 60) + 20),
-    "Auto Teleport To AFKRewards"
-)
-
--- Khi toggle được bật/tắt
-afkRewardsButton.MouseButton1Click:Connect(function()
-    -- Nếu vừa bật toggle, hiển thị thông báo
-    if afkRewardsToggle:FindFirstChild("ToggleBackground").BackgroundColor3 == Color3.fromRGB(0, 255, 255) then
-        showNotification("Đã bật tự động dịch chuyển đến AFKRewards")
-        print("Auto Teleport to AFKRewards: ON")
-        
-        -- Thêm chức năng Auto Teleport to AFKRewards
-        spawn(function()
-            local allowedPlaceId = 87039211657390 -- PlaceId mà script được phép chạy
-            
-            -- Kiểm tra nếu không đúng PlaceId thì dừng script
-            if game.PlaceId ~= allowedPlaceId then
-                return
-            end
-            
-            local TeleportService = game:GetService("TeleportService")
-            local Players = game:GetService("Players")
-            local placeId = 116614712661486 
-            local player = Players.LocalPlayer
-            
-            if not player then
-                repeat
-                    task.wait()
-                    player = Players.LocalPlayer
-                until player
-            end
-            
-            -- Kiểm tra nếu người chơi đã ở nơi cần đến
-            if game.PlaceId == placeId then
-                return -- Dừng script ngay lập tức nếu đã ở đúng nơi
-            end
-            
-            task.wait(30) -- Chờ 30 giây trước khi thực hiện teleport
-            
-            -- Kiểm tra lại nếu toggle vẫn đang bật
-            if afkRewardsToggle and afkRewardsToggle:FindFirstChild("ToggleBackground") and
-               afkRewardsToggle:FindFirstChild("ToggleBackground").BackgroundColor3 == Color3.fromRGB(0, 255, 255) then
-                local success, errorMessage = pcall(function()
-                    TeleportService:Teleport(placeId, player)
-                end)
-                
-                if not success then
-                    warn("Teleport failed: " .. errorMessage)
-                    showNotification("Dịch chuyển thất bại: " .. errorMessage)
-                end
-            end
-        end)
-    else
-        showNotification("Đã tắt tự động dịch chuyển đến AFKRewards")
-        print("Auto Teleport to AFKRewards: OFF")
-    end
-end)
-
--- Set Canvas Size for Teleport Tab
-TeleportTab.CanvasSize = UDim2.new(0, 0, 0, (#teleportLocations * 60) + 80)
-
--- Thêm hiệu ứng popup nhắc nhở
-local function showNotification(message)
-    local notification = Instance.new("Frame")
-    notification.Name = "Notification"
-    notification.Parent = AriseUI
-    notification.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
-    notification.BackgroundTransparency = 0.2
-    notification.BorderSizePixel = 0
-    notification.Position = UDim2.new(0.5, -150, 0, -50) -- Bắt đầu từ ngoài màn hình trên
-    notification.Size = UDim2.new(0, 300, 0, 50)
-    notification.ZIndex = 200
-
-    -- Bo tròn cho thông báo
-    local notifCorner = Instance.new("UICorner")
-    notifCorner.CornerRadius = UDim.new(0, 8)
-    notifCorner.Parent = notification
-
-    -- Viền cho thông báo
-    local notifStroke = Instance.new("UIStroke")
-    notifStroke.Parent = notification
-    notifStroke.Color = Color3.fromRGB(0, 255, 255)
-    notifStroke.Transparency = 0.5
-    notifStroke.Thickness = 1.5
-
-    -- Nội dung thông báo
-    local notifText = Instance.new("TextLabel")
-    notifText.Name = "NotificationText"
-    notifText.Parent = notification
-    notifText.BackgroundTransparency = 1
-    notifText.Position = UDim2.new(0, 10, 0, 0)
-    notifText.Size = UDim2.new(1, -20, 1, 0)
-    notifText.Font = Enum.Font.GothamSemibold
-    notifText.Text = message
-    notifText.TextColor3 = Color3.fromRGB(255, 255, 255)
-    notifText.TextSize = 16
-    notifText.ZIndex = 200
-
-    -- Hiệu ứng hiển thị
-    TweenService:Create(notification, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-        Position = UDim2.new(0.5, -150, 0, 20)
-    }):Play()
-
-    -- Tự động ẩn sau 3 giây
-    delay(3, function()
-        TweenService:Create(notification, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-            Position = UDim2.new(0.5, -150, 0, -50)
-        }):Play()
-        
-        delay(0.5, function()
-            notification:Destroy()
-        end)
-    end)
-end
-
--- Thêm nội dung cho tab Trang chủ
-local HomeTab
-if TabFrames["Trang chủ"] then
-    HomeTab = TabFrames["Trang chủ"]
-else
-    -- Nếu tab không tồn tại, bỏ qua phần tạo nội dung này
-    print("Tab 'Trang chủ' không tồn tại")
-end
-
--- Banner trò chơi
-local Banner = Instance.new("ImageLabel")
-Banner.Name = "Banner"
-Banner.Parent = HomeTab
-Banner.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-Banner.BackgroundTransparency = 0.5
-Banner.Position = UDim2.new(0, 0, 0, 0)
-Banner.Size = UDim2.new(1, 0, 0, 120)
-Banner.Image = "rbxassetid://14513378650" -- Banner giả định
-Banner.ScaleType = Enum.ScaleType.Crop
-
--- Bo tròn cho banner
-local BannerCorner = Instance.new("UICorner")
-BannerCorner.CornerRadius = UDim.new(0, 10)
-BannerCorner.Parent = Banner
-
--- Tiêu đề chào mừng
-local WelcomeTitle = Instance.new("TextLabel")
-WelcomeTitle.Name = "WelcomeTitle"
-WelcomeTitle.Parent = HomeTab
-WelcomeTitle.BackgroundTransparency = 1
-WelcomeTitle.Position = UDim2.new(0, 0, 0, 130)
-WelcomeTitle.Size = UDim2.new(1, 0, 0, 50)
-WelcomeTitle.Font = Enum.Font.GothamBold
-WelcomeTitle.Text = "Chào mừng đến Arise Crossover"
-WelcomeTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-WelcomeTitle.TextSize = 24
-WelcomeTitle.TextStrokeTransparency = 0.8
-
--- Mô tả
-local Description = Instance.new("TextLabel")
-Description.Name = "Description"
-Description.Parent = HomeTab
-Description.BackgroundTransparency = 1
-Description.Position = UDim2.new(0, 0, 0, 180)
-Description.Size = UDim2.new(1, 0, 0, 60)
-Description.Font = Enum.Font.Gotham
-Description.Text = "Điều khiển nhân vật của bạn, sử dụng chiêu thức đặc biệt và chiến đấu với người chơi khác trong thế giới của Arise Crossover."
-Description.TextColor3 = Color3.fromRGB(230, 230, 230)
-Description.TextSize = 16
-Description.TextWrapped = true
-
--- Nút bắt đầu
-local PlayButton = Instance.new("TextButton")
-PlayButton.Name = "PlayButton"
-PlayButton.Parent = HomeTab
-PlayButton.BackgroundColor3 = Color3.fromRGB(60, 120, 255)
-PlayButton.BackgroundTransparency = 0.2
-PlayButton.Position = UDim2.new(0.5, -100, 0, 260)
-PlayButton.Size = UDim2.new(0, 200, 0, 50)
-PlayButton.Font = Enum.Font.GothamBold
-PlayButton.Text = "CHƠI NGAY"
-PlayButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-PlayButton.TextSize = 18
-
--- Bo tròn cho nút chơi
-local PlayButtonCorner = Instance.new("UICorner")
-PlayButtonCorner.CornerRadius = UDim.new(0, 10)
-PlayButtonCorner.Parent = PlayButton
-
--- Hiệu ứng viền sáng cho nút chơi
-local PlayButtonStroke = Instance.new("UIStroke")
-PlayButtonStroke.Parent = PlayButton
-PlayButtonStroke.Color = Color3.fromRGB(120, 170, 255)
-PlayButtonStroke.Transparency = 0.5
-PlayButtonStroke.Thickness = 2
-
--- Thêm nội dung cho tab Chiêu thức
-local SkillTab 
-if TabFrames["Chiêu thức"] then
-    SkillTab = TabFrames["Chiêu thức"]
-else
-    -- Nếu tab không tồn tại, bỏ qua phần tạo nội dung này
-    print("Tab 'Chiêu thức' không tồn tại")
-end
-
--- Tiêu đề chiêu thức
-local SkillTitle = Instance.new("TextLabel")
-SkillTitle.Name = "SkillTitle"
-SkillTitle.Parent = SkillTab
-SkillTitle.BackgroundTransparency = 1
-SkillTitle.Position = UDim2.new(0, 0, 0, 0)
-SkillTitle.Size = UDim2.new(1, 0, 0, 40)
-SkillTitle.Font = Enum.Font.GothamBold
-SkillTitle.Text = "Chiêu Thức Của Bạn"
-SkillTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-SkillTitle.TextSize = 20
-
--- Danh sách chiêu thức
-local skills = {
-    {name = "Đòn đánh thường", description = "Tấn công cơ bản, gây sát thương nhỏ.", cooldown = "0.5s"},
-    {name = "Kỹ năng đặc biệt", description = "Tấn công phép thuật mạnh, gây sát thương khu vực.", cooldown = "5s"},
-    {name = "Chiêu cuối", description = "Chiêu thức mạnh nhất, gây sát thương lớn cho tất cả kẻ địch.", cooldown = "30s"},
-    {name = "Chiêu hỗ trợ", description = "Tăng tốc độ di chuyển và khả năng phòng thủ.", cooldown = "15s"}
-}
-
--- Tạo UI cho từng chiêu thức
-for i, skill in ipairs(skills) do
-    local SkillFrame = Instance.new("Frame")
-    SkillFrame.Name = "Skill"..i
-    SkillFrame.Parent = SkillTab
-    SkillFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
-    SkillFrame.BackgroundTransparency = 0.7
-    SkillFrame.Position = UDim2.new(0, 0, 0, 50 + (i-1) * 90)
-    SkillFrame.Size = UDim2.new(1, -10, 0, 80)
-
-    -- Bo tròn cho frame kỹ năng
-    local SkillFrameCorner = Instance.new("UICorner")
-    SkillFrameCorner.CornerRadius = UDim.new(0, 10)
-    SkillFrameCorner.Parent = SkillFrame
-
-    -- Viền sáng cho frame kỹ năng
-    local SkillFrameStroke = Instance.new("UIStroke")
-    SkillFrameStroke.Parent = SkillFrame
-    SkillFrameStroke.Color = Color3.fromRGB(100, 100, 255)
-    SkillFrameStroke.Transparency = 0.7
-    SkillFrameStroke.Thickness = 1.5
-
-    -- Icon kỹ năng
-    local SkillIcon = Instance.new("ImageLabel")
-    SkillIcon.Name = "SkillIcon"
-    SkillIcon.Parent = SkillFrame
-    SkillIcon.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-    SkillIcon.BackgroundTransparency = 0.5
-    SkillIcon.Position = UDim2.new(0, 10, 0.5, -30)
-    SkillIcon.Size = UDim2.new(0, 60, 0, 60)
-    SkillIcon.Image = "rbxassetid://14513390289" -- Thay bằng icon thực tế
-    
-    -- Bo tròn cho icon
-    local SkillIconCorner = Instance.new("UICorner")
-    SkillIconCorner.CornerRadius = UDim.new(0, 10)
-    SkillIconCorner.Parent = SkillIcon
-
-    -- Tên kỹ năng
-    local SkillName = Instance.new("TextLabel")
-    SkillName.Name = "SkillName"
-    SkillName.Parent = SkillFrame
-    SkillName.BackgroundTransparency = 1
-    SkillName.Position = UDim2.new(0, 80, 0, 5)
-    SkillName.Size = UDim2.new(1, -160, 0, 25)
-    SkillName.Font = Enum.Font.GothamBold
-    SkillName.Text = skill.name
-    SkillName.TextColor3 = Color3.fromRGB(255, 255, 255)
-    SkillName.TextSize = 16
-    SkillName.TextXAlignment = Enum.TextXAlignment.Left
-
-    -- Mô tả kỹ năng
-    local SkillDescription = Instance.new("TextLabel")
-    SkillDescription.Name = "SkillDescription"
-    SkillDescription.Parent = SkillFrame
-    SkillDescription.BackgroundTransparency = 1
-    SkillDescription.Position = UDim2.new(0, 80, 0, 30)
-    SkillDescription.Size = UDim2.new(1, -160, 0, 25)
-    SkillDescription.Font = Enum.Font.Gotham
-    SkillDescription.Text = skill.description
-    SkillDescription.TextColor3 = Color3.fromRGB(200, 200, 200)
-    SkillDescription.TextSize = 12
-    SkillDescription.TextXAlignment = Enum.TextXAlignment.Left
-    SkillDescription.TextWrapped = true
-
-    -- Thời gian hồi chiêu
-    local SkillCooldown = Instance.new("TextLabel")
-    SkillCooldown.Name = "SkillCooldown"
-    SkillCooldown.Parent = SkillFrame
-    SkillCooldown.BackgroundTransparency = 1
-    SkillCooldown.Position = UDim2.new(0, 80, 0, 55)
-    SkillCooldown.Size = UDim2.new(0, 100, 0, 20)
-    SkillCooldown.Font = Enum.Font.GothamBold
-    SkillCooldown.Text = "Hồi chiêu: " .. skill.cooldown
-    SkillCooldown.TextColor3 = Color3.fromRGB(150, 200, 255)
-    SkillCooldown.TextSize = 12
-    SkillCooldown.TextXAlignment = Enum.TextXAlignment.Left
-
-    -- Nút kích hoạt kỹ năng
-    local SkillButton = Instance.new("TextButton")
-    SkillButton.Name = "SkillButton"
-    SkillButton.Parent = SkillFrame
-    SkillButton.BackgroundColor3 = Color3.fromRGB(80, 120, 255)
-    SkillButton.BackgroundTransparency = 0.3
-    SkillButton.Position = UDim2.new(1, -70, 0.5, -15)
-    SkillButton.Size = UDim2.new(0, 60, 0, 30)
-    SkillButton.Font = Enum.Font.GothamBold
-    SkillButton.Text = "TRANG BỊ"
-    SkillButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    SkillButton.TextSize = 12
-
-    -- Bo tròn cho nút
-    local SkillButtonCorner = Instance.new("UICorner")
-    SkillButtonCorner.CornerRadius = UDim.new(0, 6)
-    SkillButtonCorner.Parent = SkillButton
-end
-
--- Cập nhật CanvasSize cho tab Skills
-if SkillTab then
-    SkillTab.CanvasSize = UDim2.new(0, 0, 0, 50 + #skills * 90)
-end
-
--- Thêm hiệu ứng đồ họa - hạt lấp lánh
-local ParticleEmitter = Instance.new("Frame")
-ParticleEmitter.Name = "ParticleEmitter"
-ParticleEmitter.Parent = MainFrame
-ParticleEmitter.BackgroundTransparency = 1
-ParticleEmitter.Size = UDim2.new(1, 0, 1, 0)
-ParticleEmitter.ZIndex = 0
-
--- Hàm tạo hạt lấp lánh
-local function createParticle()
-    local particle = Instance.new("Frame")
-    particle.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-    particle.BackgroundTransparency = math.random(40, 80)/100
-    particle.BorderSizePixel = 0
-    particle.Size = UDim2.new(0, math.random(2, 4), 0, math.random(2, 4))
-    particle.Position = UDim2.new(math.random(0, 100)/100, 0, math.random(0, 100)/100, 0)
-    particle.Parent = ParticleEmitter
-    
-    -- Bo tròn cho hạt
-    local particleCorner = Instance.new("UICorner")
-    particleCorner.CornerRadius = UDim.new(1, 0)
-    particleCorner.Parent = particle
-    
-    -- Hiệu ứng di chuyển và mờ dần
-    spawn(function()
-        local duration = math.random(3, 8)
-        local startTime = tick()
-        
-        while tick() - startTime < duration do
-            local delta = tick() - startTime
-            local progress = delta / duration
-            
-            particle.Position = UDim2.new(
-                particle.Position.X.Scale,
-                particle.Position.X.Offset,
-                particle.Position.Y.Scale + (0.02 * delta/duration), 
-                particle.Position.Y.Offset
-            )
-            
-            particle.BackgroundTransparency = 0.4 + (0.6 * progress)
-            
-            RunService.Heartbeat:Wait()
-        end
-        
-        particle:Destroy()
-    end)
-    
-    return particle
-end
-
--- Tạo hạt liên tục
-spawn(function()
-    while wait(0.3) do
-        if MainFrame.Parent then
-            createParticle()
-        else
-            break
-        end
-    end
-end)
-
--- Hiệu ứng mở UI
-MainFrame.Position = UDim2.new(0.5, -300, 1.5, 0)
-BlurEffect.Size = 0
-
--- Tween mở UI
-local openTween = TweenInfo.new(0.8, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
-local blurTween = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-
-TweenService:Create(MainFrame, openTween, {Position = UDim2.new(0.5, -300, 0.5, -200)}):Play()
-TweenService:Create(BlurEffect, blurTween, {Size = 10}):Play()
-TweenService:Create(BlurBackground, blurTween, {BackgroundTransparency = 0.7}):Play()
-
--- Hiệu ứng đóng UI
-CloseButton.MouseButton1Click:Connect(function()
-    local closeTween = TweenInfo.new(0.6, Enum.EasingStyle.Back, Enum.EasingDirection.In)
-    local unblurTween = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-    
-    TweenService:Create(MainFrame, closeTween, {Position = UDim2.new(0.5, -300, 1.5, 0)}):Play()
-    TweenService:Create(BlurEffect, unblurTween, {Size = 0}):Play()
-    TweenService:Create(BlurBackground, unblurTween, {BackgroundTransparency = 1}):Play()
-    
-    wait(0.7)
-    AriseUI:Destroy()
-    BlurEffect:Destroy()
-end)
-
--- Hiệu ứng thu nhỏ UI
-local minimized = false
-MinimizeButton.MouseButton1Click:Connect(function()
-    minimized = not minimized
-    
-    local sizeTween = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-    
-    if minimized then
-        TweenService:Create(MainFrame, sizeTween, {Size = UDim2.new(0, 600, 0, 40)}):Play()
-        ContentContainer.Visible = false
-    else
-        TweenService:Create(MainFrame, sizeTween, {Size = UDim2.new(0, 600, 0, 400)}):Play()
-        ContentContainer.Visible = true
-    end
-end)
-
--- Hiệu ứng kéo thả UI
-local dragging = false
-local dragInput, dragStart, startPos
-
-local function updateDrag(input)
-    local delta = input.Position - dragStart
-    MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-end
-
-TopBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = MainFrame.Position
-        
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
-    end
-end)
-
-TopBar.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        dragInput = input
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        updateDrag(input)
-    end
-end)
-
--- Thêm hiệu ứng hover cho các nút
-local function applyButtonHoverEffect(button)
-    local originalTransparency = button.BackgroundTransparency
-    local originalColor = button.BackgroundColor3
-    
-    button.MouseEnter:Connect(function()
-        TweenService:Create(button, TweenInfo.new(0.3), {
-            BackgroundTransparency = originalTransparency - 0.2,
-            BackgroundColor3 = Color3.new(
-                math.min(originalColor.R + 0.1, 1),
-                math.min(originalColor.G + 0.1, 1),
-                math.min(originalColor.B + 0.1, 1)
-            )
-        }):Play()
-    end)
-    
-    button.MouseLeave:Connect(function()
-        TweenService:Create(button, TweenInfo.new(0.3), {
-            BackgroundTransparency = originalTransparency,
-            BackgroundColor3 = originalColor
-        }):Play()
-    end)
-end
-
--- Áp dụng hiệu ứng cho nút Play
-applyButtonHoverEffect(PlayButton)
-
--- Áp dụng hiệu ứng cho các tab button
-for _, button in pairs(TabButtons) do
-    applyButtonHoverEffect(button)
-end
-
-print("Arise Crossover UI đã được tải với các chức năng mới!")
-
--- ===== TAB WEBHOOK =====
-local WebhookTab = TabFrames["Webhook"]
-
--- Nhãn tiêu đề
-local WebhookTitle = Instance.new("TextLabel")
-WebhookTitle.Name = "WebhookTitle"
-WebhookTitle.Parent = WebhookTab
-WebhookTitle.BackgroundTransparency = 1
-WebhookTitle.Position = UDim2.new(0, 0, 0, 0)
-WebhookTitle.Size = UDim2.new(1, 0, 0, 40)
-WebhookTitle.Font = Enum.Font.GothamBold
-WebhookTitle.Text = "Discord Webhook Configuration"
-WebhookTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-WebhookTitle.TextSize = 20
-WebhookTitle.TextXAlignment = Enum.TextXAlignment.Left
-
--- Nhãn URL
-local urlLabel = Instance.new("TextLabel")
-urlLabel.Name = "UrlLabel"
-urlLabel.Parent = WebhookTab
-urlLabel.BackgroundTransparency = 1
-urlLabel.Position = UDim2.new(0, 5, 0, 50)
-urlLabel.Size = UDim2.new(0, 100, 0, 25)
-urlLabel.Font = Enum.Font.GothamSemibold
-urlLabel.Text = "Webhook URL:"
-urlLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-urlLabel.TextSize = 14
-urlLabel.TextXAlignment = Enum.TextXAlignment.Left
-
--- Textbox cho Webhook URL
-local urlInput = Instance.new("TextBox")
-urlInput.Name = "UrlInput"
-urlInput.Parent = WebhookTab
-urlInput.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
-urlInput.BackgroundTransparency = 0.5
-urlInput.Position = UDim2.new(0, 0, 0, 80)
-urlInput.Size = UDim2.new(1, -10, 0, 40)
-urlInput.Font = Enum.Font.Gotham
-urlInput.PlaceholderText = "Nhập URL webhook Discord..."
-urlInput.Text = ""
-urlInput.TextColor3 = Color3.fromRGB(255, 255, 255)
-urlInput.TextSize = 14
-urlInput.ClearTextOnFocus = false
-
--- Bo tròn cho textbox
-local urlInputCorner = Instance.new("UICorner")
-urlInputCorner.CornerRadius = UDim.new(0, 8)
-urlInputCorner.Parent = urlInput
-
--- Viền cho textbox
-local urlInputStroke = Instance.new("UIStroke") 
-urlInputStroke.Parent = urlInput
-urlInputStroke.Color = Color3.fromRGB(0, 255, 255)
-urlInputStroke.Transparency = 0.8
-urlInputStroke.Thickness = 1
-
--- Nút Lưu URL
-local saveButton = Instance.new("TextButton")
-saveButton.Name = "SaveButton"
-saveButton.Parent = WebhookTab
-saveButton.BackgroundColor3 = Color3.fromRGB(76, 175, 80)
-saveButton.BackgroundTransparency = 0.3
-saveButton.Position = UDim2.new(0, 0, 0, 130)
-saveButton.Size = UDim2.new(0.48, 0, 0, 40)
-saveButton.Font = Enum.Font.GothamBold
-saveButton.Text = "Lưu URL"
-saveButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-saveButton.TextSize = 16
-
--- Bo tròn cho nút lưu
-local saveButtonCorner = Instance.new("UICorner")
-saveButtonCorner.CornerRadius = UDim.new(0, 8)
-saveButtonCorner.Parent = saveButton
-
--- Nút Test
-local testButton = Instance.new("TextButton")
-testButton.Name = "TestButton"
-testButton.Parent = WebhookTab
-testButton.BackgroundColor3 = Color3.fromRGB(33, 150, 243)
-testButton.BackgroundTransparency = 0.3
-testButton.Position = UDim2.new(0.52, 0, 0, 130)
-testButton.Size = UDim2.new(0.48, 0, 0, 40)
-testButton.Font = Enum.Font.GothamBold
-testButton.Text = "Test Webhook"
-testButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-testButton.TextSize = 16
-
--- Bo tròn cho nút test
-local testButtonCorner = Instance.new("UICorner")
-testButtonCorner.CornerRadius = UDim.new(0, 8)
-testButtonCorner.Parent = testButton
-
--- Trạng thái
-local statusLabel = Instance.new("TextLabel")
-statusLabel.Name = "StatusLabel"
-statusLabel.Parent = WebhookTab
-statusLabel.BackgroundTransparency = 1
-statusLabel.Position = UDim2.new(0, 5, 0, 180)
-statusLabel.Size = UDim2.new(1, -10, 0, 25)
-statusLabel.Font = Enum.Font.GothamSemibold
-statusLabel.Text = "Trạng thái: Chưa cấu hình"
-statusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-statusLabel.TextSize = 14
-statusLabel.TextXAlignment = Enum.TextXAlignment.Left
-
--- Mô tả
-local descriptionLabel = Instance.new("TextLabel")
-descriptionLabel.Name = "DescriptionLabel"
-descriptionLabel.Parent = WebhookTab
-descriptionLabel.BackgroundTransparency = 1
-descriptionLabel.Position = UDim2.new(0, 5, 0, 210)
-descriptionLabel.Size = UDim2.new(1, -10, 0, 80)
-descriptionLabel.Font = Enum.Font.Gotham
-descriptionLabel.Text = "Webhook sẽ gửi thông báo đến Discord của bạn khi nhận được phần thưởng AFK. Nhập URL webhook Discord của bạn ở trên."
-descriptionLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-descriptionLabel.TextSize = 14
-descriptionLabel.TextWrapped = true
-descriptionLabel.TextXAlignment = Enum.TextXAlignment.Left
-
--- Separator
-local separator = Instance.new("Frame")
-separator.Name = "Separator"
-separator.Parent = WebhookTab
-separator.BackgroundColor3 = Color3.fromRGB(0, 255, 255)
-separator.BackgroundTransparency = 0.8
-separator.Position = UDim2.new(0, 0, 0, 300)
-separator.Size = UDim2.new(1, -10, 0, 1)
-
--- Auto Notify Toggle
-local autoNotifyToggle, autoNotifyButton = createToggleSwitch(
-    WebhookTab,
-    UDim2.new(0, 0, 0, 310),
-    "Auto Notify AFKRewards"
-)
-
--- Set Canvas Size for Webhook Tab
-WebhookTab.CanvasSize = UDim2.new(0, 0, 0, 360)
-
--- Chức năng xử lý webhook
-local webhookConfig = {
-    URL = "",
-    ENABLED = false
-}
-
--- Sự kiện khi nhấn nút lưu
-saveButton.MouseButton1Click:Connect(function()
-    local newUrl = urlInput.Text
-    if newUrl ~= "" and newUrl ~= webhookConfig.URL then
-        webhookConfig.URL = newUrl
-        CONFIG.WEBHOOK_URL = newUrl -- Cập nhật cả CONFIG mới
-        
-        statusLabel.Text = "Trạng thái: Đã lưu URL mới"
-        statusLabel.TextColor3 = Color3.fromRGB(76, 175, 80)
-        
-        -- Lưu cấu hình và kết nối với RewardsWebhook.lua nếu cần
-        pcall(function() if saveConfig then saveConfig(CONFIG) end end)
-        
-        -- Kết nối với script RewardsWebhook
-        local success, message = pcall(function()
-            -- Kiểm tra nếu biến CONFIG tồn tại từ RewardsWebhook.lua
-            if _G.CONFIG then
-                _G.CONFIG.WEBHOOK_URL = newUrl
-                -- Lưu cấu hình nếu hàm lưu tồn tại
-                if _G.saveConfig then
-                    _G.saveConfig(_G.CONFIG)
-                end
-                return "Đã kết nối và lưu với RewardsWebhook"
-            else
-                -- Nếu chưa tải RewardsWebhook, lưu vào biến cục bộ
-                return "Lưu vào cấu hình cục bộ"
-            end
-        end)
-        
-        -- Lưu vào biến cục bộ và hiển thị thông báo
-        showNotification("Đã lưu URL webhook" .. (success and ": " .. message or ""))
-    else
-        statusLabel.Text = "Trạng thái: URL không thay đổi hoặc trống"
-        statusLabel.TextColor3 = Color3.fromRGB(255, 235, 59)
-    end
-end)
-
--- Sự kiện khi nhấn nút test
-testButton.MouseButton1Click:Connect(function()
-    if webhookConfig.URL == "" then
-        statusLabel.Text = "Trạng thái: Vui lòng nhập URL trước khi test"
-        statusLabel.TextColor3 = Color3.fromRGB(255, 75, 75)
-        return
-    end
-    
-    statusLabel.Text = "Trạng thái: Đang kiểm tra kết nối..."
-    statusLabel.TextColor3 = Color3.fromRGB(33, 150, 243)
-    
-    -- Ưu tiên sử dụng hàm sendTestWebhook trong script hiện tại
-    local success, result
-    
-    -- Sử dụng hàm sendTestWebhook trong script hiện tại nếu URL được cung cấp
-    if CONFIG.WEBHOOK_URL ~= "YOUR_URL" and CONFIG.WEBHOOK_URL ~= "" then
-        success, result = pcall(function()
-            return sendTestWebhook("Webhook test từ Arise Crossover UI")
-        end)
-    -- Thử kết nối với hàm từ RewardsWebhook.lua nếu hàm trong script hiện tại không khả dụng
-    elseif _G.sendTestWebhook then
-        success, result = pcall(function()
-            return _G.sendTestWebhook("Webhook test từ Arise Crossover UI")
-        end)
-    else
-        -- Giả lập gửi webhook nếu không có tùy chọn nào khả dụng
-        statusLabel.Text = "Trạng thái: Không tìm thấy hàm webhook" 
-        statusLabel.TextColor3 = Color3.fromRGB(255, 75, 75)
-        success = false
-    end
-    
-    -- Hiển thị kết quả
-    if success and result then
-        statusLabel.Text = "Trạng thái: Test webhook thành công!"
-        statusLabel.TextColor3 = Color3.fromRGB(76, 175, 80)
-        showNotification("Webhook test thành công")
-    else
-        statusLabel.Text = "Trạng thái: Test thất bại! Kiểm tra URL và quyền"
-        statusLabel.TextColor3 = Color3.fromRGB(255, 75, 75)
-        showNotification("Webhook test thất bại")
-    end
-end)
-
--- Sự kiện khi toggle auto notify
-autoNotifyButton.MouseButton1Click:Connect(function()
-    -- Trạng thái sau khi nhấn
-    local enabled = autoNotifyToggle:FindFirstChild("ToggleBackground").BackgroundColor3 == Color3.fromRGB(0, 255, 255)
-    webhookConfig.ENABLED = enabled
-    CONFIG.SHOW_UI = enabled
-    
-    -- Khởi động/dừng theo dõi phần thưởng
-    if enabled then
-        startRewardTracking() 
-    else
-        stopRewardTracking()
-    end
-    
-    -- Kết nối với script RewardsWebhook
-    pcall(function()
-        if _G.CONFIG then
-            _G.CONFIG.SHOW_UI = enabled
-            -- Cập nhật trạng thái và lưu cấu hình
-            if _G.saveConfig then
-                _G.saveConfig(_G.CONFIG)
-            end
-            
-            -- Cập nhật UI nếu có
-            if _G.webhookUI then
-                local mainFrame = _G.webhookUI:FindFirstChild("mainFrame")
-                if mainFrame then
-                    mainFrame.Visible = enabled
-                end
-            end
-        end
-    end)
-    
-    showNotification(enabled and "Đã bật tự động thông báo AFKRewards" or "Đã tắt tự động thông báo AFKRewards")
-end)
-
--- Tải URL từ RewardsWebhook nếu có
-spawn(function()
-    wait(2) -- Đợi một chút để đảm bảo RewardsWebhook đã được tải
-    pcall(function()
-        if _G.CONFIG and _G.CONFIG.WEBHOOK_URL and _G.CONFIG.WEBHOOK_URL ~= "YOUR_URL" then
-            urlInput.Text = _G.CONFIG.WEBHOOK_URL
-            webhookConfig.URL = _G.CONFIG.WEBHOOK_URL
-            statusLabel.Text = "Trạng thái: Đã tải URL từ cấu hình"
-            statusLabel.TextColor3 = Color3.fromRGB(76, 175, 80)
-            
-            -- Đặt trạng thái toggle theo cấu hình
-            if _G.CONFIG.SHOW_UI then
-                TweenService:Create(autoNotifyToggle:FindFirstChild("ToggleBackground"), TweenInfo.new(0.3), {
-                    BackgroundColor3 = Color3.fromRGB(0, 255, 255)
-                }):Play()
-                
-                TweenService:Create(autoNotifyToggle:FindFirstChild("ToggleBackground"):FindFirstChild("ToggleCircle"), TweenInfo.new(0.3), {
-                    Position = UDim2.new(1, -25, 0.5, -10)
-                }):Play()
-                
-                webhookConfig.ENABLED = true
-            end
-        end
-    end)
-end)
-
--- Thêm các chức năng từ RewardWebhook.lua trực tiếp vào đây
+-- Arise Crossover - Discord Webhook cho AFKRewards
+local allowedPlaceId = 87039211657390 -- PlaceId mà script được phép chạy
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 
+-- Khởi tạo Rayfield UI
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
 -- Sử dụng tên người chơi để tạo file cấu hình riêng cho từng tài khoản
 local playerName = Player.Name:gsub("[^%w_]", "_") -- Loại bỏ ký tự đặc biệt
+local CONFIG_FILE = "AriseWebhook_" .. playerName .. ".json"
 
--- Lấy thông tin về folder chứa script hiện tại để tạo định danh riêng cho mỗi package KRNL
-local scriptPath = debug.getinfo(1, "S").source:sub(2)
-local folderHash = tostring(scriptPath):gsub("[^%w]", ""):sub(1, 8)
+-- Biến kiểm soát trạng thái script
+local scriptRunning = true
 
--- Tạo CONFIG_FILE với định danh riêng cho mỗi package KRNL
-local CONFIG_FILE = "AriseWebhook_" .. playerName .. "_" .. folderHash .. ".json"
-
--- Biến kiểm soát trạng thái webhook
-local webhookActive = false
-local receivedRewards = {}
-local isProcessingReward = false
-local lastWebhookTime = 0
-local WEBHOOK_COOLDOWN = 3
-local totalRewards = {}
-local playerItems = {}
+-- Biến đánh dấu đã ping ZIRU G
+local hasAlreadyPingedZiruG = false
 
 -- Đọc cấu hình từ file (nếu có)
 local function loadConfig()
@@ -1743,36 +47,307 @@ local function saveConfig(config)
     
     if success then
         print("Đã lưu cấu hình vào file " .. CONFIG_FILE)
-        statusLabel.Text = "Trạng thái: Đã lưu URL thành công"
-        statusLabel.TextColor3 = Color3.fromRGB(76, 175, 80)
         return true
     else
         warn("Lỗi khi lưu cấu hình: " .. tostring(err))
-        statusLabel.Text = "Trạng thái: Lỗi khi lưu cấu hình"
-        statusLabel.TextColor3 = Color3.fromRGB(255, 75, 75)
         return false
     end
 end
 
--- Cấu hình Webhook
-local CONFIG = {
-    WEBHOOK_URL = "YOUR_URL",
-    WEBHOOK_COOLDOWN = 3,
-    SHOW_UI = true
-}
+-- Tắt hoàn toàn script (định nghĩa hàm này trước khi được gọi)
+local function shutdownScript()
+    print("Đang tắt script Arise Webhook...")
+    scriptRunning = false
+    
+    -- Lưu cấu hình trước khi tắt
+    saveConfig(CONFIG)
+    
+    -- Hủy bỏ tất cả các kết nối sự kiện (nếu có)
+    for _, connection in pairs(connections or {}) do
+        if typeof(connection) == "RBXScriptConnection" and connection.Connected then
+            connection:Disconnect()
+        end
+    end
+    
+    -- Đóng cửa sổ Rayfield
+    Rayfield:Destroy()
+    
+    print("Script Arise Webhook đã tắt hoàn toàn")
+end
 
--- Đảm bảo tương thích với webhookConfig cũ
-webhookConfig.URL = CONFIG.WEBHOOK_URL
+-- Cấu hình Webhook Discord của bạn
+local WEBHOOK_URL = "YOUR_URL" -- Giá trị mặc định
 
 -- Tải cấu hình từ file (nếu có)
 local savedConfig = loadConfig()
 if savedConfig and savedConfig.WEBHOOK_URL then
-    CONFIG.WEBHOOK_URL = savedConfig.WEBHOOK_URL
-    urlInput.Text = savedConfig.WEBHOOK_URL
+    WEBHOOK_URL = savedConfig.WEBHOOK_URL
+    print("Đã tải URL webhook từ cấu hình: " .. WEBHOOK_URL:sub(1, 30) .. "...")
 end
 
--- Hàm trích xuất số lượng trong ngoặc
+-- Tùy chọn định cấu hình
+local CONFIG = {
+    WEBHOOK_URL = WEBHOOK_URL,
+    WEBHOOK_COOLDOWN = 3,
+    SHOW_UI = true,
+    UI_POSITION = UDim2.new(0.7, 0, 0.05, 0),
+    ACCOUNT_NAME = playerName -- Lưu tên tài khoản vào cấu hình
+}
+
+-- Lưu cấu hình hiện tại
+saveConfig(CONFIG)
+
+-- Lưu trữ phần thưởng đã nhận để tránh gửi trùng lặp
+local receivedRewards = {}
+
+-- Theo dõi tổng phần thưởng
+local totalRewards = {}
+
+-- Lưu trữ số lượng item đã kiểm tra từ RECEIVED
+local playerItems = {}
+
+-- Cooldown giữa các lần gửi webhook (giây)
+local WEBHOOK_COOLDOWN = CONFIG.WEBHOOK_COOLDOWN
+local lastWebhookTime = 0
+
+-- Đang xử lý một phần thưởng (tránh xử lý đồng thời)
+local isProcessingReward = false
+
+-- Lưu danh sách các kết nối sự kiện để có thể ngắt kết nối khi tắt script
+local connections = {}
+
+-- Tạo khai báo trước các hàm để tránh lỗi gọi nil
+local findRewardsUI
+local findReceivedFrame
+local findNewRewardNotification
+local checkNewRewards
+local checkReceivedRewards
+local readActualItemQuantities
+local sendTestWebhook
+
+-- Khởi tạo Window Rayfield
+local Window = Rayfield:CreateWindow({
+    Name = "Arise Webhook - " .. playerName,
+    LoadingTitle = "Arise Crossover",
+    LoadingSubtitle = "by Kiz",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "AriseWebhook",
+        FileName = "AriseWebhook_" .. playerName
+    },
+    KeySystem = false
+})
+
+-- Tạo Tab chính
+local MainTab = Window:CreateTab("Webhook", 4483362458) -- Sử dụng icon mặc định
+
+-- Tạo Input cho URL Webhook
+local WebhookInput = MainTab:CreateInput({
+    Name = "Discord Webhook URL",
+    PlaceholderText = "Nhập URL webhook Discord...",
+    RemoveTextAfterFocusLost = false,
+    CurrentValue = CONFIG.WEBHOOK_URL ~= "YOUR_URL" and CONFIG.WEBHOOK_URL or "",
+    Flag = "WebhookURL",
+    Callback = function(Text)
+        if Text ~= "" and Text ~= CONFIG.WEBHOOK_URL then
+            CONFIG.WEBHOOK_URL = Text
+            WEBHOOK_URL = Text -- Cập nhật biến toàn cục
+            
+            -- Lưu vào file cấu hình
+            if saveConfig(CONFIG) then
+                Rayfield:Notify({
+                    Title = "Thành công",
+                    Content = "Đã lưu URL mới cho " .. playerName,
+                    Duration = 3,
+                    Image = "check", -- Lucide icon
+                })
+            else
+                Rayfield:Notify({
+                    Title = "Lưu ý",
+                    Content = "Đã lưu URL mới (không lưu được file)",
+                    Duration = 3,
+                    Image = "alert-triangle", -- Lucide icon
+                })
+            end
+        end
+    end,
+})
+
+-- Tạo Slider cho Cooldown
+local CooldownSlider = MainTab:CreateSlider({
+    Name = "Thời gian cooldown giữa các webhook",
+    Range = {1, 10},
+    Increment = 1,
+    Suffix = "giây",
+    CurrentValue = CONFIG.WEBHOOK_COOLDOWN,
+    Flag = "WebhookCooldown",
+    Callback = function(Value)
+        CONFIG.WEBHOOK_COOLDOWN = Value
+        WEBHOOK_COOLDOWN = Value
+        saveConfig(CONFIG)
+    end,
+})
+
+-- Tạo nút Test Webhook
+local TestButton = MainTab:CreateButton({
+    Name = "Kiểm tra kết nối Webhook",
+    Callback = function()
+        -- Hiển thị thông báo đang kiểm tra
+        Rayfield:Notify({
+            Title = "Đang kiểm tra",
+            Content = "Đang gửi webhook thử nghiệm...",
+            Duration = 2,
+            Image = "loader", -- Lucide icon
+        })
+        
+        -- Thử gửi webhook kiểm tra
+        local success = sendTestWebhook("Kiểm tra kết nối từ Arise Crossover Rewards Tracker")
+        
+        if success then
+            Rayfield:Notify({
+                Title = "Thành công",
+                Content = "Kiểm tra webhook thành công!",
+                Duration = 3,
+                Image = "check", -- Lucide icon
+            })
+        else
+            Rayfield:Notify({
+                Title = "Lỗi",
+                Content = "Kiểm tra webhook thất bại, vui lòng kiểm tra URL!",
+                Duration = 5,
+                Image = "x", -- Lucide icon
+            })
+        end
+    end,
+})
+
+-- Tạo Toggle hiển thị/ẩn UI
+local UIToggle = MainTab:CreateToggle({
+    Name = "Hiển thị UI",
+    CurrentValue = CONFIG.SHOW_UI,
+    Flag = "ShowUI",
+    Callback = function(Value)
+        CONFIG.SHOW_UI = Value
+        saveConfig(CONFIG)
+    end,
+})
+
+-- Tạo Tab thông tin phần thưởng
+local RewardsTab = Window:CreateTab("Phần thưởng", "gift") -- Sử dụng icon Lucide
+
+-- Hiển thị thông tin tổng phần thưởng
+local RewardsInfo = RewardsTab:CreateSection("Thông tin phần thưởng")
+
+-- Text hiển thị tổng phần thưởng (sẽ được cập nhật)
+local TotalRewardsText = ""
+
+-- Tạo một paragraph để hiển thị tổng phần thưởng
+local TotalRewardsLabel = RewardsTab:CreateParagraph({
+    Title = "Tổng phần thưởng hiện có",
+    Content = "Đang tải thông tin phần thưởng..."
+})
+
+-- Tạo button để làm mới thông tin phần thưởng
+local RefreshButton = RewardsTab:CreateButton({
+    Name = "Làm mới thông tin phần thưởng",
+    Callback = function()
+        -- Đọc số lượng item hiện tại
+        readActualItemQuantities()
+        
+        -- Cập nhật thông tin hiển thị
+        local rewardsText = getTotalRewardsText()
+        TotalRewardsText = rewardsText
+        TotalRewardsLabel:Set({
+            Title = "Tổng phần thưởng hiện có", 
+            Content = rewardsText
+        })
+        
+        Rayfield:Notify({
+            Title = "Đã làm mới",
+            Content = "Đã cập nhật thông tin phần thưởng",
+            Duration = 2,
+            Image = "refresh-cw", -- Lucide icon
+        })
+    end,
+})
+
+-- Tạo button để xóa hết phần thưởng đã lưu
+local ClearButton = RewardsTab:CreateButton({
+    Name = "Xóa thông tin phần thưởng đã lưu",
+    Callback = function()
+        -- Xóa hết thông tin phần thưởng đã lưu
+        receivedRewards = {}
+        totalRewards = {}
+        playerItems = {}
+        
+        -- Cập nhật lại thông tin hiển thị
+        TotalRewardsLabel:Set({
+            Title = "Tổng phần thưởng hiện có",
+            Content = "Đã xóa thông tin phần thưởng"
+        })
+        
+        Rayfield:Notify({
+            Title = "Đã xóa",
+            Content = "Đã xóa toàn bộ thông tin phần thưởng đã lưu",
+            Duration = 3,
+            Image = "trash-2", -- Lucide icon
+        })
+    end,
+})
+
+-- Tab cài đặt
+local SettingsTab = Window:CreateTab("Cài đặt", "settings") -- Sử dụng icon Lucide
+
+-- Tạo button để tắt script
+local ShutdownButton = SettingsTab:CreateButton({
+    Name = "Tắt script",
+    Callback = function()
+        Rayfield:Notify({
+            Title = "Xác nhận",
+            Content = "Bạn có chắc chắn muốn tắt script?",
+            Duration = 5,
+            Image = "alert-triangle", -- Lucide icon
+            Actions = {
+                Ignore = {
+                    Name = "Hủy",
+                    Callback = function()
+                        -- Không làm gì
+                    end
+                },
+                Confirm = {
+                    Name = "Tắt",
+                    Callback = function()
+                        shutdownScript() -- Tắt hoàn toàn script
+                    end
+                }
+            }
+        })
+    end,
+})
+
+-- Tạo UI cấu hình Webhook (thay thế hàm cũ bằng các phần tử Rayfield)
+local function createWebhookUI()
+    -- Không cần tạo UI tùy chỉnh nữa vì đã dùng Rayfield
+    print("Đã chuyển sang sử dụng Rayfield UI")
+    
+    -- Đọc số lượng item hiện tại và cập nhật hiển thị
+    spawn(function()
+        wait(1) -- Chờ UI khởi tạo xong
+        readActualItemQuantities()
+        local rewardsText = getTotalRewardsText()
+        TotalRewardsText = rewardsText
+        TotalRewardsLabel:Set({
+            Title = "Tổng phần thưởng hiện có", 
+            Content = rewardsText
+        })
+    end)
+    
+    return nil -- Không cần trả về UI nữa
+end
+
+-- Mẫu regex để trích xuất số lượng trong ngoặc
 local function extractQuantity(text)
+    -- Tìm số lượng trong ngoặc, ví dụ: GEMS(10)
     local quantity = text:match("%((%d+)%)")
     if quantity then
         return tonumber(quantity)
@@ -1780,11 +355,17 @@ local function extractQuantity(text)
     return nil
 end
 
--- Tạo ID duy nhất cho phần thưởng
+-- Tạo một ID duy nhất cho phần thưởng mà không dùng timestamp
 local function createUniqueRewardId(rewardText)
+    -- Loại bỏ khoảng trắng và chuyển về chữ thường để so sánh nhất quán
     local id = rewardText:gsub("%s+", ""):lower()
+    
+    -- Loại bỏ tiền tố "RECEIVED:" nếu có
     id = id:gsub("received:", "")
+    
+    -- Loại bỏ tiền tố "YOU GOT A NEW REWARD!" nếu có
     id = id:gsub("yougotanewreward!", "")
+    
     return id
 end
 
@@ -1795,17 +376,21 @@ end
 
 -- Phân tích chuỗi phần thưởng để lấy số lượng và loại
 local function parseReward(rewardText)
+    -- Loại bỏ các tiền tố không cần thiết
     rewardText = rewardText:gsub("RECEIVED:%s*", "")
     rewardText = rewardText:gsub("YOU GOT A NEW REWARD!%s*", "")
     
+    -- Tìm số lượng và loại phần thưởng từ text
     local amount, itemType = rewardText:match("(%d+)%s+([%w%s]+)")
     
     if amount and itemType then
         amount = tonumber(amount)
-        itemType = itemType:gsub("^%s+", ""):gsub("%s+$", "")
+        itemType = itemType:gsub("^%s+", ""):gsub("%s+$", "") -- Xóa khoảng trắng thừa
         
+        -- Kiểm tra xem có số lượng trong ngoặc không
         local quantityInBrackets = itemType:match("%((%d+)%)$")
         if quantityInBrackets then
+            -- Loại bỏ phần số lượng trong ngoặc khỏi tên item
             itemType = itemType:gsub("%(%d+%)$", ""):gsub("%s+$", "")
         end
         
@@ -1816,14 +401,17 @@ local function parseReward(rewardText)
 end
 
 -- Tìm UI phần thưởng
-local function findRewardsUI()
+findRewardsUI = function()
+    -- Tìm trong PlayerGui
     for _, gui in pairs(Player.PlayerGui:GetChildren()) do
         if gui:IsA("ScreenGui") then
+            -- Tìm frame chứa các phần thưởng
             local rewardsFrame = gui:FindFirstChild("REWARDS", true) 
             if rewardsFrame then
                 return rewardsFrame.Parent
             end
             
+            -- Tìm theo tên khác nếu không tìm thấy
             for _, obj in pairs(gui:GetDescendants()) do
                 if obj:IsA("TextLabel") and (obj.Text == "REWARDS" or obj.Text:find("REWARD")) then
                     return obj.Parent
@@ -1834,8 +422,95 @@ local function findRewardsUI()
     return nil
 end
 
+-- Theo dõi phần thưởng "RECEIVED"
+findReceivedFrame = function()
+    -- Thêm thông báo debug
+    print("Đang tìm kiếm UI RECEIVED...")
+    
+    for _, gui in pairs(Player.PlayerGui:GetChildren()) do
+        if gui:IsA("ScreenGui") then
+            -- Phương pháp 1: Tìm trực tiếp label RECEIVED
+            for _, obj in pairs(gui:GetDescendants()) do
+                if obj:IsA("TextLabel") and obj.Text == "RECEIVED" then
+                    print("Đã tìm thấy label RECEIVED qua TextLabel")
+                    return obj.Parent
+                end
+            end
+            
+            -- Phương pháp 2: Tìm ImageLabel hoặc Frame có tên là RECEIVED
+            local receivedFrame = gui:FindFirstChild("RECEIVED", true)
+            if receivedFrame then
+                print("Đã tìm thấy RECEIVED qua FindFirstChild")
+                return receivedFrame.Parent
+            end
+            
+            -- Phương pháp 3: Tìm các Frame chứa phần thưởng 
+            for _, frame in pairs(gui:GetDescendants()) do
+                if (frame:IsA("Frame") or frame:IsA("ScrollingFrame")) and
+                   (frame.Name:upper():find("RECEIVED") or 
+                    (frame.Name:upper():find("REWARD") and not frame.Name:upper():find("REWARDS"))) then
+                    print("Đã tìm thấy RECEIVED qua tên Frame: " .. frame.Name)
+                    return frame
+                end
+            end
+            
+            -- Phương pháp 4: Tìm các phần thưởng đặc trưng trong RECEIVED
+            for _, frame in pairs(gui:GetDescendants()) do
+                if frame:IsA("Frame") or frame:IsA("ImageLabel") then
+                    -- Đếm số lượng item trong frame
+                    local itemCount = 0
+                    local hasPercentage = false
+                    
+                    for _, child in pairs(frame:GetDescendants()) do
+                        if child:IsA("TextLabel") then
+                            -- Kiểm tra phần trăm (dấu hiệu của item)
+                            if child.Text:match("^%d+%.?%d*%%$") then
+                                hasPercentage = true
+                            end
+                            
+                            -- Kiểm tra "POWDER", "GEMS", "TICKETS" (dấu hiệu của item)
+                            if child.Text:find("POWDER") or child.Text:find("GEMS") or child.Text:find("TICKETS") then
+                                itemCount = itemCount + 1
+                            end
+                        end
+                    end
+                    
+                    -- Nếu frame chứa nhiều loại item và có phần trăm, có thể là RECEIVED
+                    if itemCount >= 2 and hasPercentage and not frame.Name:upper():find("REWARDS") then
+                        print("Đã tìm thấy RECEIVED qua việc phân tích nội dung: " .. frame.Name)
+                        return frame
+                    end
+                end
+            end
+        end
+    end
+    
+    print("KHÔNG thể tìm thấy UI RECEIVED, tiếp tục tìm với cách khác...")
+    
+    -- Phương pháp cuối: Tìm một frame bất kỳ chứa TextLabel "POWDER", không thuộc REWARDS
+    for _, gui in pairs(Player.PlayerGui:GetChildren()) do
+        if gui:IsA("ScreenGui") then
+            for _, frame in pairs(gui:GetDescendants()) do
+                if (frame:IsA("Frame") or frame:IsA("ImageLabel")) and not frame.Name:upper():find("REWARDS") then
+                    for _, child in pairs(frame:GetDescendants()) do
+                        if child:IsA("TextLabel") and 
+                           (child.Text:find("POWDER") or child.Text:find("GEMS")) and
+                           not frame:FindFirstChild("REWARDS", true) then
+                            local parentName = frame.Parent and frame.Parent.Name or "unknown"
+                            print("Tìm thấy frame có thể là RECEIVED: " .. frame.Name .. " (Parent: " .. parentName .. ")")
+                            return frame
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    return nil
+end
+
 -- Tìm frame thông báo phần thưởng mới "YOU GOT A NEW REWARD!"
-local function findNewRewardNotification()
+findNewRewardNotification = function()
     for _, gui in pairs(Player.PlayerGui:GetChildren()) do
         if gui:IsA("ScreenGui") then
             for _, obj in pairs(gui:GetDescendants()) do
@@ -1848,39 +523,25 @@ local function findNewRewardNotification()
     return nil
 end
 
--- Tìm frame RECEIVED
-local function findReceivedFrame()
-    for _, gui in pairs(Player.PlayerGui:GetChildren()) do
-        if gui:IsA("ScreenGui") then
-            for _, obj in pairs(gui:GetDescendants()) do
-                if obj:IsA("TextLabel") and obj.Text == "RECEIVED" then
-                    return obj.Parent
-                end
-            end
-            
-            local receivedFrame = gui:FindFirstChild("RECEIVED", true)
-            if receivedFrame then
-                return receivedFrame.Parent
-            end
-            
-            for _, frame in pairs(gui:GetDescendants()) do
-                if (frame:IsA("Frame") or frame:IsA("ScrollingFrame")) and
-                   (frame.Name:upper():find("RECEIVED") or 
-                    (frame.Name:upper():find("REWARD") and not frame.Name:upper():find("REWARDS"))) then
-                    return frame
-                end
-            end
-        end
-    end
-    return nil
-end
-
 -- Đọc số lượng item thực tế từ UI RECEIVED
-local function readActualItemQuantities()
+readActualItemQuantities = function()
     local receivedUI = findReceivedFrame()
-    if not receivedUI then return end
+    if not receivedUI then 
+        print("Không tìm thấy UI RECEIVED để đọc số lượng")
+        return 
+    end
     
+    print("Đang đọc phần thưởng từ RECEIVED UI: " .. receivedUI:GetFullName())
+    
+    -- Reset playerItems để cập nhật lại
     playerItems = {}
+    local foundAnyItem = false
+    
+    -- Debug: In ra tất cả con của receivedUI
+    print("Các phần tử con của RECEIVED UI:")
+    for i, child in pairs(receivedUI:GetChildren()) do
+        print("  " .. i .. ": " .. child.Name .. " [" .. child.ClassName .. "]")
+    end
     
     for _, itemFrame in pairs(receivedUI:GetChildren()) do
         if itemFrame:IsA("Frame") or itemFrame:IsA("ImageLabel") then
@@ -1888,63 +549,220 @@ local function readActualItemQuantities()
             local baseQuantity = 0
             local multiplier = 1
             
+            -- Debug: In thông tin từng frame
+            print("Đang phân tích frame: " .. itemFrame.Name)
+            
+            -- Tìm tên item và số lượng
             for _, child in pairs(itemFrame:GetDescendants()) do
                 if child:IsA("TextLabel") then
                     local text = child.Text
+                    print("  TextLabel: '" .. text .. "'")
                     
+                    -- Cải thiện: Kiểm tra văn bản chứa TIGER
                     if text:find("TIGER") then
                         itemType = "TIGER"
+                        print("    Phát hiện TIGER item")
+                        
+                        -- Tìm số lượng trong ngoặc - ví dụ: TIGER(1)
                         local foundQuantity = extractQuantity(text)
                         if foundQuantity then
                             multiplier = foundQuantity
+                            print("    Số lượng TIGER: " .. multiplier)
                         end
                         
-                        if multiplier <= 0 then multiplier = 1 end
-                        if baseQuantity <= 0 then baseQuantity = 1 end
+                        -- Nếu không tìm được số lượng, giả định là 1
+                        if multiplier <= 0 then
+                            multiplier = 1
+                        end
+                        
+                        -- Nếu không có baseQuantity, giả định là 1
+                        if baseQuantity <= 0 then
+                            baseQuantity = 1
+                        end
+                    -- Thêm xử lý cho TWIN PRISM BLADES
                     elseif text:find("TWIN PRISM BLADES") then
                         itemType = "TWIN PRISM BLADES"
+                        print("    Phát hiện TWIN PRISM BLADES item")
+                        
+                        -- Tìm số lượng trong ngoặc - ví dụ: TWIN PRISM BLADES(1)
                         local foundQuantity = extractQuantity(text)
                         if foundQuantity then
                             multiplier = foundQuantity
+                            print("    Số lượng TWIN PRISM BLADES: " .. multiplier)
                         end
                         
-                        if multiplier <= 0 then multiplier = 1 end
-                        if baseQuantity <= 0 then baseQuantity = 1 end
+                        -- Nếu không tìm được số lượng, giả định là 1
+                        if multiplier <= 0 then
+                            multiplier = 1
+                        end
+                        
+                        -- Nếu không có baseQuantity, giả định là 1
+                        if baseQuantity <= 0 then
+                            baseQuantity = 1
+                        end
+                    -- Thêm xử lý cho ZIRU G
                     elseif text:find("ZIRU G") then
                         itemType = "ZIRU G"
+                        print("    Phát hiện ZIRU G item")
+                        
+                        -- Tìm số lượng trong ngoặc - ví dụ: ZIRU G(1)
                         local foundQuantity = extractQuantity(text)
                         if foundQuantity then
                             multiplier = foundQuantity
+                            print("    Số lượng ZIRU G: " .. multiplier)
                         end
                         
-                        if multiplier <= 0 then multiplier = 1 end
-                        if baseQuantity <= 0 then baseQuantity = 1 end
+                        -- Nếu không tìm được số lượng, giả định là 1
+                        if multiplier <= 0 then
+                            multiplier = 1
+                        end
+                        
+                        -- Nếu không có baseQuantity, giả định là 1
+                        if baseQuantity <= 0 then
+                            baseQuantity = 1
+                        end
                     end
                     
+                    -- Tìm loại item (GEMS, POWDER, TICKETS, v.v.)
                     local foundItemType = text:match("(%w+)%s*%(%d+%)") or text:match("(%w+)%s*$")
                     if foundItemType then
                         itemType = foundItemType
+                        print("    Phát hiện loại item: " .. itemType)
                     end
                     
+                    -- Tìm số lượng trong ngoặc - ví dụ: GEMS(1)
                     local foundQuantity = extractQuantity(text)
                     if foundQuantity then
                         multiplier = foundQuantity
+                        print("    Phát hiện số lượng từ ngoặc (multiplier): " .. multiplier)
                     end
                     
+                    -- Tìm số lượng đứng trước tên item - ví dụ: 500 GEMS
                     local amountPrefix = text:match("^(%d+)%s+%w+")
                     if amountPrefix then
                         baseQuantity = tonumber(amountPrefix)
+                        print("    Phát hiện số lượng cơ bản: " .. baseQuantity)
                     end
                 end
             end
             
+            -- Tính toán số lượng thực tế bằng cách nhân số lượng cơ bản với hệ số từ ngoặc
             local finalQuantity = baseQuantity * multiplier
+            print("    Số lượng cuối cùng: " .. baseQuantity .. " x " .. multiplier .. " = " .. finalQuantity)
             
+            -- Chỉ lưu các phần thưởng không phải CASH
             if itemType ~= "" and finalQuantity > 0 and not isCashReward(itemType) then
                 playerItems[itemType] = (playerItems[itemType] or 0) + finalQuantity
+                print("Đã đọc item: " .. finalQuantity .. " " .. itemType .. " (từ " .. baseQuantity .. " x " .. multiplier .. ")")
+                foundAnyItem = true
+            elseif itemType ~= "" and finalQuantity > 0 then
+                print("Bỏ qua item CASH: " .. finalQuantity .. " " .. itemType)
             end
         end
     end
+    
+    -- Cố gắng đọc theo cách khác nếu không tìm thấy item nào
+    if not foundAnyItem then
+        print("Không tìm thấy item nào bằng phương pháp thông thường, thử phương pháp thay thế...")
+        
+        -- Tìm tất cả TextLabel trong receivedUI có chứa GEMS, POWDER, TICKETS, TIGER
+        for _, child in pairs(receivedUI:GetDescendants()) do
+            if child:IsA("TextLabel") then
+                local text = child.Text
+                
+                -- Tìm item có pattern X ITEM_TYPE(Y) hoặc ITEM_TYPE(Y)
+                local baseAmount, itemType, multiplier = text:match("(%d+)%s+([%w%s]+)%((%d+)%)")
+                if baseAmount and itemType and multiplier then
+                    baseAmount = tonumber(baseAmount)
+                    multiplier = tonumber(multiplier)
+                    local finalAmount = baseAmount * multiplier
+                    
+                    if not isCashReward(itemType) then
+                        playerItems[itemType] = (playerItems[itemType] or 0) + finalAmount
+                        print("Phương pháp thay thế - Đã đọc item: " .. finalAmount .. " " .. itemType .. " (từ " .. baseAmount .. " x " .. multiplier .. ")")
+                        foundAnyItem = true
+                    end
+                else
+                    -- Kiểm tra văn bản có chứa TIGER(X), TWIN PRISM BLADES(X) hoặc ZIRU G(X)
+                    local itemType, multiplier = text:match("([%w%s]+)%((%d+)%)")
+                    if itemType and multiplier then
+                        if itemType == "TIGER" or text:find("TIGER") or
+                           itemType == "TWIN PRISM BLADES" or text:find("TWIN PRISM BLADES") or
+                           itemType == "ZIRU G" or text:find("ZIRU G") then
+                            
+                            multiplier = tonumber(multiplier)
+                            if multiplier and multiplier > 0 and not isCashReward(itemType) then
+                                playerItems[itemType] = (playerItems[itemType] or 0) + multiplier
+                                print("Phương pháp thay thế - Đã đọc item đặc biệt: " .. multiplier .. " " .. itemType)
+                                foundAnyItem = true
+                            end
+                        end
+                    end
+                    
+                    -- Phương pháp đơn giản hơn: tìm tên item đặc biệt mà không có định dạng
+                    if text:find("TWIN PRISM BLADES") and not playerItems["TWIN PRISM BLADES"] then
+                        playerItems["TWIN PRISM BLADES"] = (playerItems["TWIN PRISM BLADES"] or 0) + 1
+                        print("Phương pháp thay thế - Đã đọc TWIN PRISM BLADES")
+                        foundAnyItem = true
+                    elseif text:find("ZIRU G") and not playerItems["ZIRU G"] then
+                        playerItems["ZIRU G"] = (playerItems["ZIRU G"] or 0) + 1
+                        print("Phương pháp thay thế - Đã đọc ZIRU G")
+                        foundAnyItem = true
+                    end
+                end
+            end
+        end
+    end
+    
+    -- Thêm: Kiểm tra đặc biệt cho TIGER nếu vẫn chưa thấy
+    if not playerItems["TIGER"] then
+        for _, child in pairs(receivedUI:GetDescendants()) do
+            if child:IsA("TextLabel") and child.Text:find("TIGER") then
+                print("Phát hiện TIGER thông qua kiểm tra đặc biệt: " .. child.Text)
+                -- Tìm số lượng trong ngoặc nếu có
+                local quantity = extractQuantity(child.Text) or 1
+                playerItems["TIGER"] = (playerItems["TIGER"] or 0) + quantity
+                foundAnyItem = true
+            end
+        end
+    end
+    
+    -- Thêm: Kiểm tra đặc biệt cho TWIN PRISM BLADES nếu vẫn chưa thấy
+    if not playerItems["TWIN PRISM BLADES"] then
+        for _, child in pairs(receivedUI:GetDescendants()) do
+            if child:IsA("TextLabel") and child.Text:find("TWIN PRISM BLADES") then
+                print("Phát hiện TWIN PRISM BLADES thông qua kiểm tra đặc biệt: " .. child.Text)
+                -- Tìm số lượng trong ngoặc nếu có
+                local quantity = extractQuantity(child.Text) or 1
+                playerItems["TWIN PRISM BLADES"] = (playerItems["TWIN PRISM BLADES"] or 0) + quantity
+                foundAnyItem = true
+            end
+        end
+    end
+    
+    -- Thêm: Kiểm tra đặc biệt cho ZIRU G nếu vẫn chưa thấy
+    if not playerItems["ZIRU G"] then
+        for _, child in pairs(receivedUI:GetDescendants()) do
+            if child:IsA("TextLabel") and child.Text:find("ZIRU G") then
+                print("Phát hiện ZIRU G thông qua kiểm tra đặc biệt: " .. child.Text)
+                -- Tìm số lượng trong ngoặc nếu có
+                local quantity = extractQuantity(child.Text) or 1
+                playerItems["ZIRU G"] = (playerItems["ZIRU G"] or 0) + quantity
+                foundAnyItem = true
+            end
+        end
+    end
+    
+    -- Hiển thị tất cả các item đã đọc được
+    print("----- Danh sách item hiện có (không bao gồm CASH) -----")
+    if next(playerItems) ~= nil then
+        for itemType, amount in pairs(playerItems) do
+            print(itemType .. ": " .. amount)
+        end
+    else
+        print("Không đọc được bất kỳ item nào từ UI RECEIVED!")
+    end
+    print("------------------------------------------------------")
     
     return playerItems
 end
@@ -1954,7 +772,9 @@ local function updateTotalRewards(rewardText)
     local amount, itemType = parseReward(rewardText)
     
     if amount and itemType then
+        -- Bỏ qua CASH
         if isCashReward(itemType) then
+            print("Bỏ qua cập nhật CASH: " .. amount .. " " .. itemType)
             return
         end
         
@@ -1963,6 +783,7 @@ local function updateTotalRewards(rewardText)
         else
             totalRewards[itemType] = totalRewards[itemType] + amount
         end
+        print("Đã cập nhật tổng phần thưởng: " .. amount .. " " .. itemType)
     end
 end
 
@@ -1970,16 +791,21 @@ end
 local function getTotalRewardsText()
     local result = "Tổng phần thưởng:\n"
     
+    -- Đọc số lượng item thực tế từ UI
     readActualItemQuantities()
     
+    -- Ưu tiên hiển thị số liệu từ playerItems nếu có
     if next(playerItems) ~= nil then
         for itemType, amount in pairs(playerItems) do
+            -- Loại bỏ CASH (thêm biện pháp bảo vệ)
             if not isCashReward(itemType) then
                 result = result .. "- " .. amount .. " " .. itemType .. "\n"
             end
         end
     else
+        -- Sử dụng totalRewards nếu không đọc được từ UI
         for itemType, amount in pairs(totalRewards) do
+            -- Loại bỏ CASH (thêm biện pháp bảo vệ)
             if not isCashReward(itemType) then
                 result = result .. "- " .. amount .. " " .. itemType .. "\n"
             end
@@ -1991,12 +817,14 @@ end
 
 -- Tạo chuỗi hiển thị các phần thưởng vừa nhận
 local function getLatestRewardsText(newRewardInfo)
+    -- Loại bỏ các tiền tố không cần thiết
     local cleanRewardInfo = newRewardInfo:gsub("RECEIVED:%s*", "")
     cleanRewardInfo = cleanRewardInfo:gsub("YOU GOT A NEW REWARD!%s*", "")
     
     local amount, itemType = parseReward(cleanRewardInfo)
     local result = "Phần thưởng mới:\n- " .. cleanRewardInfo .. "\n\n"
     
+    -- Chỉ hiển thị tổng nếu không phải CASH
     if amount and itemType and playerItems[itemType] and not isCashReward(itemType) then
         result = result .. "Tổng " .. itemType .. ": " .. playerItems[itemType] .. " (+" .. amount .. ")\n"
     end
@@ -2004,23 +832,25 @@ local function getLatestRewardsText(newRewardInfo)
     return result
 end
 
+-- Kiểm tra xem có thể gửi webhook không (cooldown)
+local function canSendWebhook()
+    local currentTime = tick()
+    if currentTime - lastWebhookTime < WEBHOOK_COOLDOWN then
+        return false
+    end
+    return true
+end
+
 -- Gửi webhook thử nghiệm để kiểm tra kết nối
-local function sendTestWebhook(customMessage)
+sendTestWebhook = function(customMessage)
+    -- Nếu đang xử lý phần thưởng khác, không gửi webhook thử nghiệm
     if isProcessingReward then
-        statusLabel.Text = "Trạng thái: Đang xử lý, vui lòng đợi..."
-        statusLabel.TextColor3 = Color3.fromRGB(255, 235, 59)
+        print("Đang xử lý phần thưởng khác, không thể gửi webhook thử nghiệm")
         return false
     end
     
-    if CONFIG.WEBHOOK_URL == "YOUR_URL" or CONFIG.WEBHOOK_URL == "" then
-        statusLabel.Text = "Trạng thái: Vui lòng nhập URL webhook trước"
-        statusLabel.TextColor3 = Color3.fromRGB(255, 75, 75)
-        return false
-    end
-    
+    -- Đánh dấu đang xử lý
     isProcessingReward = true
-    statusLabel.Text = "Trạng thái: Đang gửi webhook thử nghiệm..."
-    statusLabel.TextColor3 = Color3.fromRGB(33, 150, 243)
     
     local message = customMessage or "Đây là webhook thử nghiệm từ Arise Crossover Rewards Tracker"
     
@@ -2050,9 +880,14 @@ local function sendTestWebhook(customMessage)
         }
     }
     
+    -- Chuyển đổi dữ liệu thành chuỗi JSON
     local jsonData = HttpService:JSONEncode(data)
     
+    print("Đang gửi webhook thử nghiệm...")
+    
+    -- Sử dụng HTTP request từ executor
     local success, err = pcall(function()
+        -- Synapse X
         if syn and syn.request then
             syn.request({
                 Url = CONFIG.WEBHOOK_URL,
@@ -2062,6 +897,8 @@ local function sendTestWebhook(customMessage)
                 },
                 Body = jsonData
             })
+            print("Đã gửi webhook thử nghiệm qua syn.request")
+        -- KRNL, Script-Ware và nhiều executor khác
         elseif request then
             request({
                 Url = CONFIG.WEBHOOK_URL,
@@ -2071,6 +908,8 @@ local function sendTestWebhook(customMessage)
                 },
                 Body = jsonData
             })
+            print("Đã gửi webhook thử nghiệm qua request")
+        -- Các Executor khác
         elseif http and http.request then
             http.request({
                 Url = CONFIG.WEBHOOK_URL,
@@ -2080,57 +919,433 @@ local function sendTestWebhook(customMessage)
                 },
                 Body = jsonData
             })
+            print("Đã gửi webhook thử nghiệm qua http.request")
+        -- JJSploit và một số executor khác
         elseif httppost then
             httppost(CONFIG.WEBHOOK_URL, jsonData)
+            print("Đã gửi webhook thử nghiệm qua httppost")
         else
             error("Không tìm thấy HTTP API nào được hỗ trợ bởi executor hiện tại")
         end
     end)
     
+    -- Kết thúc xử lý
     wait(0.5)
     isProcessingReward = false
     
     if success then
-        statusLabel.Text = "Trạng thái: Webhook thử nghiệm thành công!"
-        statusLabel.TextColor3 = Color3.fromRGB(76, 175, 80)
+        -- Hiển thị thông báo Rayfield khi gửi thành công
+        Rayfield:Notify({
+            Title = "Thử nghiệm thành công",
+            Content = "Đã gửi webhook thử nghiệm thành công",
+            Duration = 3,
+            Image = "check", -- Lucide icon
+        })
+        print("Đã gửi webhook thử nghiệm thành công")
         return true
     else
-        statusLabel.Text = "Trạng thái: Lỗi gửi webhook: " .. tostring(err)
-        statusLabel.TextColor3 = Color3.fromRGB(255, 75, 75)
+        -- Hiển thị thông báo Rayfield khi gửi thất bại
+        Rayfield:Notify({
+            Title = "Thử nghiệm thất bại",
+            Content = "Lỗi: " .. tostring(err),
+            Duration = 5,
+            Image = "x", -- Lucide icon
+        })
+        warn("Lỗi gửi webhook thử nghiệm: " .. tostring(err))
         return false
     end
 end
 
--- Gửi webhook cho phần thưởng mới
-local function sendWebhook(rewardInfo)
+-- Tìm kiếm các phần tử UI ban đầu
+local function findAllUIElements()
+    print("Đang tìm kiếm các phần tử UI...")
+    local rewardsUI = findRewardsUI()
+    local receivedUI = findReceivedFrame()
+    local newRewardUI = findNewRewardNotification()
+    
+    -- Đọc số lượng item hiện tại
+    readActualItemQuantities()
+    
+    -- Kiểm tra thông báo phần thưởng mới trước tiên
+    if newRewardUI then
+        print("Đã tìm thấy thông báo YOU GOT A NEW REWARD!")
+        checkNewRewardNotification(newRewardUI)
+    else
+        print("Chưa tìm thấy thông báo phần thưởng mới")
+        
+        -- Nếu không có thông báo NEW REWARD, kiểm tra REWARDS
+        if rewardsUI then
+            print("Đã tìm thấy UI phần thưởng")
+            checkNewRewards(rewardsUI)
+        else
+            warn("Không tìm thấy UI phần thưởng")
+        end
+    end
+    
+    -- Luôn đọc RECEIVED để cập nhật số lượng item hiện tại
+    if receivedUI then
+        print("Đã tìm thấy UI RECEIVED")
+        checkReceivedRewards(receivedUI)
+    end
+    
+    return rewardsUI, receivedUI, newRewardUI
+end
+
+-- Theo dõi thay đổi trong PlayerGui
+local playerGuiConnection
+playerGuiConnection = Player.PlayerGui.ChildAdded:Connect(function(child)
+    if not scriptRunning then
+        playerGuiConnection:Disconnect()
+        return
+    end
+    
+    if child:IsA("ScreenGui") then
+        delay(2, function()
+            if scriptRunning then
+                findAllUIElements()
+            end
+        end)
+    end
+end)
+
+-- Theo dõi sự xuất hiện của thông báo phần thưởng mới
+spawn(function()
+    while scriptRunning and wait(2) do
+        if not scriptRunning then break end
+        
+        local newRewardUI = findNewRewardNotification()
+        if newRewardUI then
+            checkNewRewardNotification(newRewardUI)
+        end
+    end
+end)
+
+-- Theo dõi phần thưởng mới liên tục (với tần suất thấp hơn)
+spawn(function()
+    while scriptRunning and wait(5) do
+        if not scriptRunning then break end
+        
+        -- Đọc số lượng item định kỳ
+        readActualItemQuantities()
+        
+        -- Chỉ kiểm tra REWARDS nếu không có NEW REWARD
+        local newRewardUI = findNewRewardNotification()
+        if not newRewardUI then
+            local rewardsUI = findRewardsUI()
+            if rewardsUI then
+                checkNewRewards(rewardsUI)
+            end
+        end
+        
+        -- Luôn kiểm tra RECEIVED để cập nhật số lượng
+        local receivedUI = findReceivedFrame()
+        if receivedUI then
+            checkReceivedRewards(receivedUI)
+        end
+    end
+end)
+
+-- Gửi một webhook về tất cả phần thưởng hiện có trong UI RECEIVED khi khởi động script
+local function sendInitialReceivedWebhook()
+    print("Đang gửi webhook ban đầu về các phần thưởng hiện có...")
+    
+    -- Hiển thị thông báo đang gửi webhook ban đầu
+    Rayfield:Notify({
+        Title = "Khởi tạo",
+        Content = "Đang kiểm tra và gửi thông tin phần thưởng hiện có...",
+        Duration = 3,
+        Image = "loader", -- Lucide icon
+    })
+    
+    -- Tìm UI RECEIVED và đọc dữ liệu
+    local receivedUI = findReceivedFrame()
+    if not receivedUI then 
+        print("Không tìm thấy UI RECEIVED - thử phương án dự phòng...")
+        
+        -- Hiển thị thông báo không tìm thấy UI
+        Rayfield:Notify({
+            Title = "Lưu ý",
+            Content = "Không tìm thấy UI hiển thị phần thưởng, vui lòng mở UI phần thưởng trong game",
+            Duration = 5,
+            Image = "alert-triangle", -- Lucide icon
+        })
+        
+        -- Phương án dự phòng sẽ được giữ nguyên
+        -- ...
+    else
+        -- Nếu tìm thấy RECEIVED UI, tiếp tục xử lý
+        print("Đã tìm thấy UI RECEIVED, đang đọc dữ liệu...")
+        
+        -- Tạo danh sách phần thưởng thủ công bằng cách duyệt toàn bộ UI
+        local receivedItems = {}
+        local foundAny = false
+        
+        -- Tìm tất cả TextLabel trong RECEIVED UI
+        for _, textLabel in pairs(receivedUI:GetDescendants()) do
+            if textLabel:IsA("TextLabel") then
+                local text = textLabel.Text
+                
+                -- Nếu chứa GEMS, POWDER hoặc TICKETS
+                if (text:find("GEMS") or text:find("POWDER") or text:find("TICKETS")) and not isCashReward(text) then
+                    print("Tìm thấy item text: " .. text)
+                    table.insert(receivedItems, text)
+                    foundAny = true
+                end
+            end
+        end
+        
+        -- Không gửi webhook nếu không tìm thấy item nào
+        if not foundAny then
+            print("Không tìm thấy phần thưởng nào trong UI RECEIVED")
+            
+            -- Hiển thị thông báo không tìm thấy phần thưởng
+            Rayfield:Notify({
+                Title = "Thông báo",
+                Content = "Không tìm thấy phần thưởng nào hiện có",
+                Duration = 3,
+                Image = "info", -- Lucide icon
+            })
+            
+            -- Vẫn cập nhật lại playerItems để dùng cho lần sau
+            readActualItemQuantities()
+            return
+        end
+        
+        -- Đánh dấu đang xử lý
+        isProcessingReward = true
+        
+        local allItemsText = ""
+        for _, itemText in ipairs(receivedItems) do
+            allItemsText = allItemsText .. "- " .. itemText .. "\n"
+        end
+        
+        -- Đọc số lượng item chính xác
+        readActualItemQuantities()
+        
+        -- Hiển thị thông tin từ playerItems thay vì receivedItems
+        local itemListText = ""
+        if next(playerItems) ~= nil then
+            for itemType, amount in pairs(playerItems) do
+                itemListText = itemListText .. "- " .. amount .. " " .. itemType .. "\n"
+            end
+        else
+            -- Sử dụng receivedItems nếu không đọc được từ playerItems
+            itemListText = allItemsText
+        end
+        
+        local data = {
+            content = nil,
+            embeds = {
+                {
+                    title = "🎮 Arise Crossover - Phần thưởng hiện có",
+                    description = "Danh sách phần thưởng đã nhận khi bắt đầu chạy script",
+                    color = 7419530, -- Màu xanh biển
+                    fields = {
+                        {
+                            name = "Phần thưởng đã nhận",
+                            value = itemListText ~= "" and itemListText or "Không có phần thưởng nào",
+                            inline = false
+                        },
+                        {
+                            name = "Thời gian",
+                            value = os.date("%d/%m/%Y %H:%M:%S"),
+                            inline = true
+                        },
+                        {
+                            name = "Người chơi",
+                            value = Player.Name,
+                            inline = true
+                        }
+                    },
+                    footer = {
+                        text = "Arise Crossover Rewards Tracker - Khởi động"
+                    }
+                }
+            }
+        }
+        
+        -- Chuyển đổi dữ liệu thành chuỗi JSON
+        local jsonData = HttpService:JSONEncode(data)
+        
+        print("Chuẩn bị gửi webhook với dữ liệu: " .. jsonData:sub(1, 100) .. "...")
+        
+        -- Sử dụng HTTP request từ executor thay vì HttpService
+        local success, err = pcall(function()
+            -- Synapse X
+            if syn and syn.request then
+                syn.request({
+                    Url = CONFIG.WEBHOOK_URL,
+                    Method = "POST",
+                    Headers = {
+                        ["Content-Type"] = "application/json"
+                    },
+                    Body = jsonData
+                })
+                print("Đã gửi webhook qua syn.request")
+            -- KRNL, Script-Ware và nhiều executor khác
+            elseif request then
+                request({
+                    Url = CONFIG.WEBHOOK_URL,
+                    Method = "POST",
+                    Headers = {
+                        ["Content-Type"] = "application/json"
+                    },
+                    Body = jsonData
+                })
+                print("Đã gửi webhook qua request")
+            -- Các Executor khác
+            elseif http and http.request then
+                http.request({
+                    Url = CONFIG.WEBHOOK_URL,
+                    Method = "POST",
+                    Headers = {
+                        ["Content-Type"] = "application/json"
+                    },
+                    Body = jsonData
+                })
+                print("Đã gửi webhook qua http.request")
+            -- JJSploit và một số executor khác
+            elseif httppost then
+                httppost(CONFIG.WEBHOOK_URL, jsonData)
+                print("Đã gửi webhook qua httppost")
+            else
+                error("Không tìm thấy HTTP API nào được hỗ trợ bởi executor hiện tại")
+            end
+        end)
+        
+        if success then
+            print("Đã gửi webhook ban đầu thành công với " .. #receivedItems .. " phần thưởng")
+            
+            -- Hiển thị thông báo gửi webhook thành công
+            Rayfield:Notify({
+                Title = "Thành công",
+                Content = "Đã gửi thông tin " .. #receivedItems .. " phần thưởng hiện có",
+                Duration = 3,
+                Image = "check", -- Lucide icon
+            })
+        else
+            warn("Lỗi gửi webhook ban đầu: " .. tostring(err))
+            
+            -- Hiển thị thông báo lỗi
+            Rayfield:Notify({
+                Title = "Lỗi",
+                Content = "Không thể gửi webhook ban đầu: " .. tostring(err),
+                Duration = 5,
+                Image = "x", -- Lucide icon
+            })
+        end
+        
+        -- Kết thúc xử lý
+        wait(0.5)
+        isProcessingReward = false
+        lastWebhookTime = tick() -- Cập nhật thời gian gửi webhook cuối cùng
+    end
+end
+
+-- Khởi tạo tìm kiếm ban đầu và tạo UI
+delay(3, function()
+    print("Bắt đầu tìm kiếm UI và chuẩn bị gửi webhook khởi động...")
+    
+    -- Tìm các UI
+    findAllUIElements()
+    
+    -- Gửi webhook ban đầu chỉ một lần
+    sendInitialReceivedWebhook()
+    
+    -- Cập nhật thông tin hiển thị phần thưởng trong Rayfield
+    if TotalRewardsLabel then
+        local rewardsText = getTotalRewardsText()
+        TotalRewardsText = rewardsText
+        TotalRewardsLabel:Set({
+            Title = "Tổng phần thưởng hiện có", 
+            Content = rewardsText
+        })
+    end
+    
+    -- Thông báo Rayfield đã khởi động xong
+    Rayfield:Notify({
+        Title = "Arise Webhook đã sẵn sàng",
+        Content = "Đang theo dõi phần thưởng của " .. playerName,
+        Duration = 5,
+        Image = "check-circle", -- Lucide icon
+    })
+end)
+
+print("Script theo dõi phần thưởng AFKRewards đã được nâng cấp:")
+print("- Giao diện mới sử dụng Rayfield")
+print("- Gửi webhook khi khởi động để thông báo các phần thưởng hiện có")
+print("- Chỉ gửi MỘT webhook cho mỗi phần thưởng mới")
+print("- Không hiển thị và không gửi webhook cho CASH")
+print("- Kiểm tra số lượng item thực tế từ RECEIVED")
+print("- Hiển thị tổng phần thưởng chính xác trong webhook")
+print("- Ping @everyone khi phát hiện ZIRU G lần đầu tiên")
+print("- Cấu hình riêng biệt cho từng tài khoản: " .. CONFIG_FILE)
+print("- Giám sát phần thưởng mới với cooldown " .. WEBHOOK_COOLDOWN .. " giây")
+print("- Hỗ trợ phát hiện đặc biệt cho TIGER, TWIN PRISM BLADES và ZIRU G")
+
+-- Gửi thông tin đến Discord webhook (sử dụng HTTP request từ executor)
+local function sendWebhook(rewardInfo, rewardObject, isNewReward)
+    -- Loại bỏ các tiền tố không cần thiết
     local cleanRewardInfo = rewardInfo:gsub("RECEIVED:%s*", "")
     cleanRewardInfo = cleanRewardInfo:gsub("YOU GOT A NEW REWARD!%s*", "")
     
-    if isCashReward(cleanRewardInfo) then return end
+    -- Bỏ qua nếu phần thưởng là CASH
+    if isCashReward(cleanRewardInfo) then
+        print("Bỏ qua gửi webhook cho CASH: " .. cleanRewardInfo)
+        return
+    end
     
-    if isProcessingReward then return end
+    -- Kiểm tra xem có đang xử lý phần thưởng khác không
+    if isProcessingReward then
+        print("Đang xử lý phần thưởng khác, bỏ qua...")
+        return
+    end
     
-    local currentTime = tick()
-    if currentTime - lastWebhookTime < WEBHOOK_COOLDOWN then return end
+    -- Kiểm tra cooldown
+    if not canSendWebhook() then
+        print("Cooldown webhook còn " .. math.floor(WEBHOOK_COOLDOWN - (tick() - lastWebhookTime)) .. " giây, bỏ qua...")
+        return
+    end
     
+    -- Tạo ID duy nhất và kiểm tra trùng lặp
     local rewardId = createUniqueRewardId(cleanRewardInfo)
-    if receivedRewards[rewardId] then return end
+    if receivedRewards[rewardId] then
+        print("Phần thưởng này đã được gửi trước đó: " .. cleanRewardInfo)
+        return
+    end
     
+    -- Đánh dấu đang xử lý
     isProcessingReward = true
     lastWebhookTime = tick()
     
+    -- Đánh dấu đã nhận
     receivedRewards[rewardId] = true
     
+    -- Đọc số lượng item thực tế trước khi gửi webhook
     readActualItemQuantities()
     
+    local title = "🎁 Arise Crossover - AFKRewards"
+    local description = "Phần thưởng mới đã nhận được!"
+    
+    -- Cập nhật tổng phần thưởng
     updateTotalRewards(cleanRewardInfo)
+
+    -- Kiểm tra xem phần thưởng có chứa ZIRU G không để ping @everyone (chỉ lần đầu tiên)
+    local hasZiruG = cleanRewardInfo:find("ZIRU G") ~= nil or (playerItems["ZIRU G"] ~= nil and playerItems["ZIRU G"] > 0)
+    local shouldPingEveryone = hasZiruG and not hasAlreadyPingedZiruG
+    
+    -- Nếu phát hiện ZIRU G, đánh dấu đã ping để không ping lần sau
+    if hasZiruG and not hasAlreadyPingedZiruG then
+        hasAlreadyPingedZiruG = true
+        print("Đánh dấu đã ping ZIRU G lần đầu tiên, sẽ không ping lần sau")
+    end
     
     local data = {
-        content = nil,
+        content = shouldPingEveryone and "@everyone Phát hiện ZIRU G lần đầu tiên!" or nil,
         embeds = {
             {
-                title = "🎁 Arise Crossover - AFKRewards",
-                description = "Phần thưởng mới đã nhận được!",
+                title = title,
+                description = description,
                 color = 7419530, -- Màu xanh biển
                 fields = {
                     {
@@ -2161,49 +1376,100 @@ local function sendWebhook(rewardInfo)
         }
     }
     
+    -- Chuyển đổi dữ liệu thành chuỗi JSON
     local jsonData = HttpService:JSONEncode(data)
     
-    pcall(function()
+    -- Cập nhật URL từ cấu hình
+    local currentWebhookUrl = CONFIG.WEBHOOK_URL
+    
+    -- Sử dụng HTTP request từ executor thay vì HttpService
+    local success, err = pcall(function()
+        -- Synapse X
         if syn and syn.request then
             syn.request({
-                Url = CONFIG.WEBHOOK_URL,
+                Url = currentWebhookUrl,
                 Method = "POST",
                 Headers = {
                     ["Content-Type"] = "application/json"
                 },
                 Body = jsonData
             })
+        -- KRNL, Script-Ware và nhiều executor khác
         elseif request then
             request({
-                Url = CONFIG.WEBHOOK_URL,
+                Url = currentWebhookUrl,
                 Method = "POST",
                 Headers = {
                     ["Content-Type"] = "application/json"
                 },
                 Body = jsonData
             })
+        -- Các Executor khác
         elseif http and http.request then
             http.request({
-                Url = CONFIG.WEBHOOK_URL,
+                Url = currentWebhookUrl,
                 Method = "POST",
                 Headers = {
                     ["Content-Type"] = "application/json"
                 },
                 Body = jsonData
             })
+        -- JJSploit và một số executor khác
         elseif httppost then
-            httppost(CONFIG.WEBHOOK_URL, jsonData)
+            httppost(currentWebhookUrl, jsonData)
+        else
+            error("Không tìm thấy HTTP API nào được hỗ trợ bởi executor hiện tại")
         end
     end)
     
-    wait(0.5)
+    if success then
+        print("Đã gửi phần thưởng thành công: " .. cleanRewardInfo)
+        if shouldPingEveryone then
+            print("Đã ping @everyone vì phát hiện ZIRU G lần đầu tiên!")
+        end
+        
+        -- Hiển thị thông báo Rayfield khi nhận phần thưởng
+        Rayfield:Notify({
+            Title = "Phần thưởng mới!",
+            Content = cleanRewardInfo,
+            Duration = 5,
+            Image = "gift", -- Lucide icon
+        })
+        
+        -- Cập nhật thông tin hiển thị trong UI
+        if TotalRewardsLabel then
+            local rewardsText = getTotalRewardsText()
+            TotalRewardsText = rewardsText
+            TotalRewardsLabel:Set({
+                Title = "Tổng phần thưởng hiện có", 
+                Content = rewardsText
+            })
+        end
+    else
+        warn("Lỗi gửi webhook: " .. tostring(err))
+        
+        -- Hiển thị thông báo lỗi trong Rayfield
+        Rayfield:Notify({
+            Title = "Lỗi gửi webhook",
+            Content = "Không thể gửi thông tin phần thưởng",
+            Duration = 5,
+            Image = "alert-triangle", -- Lucide icon
+        })
+    end
+    
+    -- Kết thúc xử lý
+    wait(0.5) -- Chờ một chút để tránh xử lý quá nhanh
     isProcessingReward = false
 end
 
--- Kiểm tra phần thưởng mới từ thông báo
-local function checkNewRewardNotification(notificationContainer)
+-- Set này dùng để theo dõi đã gửi webhook của phần thưởng
+local sentRewards = {}
+
+-- Kiểm tra phần thưởng mới từ thông báo "YOU GOT A NEW REWARD!"
+checkNewRewardNotification = function(notificationContainer)
     if not notificationContainer then return end
     
+    -- Tìm các thông tin phần thưởng trong thông báo
     local rewardText = ""
     
     for _, child in pairs(notificationContainer:GetDescendants()) do
@@ -2212,11 +1478,19 @@ local function checkNewRewardNotification(notificationContainer)
         end
     end
     
-    if rewardText ~= "" and webhookActive then
+    -- Nếu tìm thấy thông tin phần thưởng
+    if rewardText ~= "" then
+        -- Tạo ID để kiểm tra
         local rewardId = createUniqueRewardId(rewardText)
         
-        if not receivedRewards[rewardId] then
-            sendWebhook(rewardText)
+        -- Nếu chưa gửi phần thưởng này
+        if not sentRewards[rewardId] then
+            sentRewards[rewardId] = true
+            
+            -- Đọc số lượng item hiện tại trước
+            readActualItemQuantities()
+            -- Gửi webhook với thông tin phần thưởng mới
+            sendWebhook(rewardText, notificationContainer, true)
             return true
         end
     end
@@ -2225,10 +1499,46 @@ local function checkNewRewardNotification(notificationContainer)
 end
 
 -- Kiểm tra phần thưởng mới
-local function checkNewRewards(rewardsContainer)
-    if not rewardsContainer or not webhookActive then return end
+checkNewRewards = function(rewardsContainer)
+    if not rewardsContainer then return end
     
     for _, rewardObject in pairs(rewardsContainer:GetChildren()) do
+        if rewardObject:IsA("Frame") or rewardObject:IsA("ImageLabel") then
+            -- Tìm các text label trong phần thưởng
+            local rewardText = ""
+            
+            for _, child in pairs(rewardObject:GetDescendants()) do
+                if child:IsA("TextLabel") then
+                    rewardText = rewardText .. child.Text .. " "
+                end
+            end
+            
+            -- Nếu là phần thưởng có dữ liệu
+            if rewardText ~= "" then
+                -- Tạo ID để kiểm tra
+                local rewardId = createUniqueRewardId(rewardText)
+                
+                -- Nếu chưa gửi phần thưởng này
+                if not sentRewards[rewardId] then
+                    sentRewards[rewardId] = true
+                    sendWebhook(rewardText, rewardObject, false)
+                end
+            end
+        end
+    end
+end
+
+-- Kiểm tra khi nhận được phần thưởng mới
+checkReceivedRewards = function(receivedContainer)
+    if not receivedContainer then return end
+    
+    -- Đọc số lượng item hiện tại
+    readActualItemQuantities()
+    
+    -- Ghi nhận đã kiểm tra RECEIVED
+    local receivedMarked = false
+    
+    for _, rewardObject in pairs(receivedContainer:GetChildren()) do
         if rewardObject:IsA("Frame") or rewardObject:IsA("ImageLabel") then
             local rewardText = ""
             
@@ -2238,126 +1548,29 @@ local function checkNewRewards(rewardsContainer)
                 end
             end
             
-            if rewardText ~= "" then
-                local rewardId = createUniqueRewardId(rewardText)
+            -- Nếu là phần thưởng có dữ liệu và chưa ghi nhận RECEIVED
+            if rewardText ~= "" and not receivedMarked then
+                receivedMarked = true
                 
-                if not receivedRewards[rewardId] then
-                    sendWebhook(rewardText)
-                end
+                -- Không gửi webhook từ phần RECEIVED nữa, chỉ ghi nhận đã đọc
+                -- Webhook sẽ được gửi từ NEW REWARD hoặc REWARDS
+                
+                -- Đánh dấu tất cả phần thưởng từ RECEIVED đã được xử lý
+                local rewardId = createUniqueRewardId("RECEIVED:" .. rewardText)
+                sentRewards[rewardId] = true
             end
         end
     end
-end
-
--- Khởi động theo dõi phần thưởng
-local function startRewardTracking()
-    if webhookActive then return end
     
-    webhookActive = true
-    
-    -- Đọc số lượng item hiện tại
-    readActualItemQuantities()
-    
-    -- Tạo vòng lặp kiểm tra phần thưởng mới
-    spawn(function()
-        while webhookActive and wait(2) do
-            local newRewardUI = findNewRewardNotification()
-            if newRewardUI then
-                checkNewRewardNotification(newRewardUI)
-            else
-                local rewardsUI = findRewardsUI()
-                if rewardsUI then
-                    checkNewRewards(rewardsUI)
-                end
-            end
+    -- Cập nhật thông tin hiển thị trong UI nếu có thay đổi
+    if TotalRewardsLabel then
+        local rewardsText = getTotalRewardsText()
+        if rewardsText ~= TotalRewardsText then
+            TotalRewardsText = rewardsText
+            TotalRewardsLabel:Set({
+                Title = "Tổng phần thưởng hiện có", 
+                Content = rewardsText
+            })
         end
-    end)
-    
-    statusLabel.Text = "Trạng thái: Webhook đang hoạt động"
-    statusLabel.TextColor3 = Color3.fromRGB(76, 175, 80)
-end
-
--- Dừng theo dõi phần thưởng
-local function stopRewardTracking()
-    webhookActive = false
-    statusLabel.Text = "Trạng thái: Webhook đã dừng"
-    statusLabel.TextColor3 = Color3.fromRGB(255, 152, 0)
-end
-
--- Xuất các hàm ra biến toàn cục để tích hợp với UI
-_G.CONFIG = CONFIG
-_G.saveConfig = saveConfig
-_G.sendTestWebhook = sendTestWebhook
-
--- Kết nối các chức năng với giao diện
-saveButton.MouseButton1Click:Connect(function()
-    local newUrl = urlInput.Text
-    if newUrl ~= "" and newUrl ~= CONFIG.WEBHOOK_URL then
-        CONFIG.WEBHOOK_URL = newUrl
-        
-        -- Lưu vào file cấu hình
-        if saveConfig(CONFIG) then
-            statusLabel.Text = "Trạng thái: Đã lưu URL mới cho " .. playerName
-        else
-            statusLabel.Text = "Trạng thái: Đã lưu URL mới (không lưu được file)"
-        end
-        
-        statusLabel.TextColor3 = Color3.fromRGB(76, 175, 80)
-        showNotification("Đã lưu URL webhook")
-    else
-        statusLabel.Text = "Trạng thái: URL không thay đổi hoặc trống"
-        statusLabel.TextColor3 = Color3.fromRGB(255, 235, 59)
     end
-end)
-
-testButton.MouseButton1Click:Connect(function()
-    local success = sendTestWebhook("Kiểm tra kết nối từ Arise Crossover UI")
-    if success then
-        showNotification("Webhook test thành công")
-    else
-        showNotification("Webhook test thất bại!")
-    end
-end)
-
--- Khi bật/tắt Auto Notify
-autoNotifyButton.MouseButton1Click:Connect(function()
-    -- Trạng thái sau khi nhấn
-    local enabled = autoNotifyToggle:FindFirstChild("ToggleBackground").BackgroundColor3 == Color3.fromRGB(0, 255, 255)
-    CONFIG.SHOW_UI = enabled
-    
-    -- Lưu cấu hình
-    saveConfig(CONFIG)
-    
-    if enabled then
-        startRewardTracking()
-    else
-        stopRewardTracking()
-    end
-    
-    showNotification(enabled and "Đã bật tự động thông báo AFKRewards" or "Đã tắt tự động thông báo AFKRewards")
-end)
-
--- Khởi động webhook nếu đã bật Auto Notify
-if autoNotifyToggle:FindFirstChild("ToggleBackground").BackgroundColor3 == Color3.fromRGB(0, 255, 255) then
-    startRewardTracking()
-    statusLabel.Text = "Trạng thái: Webhook đang hoạt động"
-    statusLabel.TextColor3 = Color3.fromRGB(76, 175, 80)
-else
-    statusLabel.Text = "Trạng thái: Webhook chưa kích hoạt"
-    statusLabel.TextColor3 = Color3.fromRGB(255, 152, 0)
-end
-
--- Phát hiện webhooks khi tải lại UI
-spawn(function()
-    wait(2) -- Đợi UI load hoàn tất
-    -- Nếu có URL hợp lệ, hiển thị
-    if CONFIG.WEBHOOK_URL ~= "YOUR_URL" and CONFIG.WEBHOOK_URL ~= "" then
-        urlInput.Text = CONFIG.WEBHOOK_URL
-        statusLabel.Text = "Trạng thái: Đã tải URL từ cấu hình"
-        statusLabel.TextColor3 = Color3.fromRGB(76, 175, 80)
-    end
-end)
-
--- Thông báo tích hợp hoàn tất
-print("Đã tích hợp thành công RewardWebhook vào Script-AC")
-print("Đang sử dụng cấu hình riêng biệt: " .. CONFIG_FILE)
+end 
