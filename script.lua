@@ -1,21 +1,20 @@
 -- Arise Crossover - Discord Webhook cho AFKRewards
-local allowedPlaceIds = {87039211657390, 116614712661486} -- Danh sách PlaceID được phép chạy
+local allowedPlaceId = 87039211657390 -- PlaceId mà script được phép chạy
+local afkPlaceId = 116614712661486 -- PlaceId của khu vực AFK
 
--- Kiểm tra PlaceID có nằm trong danh sách không
-local function isAllowedPlace(placeId)
-    for _, id in ipairs(allowedPlaceIds) do
-        if placeId == id then
-            return true
-        end
-    end
-    return false
-end
 -- Kiểm tra PlaceID ngay từ đầu để chỉ chạy trên đúng game
-if game.PlaceId ~= allowedPlaceId then
+if game.PlaceId ~= allowedPlaceId and game.PlaceId ~= afkPlaceId then
     local placeName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name or "Không xác định"
-    print("❌ Script Arise Webhook chỉ hoạt động trên game với PlaceID: " .. allowedPlaceId)
+    print("❌ Script Arise Webhook chỉ hoạt động trên game với PlaceID: " .. allowedPlaceId .. " hoặc khu vực AFK: " .. afkPlaceId)
     print("❌ Game hiện tại: " .. placeName .. " (PlaceID: " .. game.PlaceId .. ")")
     return -- Dừng script ngay lập tức
+end
+
+-- Thông báo khu vực hiện tại
+if game.PlaceId == allowedPlaceId then
+    print("✅ Đang chạy script trong game chính")
+elseif game.PlaceId == afkPlaceId then
+    print("✅ Đang chạy script trong khu vực AFK")
 end
 
 local HttpService = game:GetService("HttpService")
