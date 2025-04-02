@@ -2208,3 +2208,214 @@ _G.extractQuantity = extractQuantity
 _G.isCashReward = isCashReward
 _G.createUniqueRewardId = createUniqueRewardId
 _G.parseReward = parseReward
+
+-- Tạo nút để gửi webhook thủ công với phần thưởng hiện tại
+local SendCurrentButton = RewardsTab:CreateButton({
+    Name = "Gửi webhook phần thưởng hiện tại",
+    Callback = function()
+        -- Hiển thị thông báo đang gửi
+        Rayfield:Notify({
+            Title = "Đang gửi",
+            Content = "Đang gửi thông tin phần thưởng hiện tại...",
+            Duration = 2,
+            Image = "loader", -- Lucide icon
+        })
+        
+        -- Tạo nội dung phần thưởng hiện tại để gửi
+        local currentRewardsText = ""
+        if playerItems and next(playerItems) ~= nil then
+            for itemType, amount in pairs(playerItems) do
+                currentRewardsText = currentRewardsText .. amount .. " " .. itemType .. "\n"
+            end
+        else
+            -- Đọc lại số lượng item
+            pcall(function()
+                readActualItemQuantities()
+            end)
+            
+            -- Thử lại lấy dữ liệu sau khi đọc lại
+            if playerItems and next(playerItems) ~= nil then
+                for itemType, amount in pairs(playerItems) do
+                    currentRewardsText = currentRewardsText .. amount .. " " .. itemType .. "\n"
+                end
+            else
+                currentRewardsText = "2000 GEMS" -- Mặc định nếu không đọc được
+            end
+        end
+        
+        print("DEBUG: Nội dung phần thưởng sẽ gửi: " .. currentRewardsText)
+        
+        -- Kiểm tra URL webhook
+        if not CONFIG.WEBHOOK_URL or CONFIG.WEBHOOK_URL == "YOUR_URL" or CONFIG.WEBHOOK_URL == "" then
+            Rayfield:Notify({
+                Title = "Lỗi URL",
+                Content = "URL webhook chưa được cấu hình. Vui lòng nhập URL trong tab Webhook.",
+                Duration = 5,
+                Image = "alert-triangle", -- Lucide icon
+            })
+            return
+        end
+        
+        print("DEBUG: URL Webhook: " .. CONFIG.WEBHOOK_URL:sub(1, 30) .. "...")
+        
+        -- Gửi webhook thủ công
+        local data = {
+            content = nil,
+            embeds = {
+                {
+                    title = "🎮 Arise Crossover - Phần thưởng hiện tại",
+                    description = "Phần thưởng hiện có trong game",
+                    color = 7419530, -- Màu xanh biển
+                    fields = {
+                        {
+                            name = "Danh sách phần thưởng",
+                            value = currentRewardsText ~= "" and currentRewardsText or "Không có phần thưởng",
+                            inline = false
+                        },
+                        {
+                            name = "Thời gian",
+                            value = os.date("%d/%m/%Y %H:%M:%S"),
+                            inline = true
+                        },
+                        {
+                            name = "Người chơi",
+                            value = Player.Name,
+                            inline = true
+                        }
+                    },
+                    footer = {
+                        text = "Arise Crossover Rewards Tracker - Webhook độc quyền của DuongTuan"
+                    }
+                }
+            }
+        }
+        
+        -- Chuyển đổi dữ liệu thành chuỗi JSON
+        local jsonData = ""
+        local jsonSuccess = pcall(function()
+            jsonData = HttpService:JSONEncode(data)
+        end)
+        
+        if not jsonSuccess or jsonData == "" then
+            Rayfield:Notify({
+                Title = "Lỗi JSON",
+                Content = "Không thể tạo dữ liệu JSON",
+                Duration = 5,
+                Image = "x", -- Lucide icon
+            })
+            return
+        end
+        
+        print("DEBUG: Chuỗi JSON đã tạo thành công, độ dài: " .. #jsonData)
+        
+        -- Gửi HTTP request
+        local success, result = false, "Không tìm thấy phương thức HTTP nào"
+        
+        -- Thử từng phương thức HTTP
+        if syn and syn.request then
+            print("DEBUG: Đang gửi qua syn.request")
+            success, result = pcall(function()
+                return syn.request({
+                    Url = CONFIG.WEBHOOK_URL,
+                    Method = "POST",
+                    Headers = {
+                        ["Content-Type"] = "application/json"
+                    },
+                    Body = jsonData
+                })
+            end)
+            print("DEBUG: Kết quả syn.request - Success: " .. tostring(success) .. ", Status: " .. (success and (result.StatusCode or "N/A") or "Lỗi"))
+        elseif request then
+            print("DEBUG: Đang gửi qua request")
+            success, result = pcall(function()
+                return request({
+                    Url = CONFIG.WEBHOOK_URL,
+                    Method = "POST",
+                    Headers = {
+                        ["Content-Type"] = "application/json"
+                    },
+                    Body = jsonData
+                })
+            end)
+            print("DEBUG: Kết quả request - Success: " .. tostring(success) .. ", Status: " .. (success and (result.StatusCode or "N/A") or "Lỗi"))
+        elseif http and http.request then
+            print("DEBUG: Đang gửi qua http.request")
+            success, result = pcall(function()
+                return http.request({
+                    Url = CONFIG.WEBHOOK_URL,
+                    Method = "POST",
+                    Headers = {
+                        ["Content-Type"] = "application/json"
+                    },
+                    Body = jsonData
+                })
+            end)
+            print("DEBUG: Kết quả http.request - Success: " .. tostring(success) .. ", Status: " .. (success and "OK" or "Lỗi"))
+        elseif httppost then
+            print("DEBUG: Đang gửi qua httppost")
+            success, result = pcall(function()
+                return httppost(CONFIG.WEBHOOK_URL, jsonData)
+            end)
+            print("DEBUG: Kết quả httppost - Success: " .. tostring(success))
+        else
+            print("DEBUG: Không tìm thấy phương thức HTTP nào được hỗ trợ")
+        end
+        
+        if success then
+            Rayfield:Notify({
+                Title = "Thành công",
+                Content = "Đã gửi thông tin phần thưởng hiện tại qua webhook",
+                Duration = 3,
+                Image = "check", -- Lucide icon
+            })
+        else
+            Rayfield:Notify({
+                Title = "Lỗi gửi webhook",
+                Content = "Không thể gửi webhook: " .. tostring(result),
+                Duration = 5,
+                Image = "x", -- Lucide icon
+            })
+        end
+    end,
+})
+
+-- Cập nhật nút Test Webhook để hiển thị thêm thông tin debug
+local TestButton = MainTab:CreateButton({
+    Name = "Kiểm tra kết nối Webhook",
+    Callback = function()
+        -- Hiển thị thông báo đang kiểm tra
+        Rayfield:Notify({
+            Title = "Đang kiểm tra",
+            Content = "Đang gửi webhook thử nghiệm...",
+            Duration = 2,
+            Image = "loader", -- Lucide icon
+        })
+        
+        -- Debug thông tin
+        print("DEBUG: URL Webhook: " .. (CONFIG.WEBHOOK_URL or "nil"))
+        print("DEBUG: Executor hiện tại:")
+        print("  - syn.request: " .. tostring(syn and syn.request ~= nil))
+        print("  - request: " .. tostring(request ~= nil))
+        print("  - http.request: " .. tostring(http and http.request ~= nil))
+        print("  - httppost: " .. tostring(httppost ~= nil))
+        
+        -- Thử gửi webhook kiểm tra
+        local success = sendTestWebhook("Kiểm tra kết nối từ Arise Crossover Rewards Tracker")
+        
+        if success then
+            Rayfield:Notify({
+                Title = "Thành công",
+                Content = "Kiểm tra webhook thành công!",
+                Duration = 3,
+                Image = "check", -- Lucide icon
+            })
+        else
+            Rayfield:Notify({
+                Title = "Lỗi",
+                Content = "Kiểm tra webhook thất bại, vui lòng kiểm tra URL!",
+                Duration = 5,
+                Image = "x", -- Lucide icon
+            })
+        end
+    end,
+})
