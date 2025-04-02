@@ -28,6 +28,7 @@ local function loadConfig()
     
     if success and result then
         print("Đã tải cấu hình từ file cho tài khoản " .. playerName)
+        print("Auto TP từ config: " .. tostring(result.AUTO_TP_TO_AFK))
         return result
     else
         print("Không tìm thấy file cấu hình cho tài khoản " .. playerName)
@@ -80,21 +81,42 @@ local WEBHOOK_URL = "YOUR_URL" -- Giá trị mặc định
 
 -- Tải cấu hình từ file (nếu có)
 local savedConfig = loadConfig()
-if savedConfig and savedConfig.WEBHOOK_URL then
-    WEBHOOK_URL = savedConfig.WEBHOOK_URL
-    print("Đã tải URL webhook từ cấu hình: " .. WEBHOOK_URL:sub(1, 30) .. "...")
+if savedConfig then
+    if savedConfig.WEBHOOK_URL then
+        WEBHOOK_URL = savedConfig.WEBHOOK_URL
+        print("Đã tải URL webhook từ cấu hình: " .. WEBHOOK_URL:sub(1, 30) .. "...")
+    end
+    
+    -- Chỉ cập nhật các giá trị khác từ savedConfig nếu chúng tồn tại
+    local CONFIG_DEFAULTS = {
+        WEBHOOK_URL = WEBHOOK_URL,
+        WEBHOOK_COOLDOWN = 3,
+        SHOW_UI = true,
+        UI_POSITION = UDim2.new(0.7, 0, 0.05, 0),
+        ACCOUNT_NAME = playerName,
+        AUTO_TP_TO_AFK = false,
+        TELEPORT_COOLDOWN = 30
+    }
+    
+    -- Tạo đối tượng CONFIG bằng cách gộp từ mặc định và giá trị đã lưu
+    CONFIG = {}
+    for key, value in pairs(CONFIG_DEFAULTS) do
+        CONFIG[key] = (savedConfig[key] ~= nil) and savedConfig[key] or value
+    end
+    
+    print("Trạng thái Auto TP từ file config: " .. tostring(CONFIG.AUTO_TP_TO_AFK))
+else
+    -- Tùy chọn định cấu hình mặc định nếu không có file
+    CONFIG = {
+        WEBHOOK_URL = WEBHOOK_URL,
+        WEBHOOK_COOLDOWN = 3,
+        SHOW_UI = true,
+        UI_POSITION = UDim2.new(0.7, 0, 0.05, 0),
+        ACCOUNT_NAME = playerName,
+        AUTO_TP_TO_AFK = false,
+        TELEPORT_COOLDOWN = 30
+    }
 end
-
--- Tùy chọn định cấu hình
-local CONFIG = {
-    WEBHOOK_URL = WEBHOOK_URL,
-    WEBHOOK_COOLDOWN = 3,
-    SHOW_UI = true,
-    UI_POSITION = UDim2.new(0.7, 0, 0.05, 0),
-    ACCOUNT_NAME = playerName, -- Lưu tên tài khoản vào cấu hình
-    AUTO_TP_TO_AFK = false, -- Mặc định tắt auto TP
-    TELEPORT_COOLDOWN = 30  -- Thời gian chờ trước khi teleport (giây)
-}
 
 -- Lưu cấu hình hiện tại
 saveConfig(CONFIG)
@@ -333,9 +355,10 @@ local TeleportInfo = TeleportTab:CreateSection("Teleport to AFK Area")
 -- Tạo toggle cho Auto TP to AFK
 local AutoTPToggle = TeleportTab:CreateToggle({
     Name = "Auto TP to AFK",
-    CurrentValue = CONFIG.AUTO_TP_TO_AFK or false,
+    CurrentValue = CONFIG.AUTO_TP_TO_AFK,
     Flag = "AutoTPToAFK",
     Callback = function(Value)
+        print("Toggle Auto TP được thay đổi: " .. tostring(Value))
         CONFIG.AUTO_TP_TO_AFK = Value
         saveConfig(CONFIG)
         
