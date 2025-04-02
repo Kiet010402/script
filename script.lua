@@ -749,7 +749,7 @@ findNewRewardNotification = function()
     return result
 end
 
--- Đọc số lượng item thực tế từ UI RECEIVED
+-- Cập nhật hàm readActualItemQuantities để sử dụng hàm extractQuantity đúng cách
 readActualItemQuantities = function()
     local receivedUI = findReceivedFrame()
     if not receivedUI then 
@@ -792,7 +792,11 @@ readActualItemQuantities = function()
                             print("    Phát hiện TIGER item")
                             
                             -- Tìm số lượng trong ngoặc - ví dụ: TIGER(1)
-                            local foundQuantity = extractQuantity(text)
+                            local foundQuantity = nil
+                            pcall(function() 
+                                foundQuantity = extractQuantity(text)
+                            end)
+                            
                             if foundQuantity then
                                 multiplier = foundQuantity
                                 print("    Số lượng TIGER: " .. multiplier)
@@ -813,7 +817,11 @@ readActualItemQuantities = function()
                             print("    Phát hiện TWIN PRISM BLADES item")
                             
                             -- Tìm số lượng trong ngoặc - ví dụ: TWIN PRISM BLADES(1)
-                            local foundQuantity = extractQuantity(text)
+                            local foundQuantity = nil
+                            pcall(function() 
+                                foundQuantity = extractQuantity(text)
+                            end)
+                            
                             if foundQuantity then
                                 multiplier = foundQuantity
                                 print("    Số lượng TWIN PRISM BLADES: " .. multiplier)
@@ -834,7 +842,11 @@ readActualItemQuantities = function()
                             print("    Phát hiện ZIRU G item")
                             
                             -- Tìm số lượng trong ngoặc - ví dụ: ZIRU G(1)
-                            local foundQuantity = extractQuantity(text)
+                            local foundQuantity = nil
+                            pcall(function() 
+                                foundQuantity = extractQuantity(text)
+                            end)
+                            
                             if foundQuantity then
                                 multiplier = foundQuantity
                                 print("    Số lượng ZIRU G: " .. multiplier)
@@ -859,7 +871,11 @@ readActualItemQuantities = function()
                         end
                         
                         -- Tìm số lượng trong ngoặc - ví dụ: GEMS(1)
-                        local foundQuantity = extractQuantity(text)
+                        local foundQuantity = nil
+                        pcall(function() 
+                            foundQuantity = extractQuantity(text)
+                        end)
+                        
                         if foundQuantity then
                             multiplier = foundQuantity
                             print("    Phát hiện số lượng từ ngoặc (multiplier): " .. multiplier)
@@ -879,7 +895,12 @@ readActualItemQuantities = function()
                 print("    Số lượng cuối cùng: " .. baseQuantity .. " x " .. multiplier .. " = " .. finalQuantity)
                 
                 -- Chỉ lưu các phần thưởng không phải CASH
-                if itemType ~= "" and finalQuantity > 0 and not isCashReward(itemType) then
+                local isCash = false
+                pcall(function()
+                    isCash = isCashReward(itemType)
+                end)
+                
+                if itemType ~= "" and finalQuantity > 0 and not isCash then
                     playerItems[itemType] = (playerItems[itemType] or 0) + finalQuantity
                     print("Đã đọc item: " .. finalQuantity .. " " .. itemType .. " (từ " .. baseQuantity .. " x " .. multiplier .. ")")
                     foundAnyItem = true
@@ -905,7 +926,12 @@ readActualItemQuantities = function()
                         multiplier = tonumber(multiplier)
                         local finalAmount = baseAmount * multiplier
                         
-                        if not isCashReward(itemType) then
+                        local isCash = false
+                        pcall(function()
+                            isCash = isCashReward(itemType)
+                        end)
+                        
+                        if not isCash then
                             playerItems[itemType] = (playerItems[itemType] or 0) + finalAmount
                             print("Phương pháp thay thế - Đã đọc item: " .. finalAmount .. " " .. itemType .. " (từ " .. baseAmount .. " x " .. multiplier .. ")")
                             foundAnyItem = true
@@ -919,7 +945,12 @@ readActualItemQuantities = function()
                                itemType == "ZIRU G" or text:find("ZIRU G") then
                                 
                                 multiplier = tonumber(multiplier)
-                                if multiplier and multiplier > 0 and not isCashReward(itemType) then
+                                local isCash = false
+                                pcall(function()
+                                    isCash = isCashReward(itemType)
+                                end)
+                                
+                                if multiplier and multiplier > 0 and not isCash then
                                     playerItems[itemType] = (playerItems[itemType] or 0) + multiplier
                                     print("Phương pháp thay thế - Đã đọc item đặc biệt: " .. multiplier .. " " .. itemType)
                                     foundAnyItem = true
@@ -948,7 +979,10 @@ readActualItemQuantities = function()
                 if child:IsA("TextLabel") and child.Text:find("TIGER") then
                     print("Phát hiện TIGER thông qua kiểm tra đặc biệt: " .. child.Text)
                     -- Tìm số lượng trong ngoặc nếu có
-                    local quantity = extractQuantity(child.Text) or 1
+                    local quantity = 1
+                    pcall(function()
+                        quantity = extractQuantity(child.Text) or 1
+                    end)
                     playerItems["TIGER"] = (playerItems["TIGER"] or 0) + quantity
                     foundAnyItem = true
                 end
@@ -961,7 +995,10 @@ readActualItemQuantities = function()
                 if child:IsA("TextLabel") and child.Text:find("TWIN PRISM BLADES") then
                     print("Phát hiện TWIN PRISM BLADES thông qua kiểm tra đặc biệt: " .. child.Text)
                     -- Tìm số lượng trong ngoặc nếu có
-                    local quantity = extractQuantity(child.Text) or 1
+                    local quantity = 1
+                    pcall(function()
+                        quantity = extractQuantity(child.Text) or 1
+                    end)
                     playerItems["TWIN PRISM BLADES"] = (playerItems["TWIN PRISM BLADES"] or 0) + quantity
                     foundAnyItem = true
                 end
@@ -974,7 +1011,10 @@ readActualItemQuantities = function()
                 if child:IsA("TextLabel") and child.Text:find("ZIRU G") then
                     print("Phát hiện ZIRU G thông qua kiểm tra đặc biệt: " .. child.Text)
                     -- Tìm số lượng trong ngoặc nếu có
-                    local quantity = extractQuantity(child.Text) or 1
+                    local quantity = 1
+                    pcall(function()
+                        quantity = extractQuantity(child.Text) or 1
+                    end)
                     playerItems["ZIRU G"] = (playerItems["ZIRU G"] or 0) + quantity
                     foundAnyItem = true
                 end
@@ -1875,4 +1915,102 @@ spawn(function()
     if CONFIG.AUTO_TP_TO_AFK then
         startAutoTeleport()
     end
-end) 
+end)
+
+-- Trích xuất số lượng từ chuỗi văn bản (ví dụ: từ "GEMS(10)" -> 10)
+local function extractQuantity(text)
+    if not text or type(text) ~= "string" then
+        return nil
+    end
+    
+    -- Tìm số lượng trong ngoặc đơn - ví dụ: GEMS(10)
+    local quantity = text:match("%((%d+)%)")
+    if quantity then
+        return tonumber(quantity)
+    end
+    
+    -- Tìm số lượng ở đầu chuỗi - ví dụ: 500 GEMS
+    local prefixQuantity = text:match("^(%d+)%s+")
+    if prefixQuantity then
+        return tonumber(prefixQuantity)
+    end
+    
+    return nil
+end
+
+-- Kiểm tra xem phần thưởng có phải là tiền (CASH) hay không
+local function isCashReward(rewardText)
+    if not rewardText or type(rewardText) ~= "string" then
+        return false
+    end
+    
+    return rewardText:find("CASH") ~= nil or 
+           rewardText:find("MONEY") ~= nil or 
+           rewardText:find("CURRENCY") ~= nil or
+           rewardText:find("DOLLAR") ~= nil
+end
+
+-- Tạo ID duy nhất cho phần thưởng để tránh trùng lặp
+local function createUniqueRewardId(rewardText)
+    if type(rewardText) ~= "string" then
+        return tostring(tick()) -- Sử dụng thời gian hiện tại nếu không có văn bản
+    end
+    
+    -- Loại bỏ khoảng trắng và chuyển thành chữ thường
+    local cleanText = rewardText:gsub("%s+", ""):lower()
+    
+    -- Kết hợp văn bản đã làm sạch với thời gian hiện tại (làm tròn đến giây)
+    local currentTime = math.floor(tick() / 10) * 10
+    return cleanText .. "_" .. tostring(currentTime)
+end
+
+-- Phân tích phần thưởng từ văn bản
+local function parseReward(rewardText)
+    if not rewardText or type(rewardText) ~= "string" then
+        return nil, nil
+    end
+    
+    -- Loại bỏ tiền tố không cần thiết
+    local cleanText = rewardText:gsub("RECEIVED:%s*", "")
+    cleanText = cleanText:gsub("YOU GOT A NEW REWARD!%s*", "")
+    
+    -- Pattern 1: Số lượng + Loại (ví dụ: "500 GEMS")
+    local amount, itemType = cleanText:match("(%d+)%s+([%w%s]+)")
+    
+    -- Pattern 2: Loại(Số lượng) (ví dụ: "GEMS(10)")
+    if not amount or not itemType then
+        itemType, amount = cleanText:match("([%w%s]+)%((%d+)%)")
+    end
+    
+    -- Pattern 3: Chỉ là tên vật phẩm đặc biệt (ví dụ: "TIGER")
+    if not amount and not itemType then
+        if cleanText:find("TIGER") then
+            itemType = "TIGER"
+            amount = 1
+        elseif cleanText:find("TWIN PRISM BLADES") then
+            itemType = "TWIN PRISM BLADES"
+            amount = 1
+        elseif cleanText:find("ZIRU G") then
+            itemType = "ZIRU G"
+            amount = 1
+        end
+    end
+    
+    -- Chuyển đổi số lượng thành số
+    if amount then
+        amount = tonumber(amount)
+    end
+    
+    -- Làm sạch tên vật phẩm nếu có
+    if itemType then
+        itemType = itemType:gsub("^%s+", ""):gsub("%s+$", "")
+    end
+    
+    return amount, itemType
+end
+
+-- Đặt các hàm này vào môi trường toàn cục để các hàm khác có thể sử dụng
+_G.extractQuantity = extractQuantity
+_G.isCashReward = isCashReward
+_G.createUniqueRewardId = createUniqueRewardId
+_G.parseReward = parseReward
