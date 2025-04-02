@@ -1,6 +1,15 @@
 -- Arise Crossover - Discord Webhook cho AFKRewards
-local allowedPlaceId = 87039211657390 -- PlaceId mà script được phép chạy
+local allowedPlaceIds = {87039211657390, 116614712661486} -- Danh sách PlaceID được phép chạy
 
+-- Kiểm tra PlaceID có nằm trong danh sách không
+local function isAllowedPlace(placeId)
+    for _, id in ipairs(allowedPlaceIds) do
+        if placeId == id then
+            return true
+        end
+    end
+    return false
+end
 -- Kiểm tra PlaceID ngay từ đầu để chỉ chạy trên đúng game
 if game.PlaceId ~= allowedPlaceId then
     local placeName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name or "Không xác định"
