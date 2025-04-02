@@ -288,27 +288,34 @@ local TotalRewardsLabel = RewardsTab:CreateParagraph({
     Content = "Đang tải thông tin phần thưởng..."
 })
 
--- Tạo button để làm mới thông tin phần thưởng
+-- Tạo button để làm mới thông tin phần thưởng với xử lý lỗi
 local RefreshButton = RewardsTab:CreateButton({
     Name = "Làm mới thông tin phần thưởng",
     Callback = function()
-        -- Đọc số lượng item hiện tại
-        readActualItemQuantities()
+        -- Đọc số lượng item hiện tại với xử lý lỗi
+        pcall(function()
+            readActualItemQuantities()
+        end)
         
-        -- Cập nhật thông tin hiển thị
-        local rewardsText = getTotalRewardsText()
-        TotalRewardsText = rewardsText
-        TotalRewardsLabel:Set({
-            Title = "Tổng phần thưởng hiện có", 
-            Content = rewardsText
-        })
-        
-        Rayfield:Notify({
-            Title = "Đã làm mới",
-            Content = "Đã cập nhật thông tin phần thưởng",
-            Duration = 2,
-            Image = "refresh-cw", -- Lucide icon
-        })
+        -- Cập nhật thông tin hiển thị với xử lý lỗi
+        pcall(function()
+            local rewardsText = getTotalRewardsText()
+            TotalRewardsText = rewardsText
+            
+            if TotalRewardsLabel then
+                TotalRewardsLabel:Set({
+                    Title = "Tổng phần thưởng hiện có", 
+                    Content = rewardsText
+                })
+            end
+            
+            Rayfield:Notify({
+                Title = "Đã làm mới",
+                Content = "Đã cập nhật thông tin phần thưởng",
+                Duration = 2,
+                Image = "refresh-cw", -- Lucide icon
+            })
+        end)
     end,
 })
 
@@ -1046,76 +1053,167 @@ end
 
 -- Cập nhật tổng phần thưởng
 local function updateTotalRewards(rewardText)
-    local amount, itemType = parseReward(rewardText)
-    
-    if amount and itemType then
-        -- Bỏ qua CASH
-        if isCashReward(itemType) then
-            print("Bỏ qua cập nhật CASH: " .. amount .. " " .. itemType)
-            return
-        end
+    if not rewardText or type(rewardText) ~= "string" then
+        warn("Không thể cập nhật tổng phần thưởng: rewardText không hợp lệ")
+        return
+    end
+
+    -- Sử dụng pcall để bắt lỗi
+    local success, result = pcall(function()
+        local amount, itemType = nil, nil
+        pcall(function()
+            amount, itemType = parseReward(rewardText)
+        end)
         
-        if not totalRewards[itemType] then
-            totalRewards[itemType] = amount
-        else
-            totalRewards[itemType] = totalRewards[itemType] + amount
+        if amount and itemType then
+            -- Bỏ qua CASH
+            local isCash = false
+            pcall(function()
+                isCash = isCashReward(itemType)
+            end)
+            
+            if isCash then
+                print("Bỏ qua cập nhật CASH: " .. amount .. " " .. itemType)
+                return
+            end
+            
+            if not totalRewards[itemType] then
+                totalRewards[itemType] = amount
+            else
+                totalRewards[itemType] = totalRewards[itemType] + amount
+            end
+            print("Đã cập nhật tổng phần thưởng: " .. amount .. " " .. itemType)
         end
-        print("Đã cập nhật tổng phần thưởng: " .. amount .. " " .. itemType)
+    end)
+    
+    if not success then
+        warn("Lỗi khi cập nhật tổng phần thưởng: " .. tostring(result))
     end
 end
 
 -- Tạo chuỗi tổng hợp tất cả phần thưởng
 local function getTotalRewardsText()
-    local result = "Tổng phần thưởng:\n"
-    
-    -- Đọc số lượng item thực tế từ UI
-    readActualItemQuantities()
-    
-    -- Ưu tiên hiển thị số liệu từ playerItems nếu có
-    if next(playerItems) ~= nil then
-        for itemType, amount in pairs(playerItems) do
-            -- Loại bỏ CASH (thêm biện pháp bảo vệ)
-            if not isCashReward(itemType) then
-                result = result .. "- " .. amount .. " " .. itemType .. "\n"
+    -- Sử dụng pcall để bắt lỗi
+    local success, rewardText = pcall(function()
+        local result = "Tổng phần thưởng:\n"
+        
+        -- Đọc số lượng item thực tế từ UI (sử dụng pcall để tránh lỗi)
+        pcall(function()
+            readActualItemQuantities()
+        end)
+        
+        -- Ưu tiên hiển thị số liệu từ playerItems nếu có
+        if playerItems and next(playerItems) ~= nil then
+            for itemType, amount in pairs(playerItems) do
+                -- Bảo vệ lỗi với pcall
+                local isCash = false
+                pcall(function()
+                    isCash = isCashReward(itemType)
+                end)
+                
+                -- Loại bỏ CASH (thêm biện pháp bảo vệ)
+                if not isCash then
+                    result = result .. "- " .. amount .. " " .. itemType .. "\n"
+                end
+            end
+        else
+            -- Sử dụng totalRewards nếu không đọc được từ UI
+            if totalRewards and next(totalRewards) ~= nil then
+                for itemType, amount in pairs(totalRewards) do
+                    -- Bảo vệ lỗi với pcall
+                    local isCash = false
+                    pcall(function()
+                        isCash = isCashReward(itemType)
+                    end)
+                    
+                    -- Loại bỏ CASH (thêm biện pháp bảo vệ)
+                    if not isCash then
+                        result = result .. "- " .. amount .. " " .. itemType .. "\n"
+                    end
+                end
+            else
+                -- Không có dữ liệu
+                result = result .. "- Chưa có dữ liệu phần thưởng\n"
             end
         end
-    else
-        -- Sử dụng totalRewards nếu không đọc được từ UI
-        for itemType, amount in pairs(totalRewards) do
-            -- Loại bỏ CASH (thêm biện pháp bảo vệ)
-            if not isCashReward(itemType) then
-                result = result .. "- " .. amount .. " " .. itemType .. "\n"
-            end
-        end
+        
+        return result
+    end)
+    
+    if not success then
+        warn("Lỗi khi tạo chuỗi phần thưởng: " .. tostring(rewardText))
+        return "Tổng phần thưởng:\n- Đã xảy ra lỗi khi đọc dữ liệu\n"
     end
     
-    return result
+    return rewardText
 end
 
 -- Tạo chuỗi hiển thị các phần thưởng vừa nhận
 local function getLatestRewardsText(newRewardInfo)
-    -- Loại bỏ các tiền tố không cần thiết
-    local cleanRewardInfo = newRewardInfo:gsub("RECEIVED:%s*", "")
-    cleanRewardInfo = cleanRewardInfo:gsub("YOU GOT A NEW REWARD!%s*", "")
-    
-    local amount, itemType = parseReward(cleanRewardInfo)
-    local result = "Phần thưởng mới:\n- " .. cleanRewardInfo .. "\n\n"
-    
-    -- Chỉ hiển thị tổng nếu không phải CASH
-    if amount and itemType and playerItems[itemType] and not isCashReward(itemType) then
-        result = result .. "Tổng " .. itemType .. ": " .. playerItems[itemType] .. " (+" .. amount .. ")\n"
+    if not newRewardInfo or type(newRewardInfo) ~= "string" then
+        return "Không có thông tin phần thưởng"
     end
     
-    return result
+    -- Sử dụng pcall để bắt lỗi
+    local success, rewardText = pcall(function()
+        -- Loại bỏ các tiền tố không cần thiết
+        local cleanRewardInfo = newRewardInfo:gsub("RECEIVED:%s*", "")
+        cleanRewardInfo = cleanRewardInfo:gsub("YOU GOT A NEW REWARD!%s*", "")
+        
+        local amount, itemType = nil, nil
+        pcall(function()
+            amount, itemType = parseReward(cleanRewardInfo)
+        end)
+        
+        local result = "Phần thưởng mới:\n- " .. cleanRewardInfo .. "\n\n"
+        
+        -- Chỉ hiển thị tổng nếu không phải CASH
+        if amount and itemType and playerItems and playerItems[itemType] then
+            local isCash = false
+            pcall(function()
+                isCash = isCashReward(itemType)
+            end)
+            
+            if not isCash then
+                result = result .. "Tổng " .. itemType .. ": " .. playerItems[itemType] .. " (+" .. amount .. ")\n"
+            end
+        end
+        
+        return result
+    end)
+    
+    if not success then
+        warn("Lỗi khi tạo chuỗi phần thưởng mới: " .. tostring(rewardText))
+        return "Phần thưởng mới:\n- " .. newRewardInfo .. "\n\nKhông thể hiển thị chi tiết do lỗi\n"
+    end
+    
+    return rewardText
 end
 
 -- Kiểm tra xem có thể gửi webhook không (cooldown)
 local function canSendWebhook()
-    local currentTime = tick()
-    if currentTime - lastWebhookTime < WEBHOOK_COOLDOWN then
+    local success, result = pcall(function()
+        local currentTime = tick()
+        if not lastWebhookTime then
+            lastWebhookTime = 0
+        end
+        
+        if not WEBHOOK_COOLDOWN then
+            WEBHOOK_COOLDOWN = 3
+        end
+        
+        if currentTime - lastWebhookTime < WEBHOOK_COOLDOWN then
+            return false
+        end
+        return true
+    end)
+    
+    if not success then
+        warn("Lỗi khi kiểm tra cooldown webhook: " .. tostring(result))
         return false
     end
-    return true
+    
+    return result
 end
 
 -- Gửi webhook thử nghiệm để kiểm tra kết nối
@@ -1582,33 +1680,55 @@ print("- Hỗ trợ phát hiện đặc biệt cho TIGER, TWIN PRISM BLADES và 
 
 -- Gửi thông tin đến Discord webhook (sử dụng HTTP request từ executor)
 local function sendWebhook(rewardInfo, rewardObject, isNewReward)
+    -- Kiểm tra tham số đầu vào
+    if not rewardInfo or type(rewardInfo) ~= "string" then
+        warn("Không thể gửi webhook: rewardInfo không hợp lệ")
+        return false
+    end
+
+    -- Thông báo bắt đầu
+    print("Chuẩn bị gửi webhook với thông tin: " .. rewardInfo)
+    
     -- Loại bỏ các tiền tố không cần thiết
     local cleanRewardInfo = rewardInfo:gsub("RECEIVED:%s*", "")
     cleanRewardInfo = cleanRewardInfo:gsub("YOU GOT A NEW REWARD!%s*", "")
     
     -- Bỏ qua nếu phần thưởng là CASH
-    if isCashReward(cleanRewardInfo) then
+    local isCash = false
+    pcall(function()
+        isCash = isCashReward(cleanRewardInfo)
+    end)
+    
+    if isCash then
         print("Bỏ qua gửi webhook cho CASH: " .. cleanRewardInfo)
-        return
+        return false
     end
     
     -- Kiểm tra xem có đang xử lý phần thưởng khác không
     if isProcessingReward then
         print("Đang xử lý phần thưởng khác, bỏ qua...")
-        return
+        return false
     end
     
     -- Kiểm tra cooldown
     if not canSendWebhook() then
         print("Cooldown webhook còn " .. math.floor(WEBHOOK_COOLDOWN - (tick() - lastWebhookTime)) .. " giây, bỏ qua...")
-        return
+        return false
     end
     
     -- Tạo ID duy nhất và kiểm tra trùng lặp
-    local rewardId = createUniqueRewardId(cleanRewardInfo)
+    local rewardId = ""
+    pcall(function()
+        rewardId = createUniqueRewardId(cleanRewardInfo)
+    end)
+    
+    if rewardId == "" then
+        rewardId = "reward_" .. tostring(tick())
+    end
+    
     if receivedRewards[rewardId] then
         print("Phần thưởng này đã được gửi trước đó: " .. cleanRewardInfo)
-        return
+        return false
     end
     
     -- Đánh dấu đang xử lý
@@ -1619,22 +1739,48 @@ local function sendWebhook(rewardInfo, rewardObject, isNewReward)
     receivedRewards[rewardId] = true
     
     -- Đọc số lượng item thực tế trước khi gửi webhook
-    readActualItemQuantities()
+    pcall(function()
+        readActualItemQuantities()
+    end)
     
     local title = "🎁 Arise Crossover - AFKRewards"
     local description = "Phần thưởng mới đã nhận được!"
     
     -- Cập nhật tổng phần thưởng
-    updateTotalRewards(cleanRewardInfo)
+    pcall(function()
+        updateTotalRewards(cleanRewardInfo)
+    end)
 
     -- Kiểm tra xem phần thưởng có chứa ZIRU G không để ping @everyone (chỉ lần đầu tiên)
-    local hasZiruG = cleanRewardInfo:find("ZIRU G") ~= nil or (playerItems["ZIRU G"] ~= nil and playerItems["ZIRU G"] > 0)
+    local hasZiruG = cleanRewardInfo:find("ZIRU G") ~= nil
+    if not hasZiruG and playerItems["ZIRU G"] then
+        hasZiruG = playerItems["ZIRU G"] > 0
+    end
+    
     local shouldPingEveryone = hasZiruG and not hasAlreadyPingedZiruG
     
     -- Nếu phát hiện ZIRU G, đánh dấu đã ping để không ping lần sau
     if hasZiruG and not hasAlreadyPingedZiruG then
         hasAlreadyPingedZiruG = true
         print("Đánh dấu đã ping ZIRU G lần đầu tiên, sẽ không ping lần sau")
+    end
+    
+    local latestRewardsText = ""
+    pcall(function()
+        latestRewardsText = getLatestRewardsText(cleanRewardInfo)
+    end)
+    
+    if latestRewardsText == "" then
+        latestRewardsText = "Phần thưởng mới:\n- " .. cleanRewardInfo
+    end
+    
+    local totalRewardsDisplay = ""
+    pcall(function()
+        totalRewardsDisplay = getTotalRewardsText()
+    end)
+    
+    if totalRewardsDisplay == "" then
+        totalRewardsDisplay = "Tổng phần thưởng:\n- Không có dữ liệu"
     end
     
     local data = {
@@ -1647,7 +1793,7 @@ local function sendWebhook(rewardInfo, rewardObject, isNewReward)
                 fields = {
                     {
                         name = "Thông tin phần thưởng",
-                        value = getLatestRewardsText(cleanRewardInfo),
+                        value = latestRewardsText,
                         inline = false
                     },
                     {
@@ -1662,7 +1808,7 @@ local function sendWebhook(rewardInfo, rewardObject, isNewReward)
                     },
                     {
                         name = "Tổng hợp phần thưởng",
-                        value = getTotalRewardsText(),
+                        value = totalRewardsDisplay,
                         inline = false
                     }
                 },
@@ -1674,10 +1820,38 @@ local function sendWebhook(rewardInfo, rewardObject, isNewReward)
     }
     
     -- Chuyển đổi dữ liệu thành chuỗi JSON
-    local jsonData = HttpService:JSONEncode(data)
+    local jsonData = ""
+    pcall(function()
+        jsonData = HttpService:JSONEncode(data)
+    end)
+    
+    if jsonData == "" then
+        warn("Không thể tạo dữ liệu JSON cho webhook")
+        isProcessingReward = false
+        return false
+    end
     
     -- Cập nhật URL từ cấu hình
     local currentWebhookUrl = CONFIG.WEBHOOK_URL
+    
+    if not currentWebhookUrl or currentWebhookUrl == "" or currentWebhookUrl == "YOUR_URL" then
+        warn("URL webhook không hợp lệ: " .. tostring(currentWebhookUrl))
+        
+        -- Hiển thị thông báo lỗi trong Rayfield
+        pcall(function()
+            Rayfield:Notify({
+                Title = "Lỗi webhook",
+                Content = "URL webhook không hợp lệ, vui lòng cập nhật URL",
+                Duration = 5,
+                Image = "alert-triangle", -- Lucide icon
+            })
+        end)
+        
+        isProcessingReward = false
+        return false
+    end
+    
+    print("Chuẩn bị gửi webhook đến: " .. currentWebhookUrl:sub(1, 30) .. "...")
     
     -- Sử dụng HTTP request từ executor thay vì HttpService
     local success, err = pcall(function()
@@ -1691,6 +1865,8 @@ local function sendWebhook(rewardInfo, rewardObject, isNewReward)
                 },
                 Body = jsonData
             })
+            print("Đã gửi webhook qua syn.request")
+            return true
         -- KRNL, Script-Ware và nhiều executor khác
         elseif request then
             request({
@@ -1701,6 +1877,8 @@ local function sendWebhook(rewardInfo, rewardObject, isNewReward)
                 },
                 Body = jsonData
             })
+            print("Đã gửi webhook qua request")
+            return true
         -- Các Executor khác
         elseif http and http.request then
             http.request({
@@ -1711,9 +1889,13 @@ local function sendWebhook(rewardInfo, rewardObject, isNewReward)
                 },
                 Body = jsonData
             })
+            print("Đã gửi webhook qua http.request")
+            return true
         -- JJSploit và một số executor khác
         elseif httppost then
             httppost(currentWebhookUrl, jsonData)
+            print("Đã gửi webhook qua httppost")
+            return true
         else
             error("Không tìm thấy HTTP API nào được hỗ trợ bởi executor hiện tại")
         end
@@ -1726,37 +1908,49 @@ local function sendWebhook(rewardInfo, rewardObject, isNewReward)
         end
         
         -- Hiển thị thông báo Rayfield khi nhận phần thưởng
-        Rayfield:Notify({
-            Title = "Phần thưởng mới!",
-            Content = cleanRewardInfo,
-            Duration = 5,
-            Image = "gift", -- Lucide icon
-        })
+        pcall(function()
+            Rayfield:Notify({
+                Title = "Phần thưởng mới!",
+                Content = cleanRewardInfo,
+                Duration = 5,
+                Image = "gift", -- Lucide icon
+            })
+        end)
         
         -- Cập nhật thông tin hiển thị trong UI
-        if TotalRewardsLabel then
-            local rewardsText = getTotalRewardsText()
-            TotalRewardsText = rewardsText
-            TotalRewardsLabel:Set({
-                Title = "Tổng phần thưởng hiện có", 
-                Content = rewardsText
-            })
-        end
+        pcall(function()
+            if TotalRewardsLabel then
+                local rewardsText = getTotalRewardsText()
+                TotalRewardsText = rewardsText
+                TotalRewardsLabel:Set({
+                    Title = "Tổng phần thưởng hiện có", 
+                    Content = rewardsText
+                })
+            end
+        end)
+        
+        -- Kết thúc xử lý
+        wait(0.5) -- Chờ một chút để tránh xử lý quá nhanh
+        isProcessingReward = false
+        return true
     else
         warn("Lỗi gửi webhook: " .. tostring(err))
         
         -- Hiển thị thông báo lỗi trong Rayfield
-        Rayfield:Notify({
-            Title = "Lỗi gửi webhook",
-            Content = "Không thể gửi thông tin phần thưởng",
-            Duration = 5,
-            Image = "alert-triangle", -- Lucide icon
-        })
+        pcall(function()
+            Rayfield:Notify({
+                Title = "Lỗi gửi webhook",
+                Content = "Không thể gửi thông tin phần thưởng: " .. tostring(err),
+                Duration = 5,
+                Image = "alert-triangle", -- Lucide icon
+            })
+        end)
+        
+        -- Kết thúc xử lý
+        wait(0.5) -- Chờ một chút để tránh xử lý quá nhanh
+        isProcessingReward = false
+        return false
     end
-    
-    -- Kết thúc xử lý
-    wait(0.5) -- Chờ một chút để tránh xử lý quá nhanh
-    isProcessingReward = false
 end
 
 -- Set này dùng để theo dõi đã gửi webhook của phần thưởng
