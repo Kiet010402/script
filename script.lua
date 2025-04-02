@@ -153,7 +153,7 @@ local sendTestWebhook
 local Window = Rayfield:CreateWindow({
     Name = "Arise Webhook - " .. playerName,
     LoadingTitle = "Arise Crossover",
-    LoadingSubtitle = "by Kiz",
+    LoadingSubtitle = "by DuongTuan",
     ConfigurationSaving = {
         Enabled = true,
         FolderName = "AriseWebhook",
@@ -1049,7 +1049,7 @@ sendTestWebhook = function(customMessage)
                     }
                 },
                 footer = {
-                    text = "Arise Crossover Rewards Tracker - Kiểm tra webhook"
+                    text = "Arise Crossover Rewards Tracker - Webhook độc quyền của DuongTuan"
                 }
             }
         }
@@ -1313,7 +1313,7 @@ local function sendInitialReceivedWebhook()
             embeds = {
                 {
                     title = "🎮 Arise Crossover - Phần thưởng hiện có",
-                    description = "Danh sách phần thưởng đã nhận khi bắt đầu chạy script",
+                    description = "Danh sách phần thưởng đã nhận",
                     color = 7419530, -- Màu xanh biển
                     fields = {
                         {
@@ -1333,7 +1333,7 @@ local function sendInitialReceivedWebhook()
                         }
                     },
                     footer = {
-                        text = "Arise Crossover Rewards Tracker - Khởi động"
+                        text = "Arise Crossover Rewards Tracker - Webhook độc quyền của DuongTuan"
                     }
                 }
             }
@@ -1546,7 +1546,7 @@ local function sendWebhook(rewardInfo, rewardObject, isNewReward)
                     }
                 },
                 footer = {
-                    text = "Arise Crossover Rewards Tracker"
+                    text = "Arise Crossover Rewards Tracker - Webhook độc quyền của DuongTuan"
                 }
             }
         }
