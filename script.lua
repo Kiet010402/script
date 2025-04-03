@@ -1604,26 +1604,34 @@ end
 
 -- Hàm xử lý Auto Teleport
 local function handleAutoTeleport()
+    print("[Debug TP] handleAutoTeleport started.")
+
     if not CONFIG.AUTO_TP_AFK then
-        print("Auto TP to AFK is disabled.")
+        print("[Debug TP] Auto TP to AFK is disabled in config.")
         return
     end
+    print("[Debug TP] Auto TP is enabled in config.")
 
     local afkPlaceId = 116614712661486 
     local localPlayer = Players.LocalPlayer
 
     if not localPlayer then
-        print("LocalPlayer not found for teleport.")
+        print("[Debug TP] LocalPlayer not found.")
         return
     end
+    print("[Debug TP] LocalPlayer found: " .. localPlayer.Name)
+
+    print("[Debug TP] Current PlaceId: " .. tostring(game.PlaceId))
+    print("[Debug TP] Target AFK PlaceId: " .. tostring(afkPlaceId))
 
     -- Kiểm tra nếu người chơi đã ở nơi cần đến
     if game.PlaceId == afkPlaceId then
-        print("Player is already in the AFK zone (PlaceId: " .. game.PlaceId .. "). No teleport needed.")
+        print("[Debug TP] Player is already in the AFK zone. No teleport needed.")
         return -- Dừng lại nếu đã ở đúng nơi
     end
+    print("[Debug TP] Player is not in the AFK zone.")
 
-    print("Auto TP is enabled and player is not in the AFK zone. Waiting 30 seconds to teleport...")
+    print("[Debug TP] Waiting 30 seconds to teleport...")
     
     -- Thông báo cho người dùng
     Rayfield:Notify({
@@ -1633,21 +1641,25 @@ local function handleAutoTeleport()
         Image = "clock", -- Lucide icon
     })
 
+    print("[Debug TP] Before task.wait(30)")
     task.wait(30) -- Chờ 30 giây
+    print("[Debug TP] After task.wait(30)")
 
     -- Kiểm tra lại trạng thái bật/tắt sau khi chờ (người dùng có thể đã tắt)
     if not CONFIG.AUTO_TP_AFK then
-        print("Auto TP was disabled during the wait. Teleport cancelled.")
+        print("[Debug TP] Auto TP was disabled during the wait. Teleport cancelled.")
         return
     end
+    print("[Debug TP] Auto TP is still enabled after wait.")
     
     -- Kiểm tra lại vị trí người chơi sau khi chờ
     if game.PlaceId == afkPlaceId then
-        print("Player arrived at the AFK zone during the wait. Teleport cancelled.")
+        print("[Debug TP] Player arrived at the AFK zone during the wait. Teleport cancelled.")
         return
     end
+    print("[Debug TP] Player is still not in the AFK zone after wait.")
 
-    print("Teleporting player " .. localPlayer.Name .. " to PlaceId: " .. afkPlaceId)
+    print("[Debug TP] Attempting to teleport player " .. localPlayer.Name .. " to PlaceId: " .. afkPlaceId)
     
     -- Thông báo sắp dịch chuyển
     Rayfield:Notify({
@@ -1658,11 +1670,13 @@ local function handleAutoTeleport()
     })
 
     local success, errorMessage = pcall(function()
+        print("[Debug TP] Calling TeleportService:Teleport...")
         TeleportService:Teleport(afkPlaceId, localPlayer)
+        print("[Debug TP] TeleportService:Teleport call finished (does not guarantee success).")
     end)
 
     if not success then
-        warn("Teleport failed: " .. errorMessage)
+        warn("[Debug TP] Teleport pcall failed: " .. errorMessage)
         Rayfield:Notify({
             Title = "Lỗi Teleport",
             Content = "Không thể dịch chuyển: " .. errorMessage,
@@ -1670,7 +1684,7 @@ local function handleAutoTeleport()
             Image = "alert-triangle", -- Lucide icon
         })
     else
-        print("Teleport initiated successfully.")
+        print("[Debug TP] Teleport pcall succeeded. Teleport initiated (may still fail asynchronously)." )
         -- Không cần thông báo thành công vì game sẽ tự chuyển
     end
 end 
