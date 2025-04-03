@@ -3,7 +3,6 @@ local allowedPlaceId = 87039211657390 -- PlaceId mà script được phép chạ
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
-local TeleportService = game:GetService("TeleportService") -- Added TeleportService
 
 -- Khởi tạo Rayfield UI
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
@@ -90,7 +89,7 @@ local CONFIG = {
     SHOW_UI = true,
     UI_POSITION = UDim2.new(0.7, 0, 0.05, 0),
     ACCOUNT_NAME = playerName, -- Lưu tên tài khoản vào cấu hình
-    AUTO_TP_AFK = savedConfig and savedConfig.AUTO_TP_AFK or false -- Added AUTO_TP_AFK setting
+    AUTO_TELEPORT = false -- Thêm biến AUTO_TELEPORT
 }
 
 -- Lưu cấu hình hiện tại
@@ -123,7 +122,6 @@ local checkNewRewards
 local checkReceivedRewards
 local readActualItemQuantities
 local sendTestWebhook
-local handleAutoTeleport -- Forward declaration for the teleport function
 
 -- Khởi tạo Window Rayfield
 local Window = Rayfield:CreateWindow({
@@ -295,7 +293,7 @@ local ClearButton = RewardsTab:CreateButton({
     end,
 })
 
--- Tạo Tab cài đặt
+-- Tab cài đặt
 local SettingsTab = Window:CreateTab("Cài đặt", "settings") -- Sử dụng icon Lucide
 
 -- Tạo button để tắt script
@@ -326,33 +324,16 @@ local ShutdownButton = SettingsTab:CreateButton({
 })
 
 -- Tạo Tab Teleport
-local TeleportTab = Window:CreateTab("Teleport", "map-pin") -- Use Lucide icon
+local TeleportTab = Window:CreateTab("Teleport", "map-pin") -- Sử dụng icon Lucide
 
--- Nút bật/tắt Auto TP to AFK
-local AutoTpToggle = TeleportTab:CreateToggle({
-    Name = "Auto TP to AFK Zone",
-    CurrentValue = CONFIG.AUTO_TP_AFK,
-    Flag = "AutoTpAfkToggle",
+-- Tạo Toggle cho Auto Teleport
+local AutoTeleportToggle = TeleportTab:CreateToggle({
+    Name = "Auto TP to AFK",
+    CurrentValue = CONFIG.AUTO_TELEPORT or false,
+    Flag = "AutoTeleport",
     Callback = function(Value)
-        CONFIG.AUTO_TP_AFK = Value
+        CONFIG.AUTO_TELEPORT = Value
         saveConfig(CONFIG)
-        if Value then
-            Rayfield:Notify({
-                Title = "Thông báo",
-                Content = "Auto TP đã bật. Sẽ dịch chuyển sau 30 giây nếu bạn không ở khu vực AFK.",
-                Duration = 5,
-                Image = "info", -- Lucide icon
-            })
-            -- Trigger teleport check immediately if toggled on
-            handleAutoTeleport() 
-        else
-            Rayfield:Notify({
-                Title = "Thông báo",
-                Content = "Auto TP đã tắt.",
-                Duration = 3,
-                Image = "info", -- Lucide icon
-            })
-        end
     end,
 })
 
@@ -1283,9 +1264,6 @@ delay(3, function()
     -- Gửi webhook ban đầu chỉ một lần
     sendInitialReceivedWebhook()
     
-    -- Thực hiện Auto Teleport nếu được bật trong cấu hình
-    handleAutoTeleport() -- Call the teleport handler
-    
     -- Cập nhật thông tin hiển thị phần thưởng trong Rayfield
     if TotalRewardsLabel then
         local rewardsText = getTotalRewardsText()
@@ -1603,89 +1581,41 @@ checkReceivedRewards = function(receivedContainer)
     end
 end
 
--- Hàm xử lý Auto Teleport
-local function handleAutoTeleport()
-    print("[Debug TP] handleAutoTeleport started.")
+-- Chức năng Auto Teleport
+local function autoTeleportToAFK()
+    local TeleportService = game:GetService("TeleportService")
+    local Players = game:GetService("Players")
+    local placeId = 116614712661486 
+    local player = Players.LocalPlayer
 
-    if not CONFIG.AUTO_TP_AFK then
-        print("[Debug TP] Auto TP to AFK is disabled in config.")
-        return
+    if not player then
+        repeat
+            task.wait()
+            player = Players.LocalPlayer
+        until player
     end
-    print("[Debug TP] Auto TP is enabled in config.")
-
-    local afkPlaceId = 116614712661486 
-    local localPlayer = Players.LocalPlayer
-
-    if not localPlayer then
-        print("[Debug TP] LocalPlayer not found.")
-        return
-    end
-    print("[Debug TP] LocalPlayer found: " .. localPlayer.Name)
-
-    print("[Debug TP] Current PlaceId: " .. tostring(game.PlaceId))
-    print("[Debug TP] Target AFK PlaceId: " .. tostring(afkPlaceId))
 
     -- Kiểm tra nếu người chơi đã ở nơi cần đến
-    if game.PlaceId == afkPlaceId then
-        print("[Debug TP] Player is already in the AFK zone. No teleport needed.")
-        return -- Dừng lại nếu đã ở đúng nơi
+    if game.PlaceId == placeId then
+        return -- Dừng script ngay lập tức nếu đã ở đúng nơi
     end
-    print("[Debug TP] Player is not in the AFK zone.")
 
-    print("[Debug TP] Waiting 30 seconds to teleport...")
-    
-    -- Thông báo cho người dùng
-    Rayfield:Notify({
-        Title = "Auto Teleport",
-        Content = "Đang chờ 30 giây để dịch chuyển đến khu vực AFK...",
-        Duration = 5,
-        Image = "clock", -- Lucide icon
-    })
-
-    print("[Debug TP] Before task.wait(30)")
-    task.wait(30) -- Chờ 30 giây
-    print("[Debug TP] After task.wait(30)")
-
-    -- Kiểm tra lại trạng thái bật/tắt sau khi chờ (người dùng có thể đã tắt)
-    if not CONFIG.AUTO_TP_AFK then
-        print("[Debug TP] Auto TP was disabled during the wait. Teleport cancelled.")
-        return
-    end
-    print("[Debug TP] Auto TP is still enabled after wait.")
-    
-    -- Kiểm tra lại vị trí người chơi sau khi chờ
-    if game.PlaceId == afkPlaceId then
-        print("[Debug TP] Player arrived at the AFK zone during the wait. Teleport cancelled.")
-        return
-    end
-    print("[Debug TP] Player is still not in the AFK zone after wait.")
-
-    print("[Debug TP] Attempting to teleport player " .. localPlayer.Name .. " to PlaceId: " .. afkPlaceId)
-    
-    -- Thông báo sắp dịch chuyển
-    Rayfield:Notify({
-        Title = "Auto Teleport",
-        Content = "Đang dịch chuyển đến khu vực AFK...",
-        Duration = 3,
-        Image = "send", -- Lucide icon
-    })
+    task.wait(30) -- Chờ 30 giây trước khi thực hiện teleport
 
     local success, errorMessage = pcall(function()
-        print("[Debug TP] Calling TeleportService:Teleport...")
-        TeleportService:Teleport(afkPlaceId, localPlayer)
-        print("[Debug TP] TeleportService:Teleport call finished (does not guarantee success).")
+        TeleportService:Teleport(placeId, player)
     end)
 
     if not success then
-        warn("[Debug TP] Teleport pcall failed: " .. errorMessage)
-        Rayfield:Notify({
-            Title = "Lỗi Teleport",
-            Content = "Không thể dịch chuyển: " .. errorMessage,
-            Duration = 5,
-            Image = "alert-triangle", -- Lucide icon
-        })
-    else
-        print("[Debug TP] Teleport pcall succeeded. Teleport initiated (may still fail asynchronously)." )
-        -- Không cần thông báo thành công vì game sẽ tự chuyển
+        warn("Teleport failed: " .. errorMessage)
     end
-end 
+end
+
+-- Kiểm tra và thực hiện Auto Teleport nếu được bật
+spawn(function()
+    while scriptRunning and wait(5) do
+        if CONFIG.AUTO_TELEPORT then
+            autoTeleportToAFK()
+        end
+    end
+end) 
