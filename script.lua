@@ -123,6 +123,7 @@ local checkNewRewards
 local checkReceivedRewards
 local readActualItemQuantities
 local sendTestWebhook
+local handleAutoTeleport -- Forward declaration for the teleport function
 
 -- Khởi tạo Window Rayfield
 local Window = Rayfield:CreateWindow({
