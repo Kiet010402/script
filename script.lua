@@ -77,19 +77,27 @@ local WEBHOOK_URL = "YOUR_URL" -- Giá trị mặc định
 
 -- Tải cấu hình từ file (nếu có)
 local savedConfig = loadConfig()
-if savedConfig and savedConfig.WEBHOOK_URL then
-    WEBHOOK_URL = savedConfig.WEBHOOK_URL
-    print("Đã tải URL webhook từ cấu hình: " .. WEBHOOK_URL:sub(1, 30) .. "...")
+if savedConfig then
+    if savedConfig.WEBHOOK_URL then
+        WEBHOOK_URL = savedConfig.WEBHOOK_URL
+        print("Đã tải URL webhook từ cấu hình: " .. WEBHOOK_URL:sub(1, 30) .. "...")
+    end
+    
+    -- Tải tùy chọn AUTO_TELEPORT từ cấu hình nếu có
+    local autoTeleportSaved = savedConfig.AUTO_TELEPORT
+    if autoTeleportSaved ~= nil then
+        print("Đã tải cấu hình AUTO_TELEPORT: " .. tostring(autoTeleportSaved))
+    end
 end
 
 -- Tùy chọn định cấu hình
 local CONFIG = {
     WEBHOOK_URL = WEBHOOK_URL,
-    WEBHOOK_COOLDOWN = 3,
-    SHOW_UI = true,
+    WEBHOOK_COOLDOWN = savedConfig and savedConfig.WEBHOOK_COOLDOWN or 3,
+    SHOW_UI = savedConfig and savedConfig.SHOW_UI ~= nil and savedConfig.SHOW_UI or true,
     UI_POSITION = UDim2.new(0.7, 0, 0.05, 0),
     ACCOUNT_NAME = playerName, -- Lưu tên tài khoản vào cấu hình
-    AUTO_TELEPORT = false -- Thêm biến AUTO_TELEPORT
+    AUTO_TELEPORT = savedConfig and savedConfig.AUTO_TELEPORT ~= nil and savedConfig.AUTO_TELEPORT or false -- Sử dụng giá trị đã lưu
 }
 
 -- Lưu cấu hình hiện tại
