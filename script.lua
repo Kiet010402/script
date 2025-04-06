@@ -337,6 +337,8 @@ Tabs.Main:AddToggle("DamageMobs", {
                 local enemyFolder = workspace.__Main.__Enemies.Client
                 local attackDelay = 0.1
                 local player = game.Players.LocalPlayer
+                local userInputService = game:GetService("UserInputService")
+                local mouse = player:GetMouse()
                 
                 local function getClosestEnemy()
                     local character = player.Character or player.CharacterAdded:Wait()
@@ -361,27 +363,46 @@ Tabs.Main:AddToggle("DamageMobs", {
                     return closestEnemy
                 end
                 
-                -- Biến để theo dõi khi nào hiển thị lá cờ trắng
-                local retreatFlag = false
+                -- Theo dõi kẻ địch được nhấp vào
+                local clickedEnemy = nil
                 
-                -- Theo dõi giao diện người dùng để phát hiện biểu tượng retreat
-                local function checkForRetreatFlag()
-                    local playerGui = player:FindFirstChild("PlayerGui")
-                    if not playerGui then return false end
+                -- Thiết lập sự kiện nhấp chuột để phát hiện khi nhấp vào kẻ địch
+                mouse.Button1Down:Connect(function()
+                    if not getgenv().AutoAttack then return end
                     
-                    -- Tìm kiếm trong tất cả các UI để tìm biểu tượng retreat
-                    for _, gui in pairs(playerGui:GetChildren()) do
-                        if gui:IsA("ScreenGui") then
-                            for _, element in pairs(gui:GetDescendants()) do
-                                if element:IsA("TextLabel") and element.Text == "Retreat" then
-                                    return true
-                                end
-                            end
-                        end
+                    local target = mouse.Target
+                    if not target then return end
+                    
+                    -- Tìm mô hình kẻ địch từ phần được nhấp
+                    local model = target:FindFirstAncestorOfClass("Model")
+                    if model and model:IsDescendantOf(enemyFolder) then
+                        clickedEnemy = model
+                        
+                        -- Kích hoạt pet tấn công ngay khi nhấp vào kẻ địch
+                        local args = {
+                            [1] = {
+                                [1] = {
+                                    ["Event"] = "ShowPets"
+                                },
+                                [2] = "\t"
+                            }
+                        }
+                        remoteEvent:FireServer(unpack(args))
+                        
+                        local petArgs = {
+                            [1] = {
+                                [1] = {
+                                    ["PetPos"] = {},
+                                    ["AttackType"] = "All",
+                                    ["Event"] = "Attack",
+                                    ["Enemy"] = model.Name
+                                },
+                                [2] = "\7"
+                            }
+                        }
+                        remoteEvent:FireServer(unpack(petArgs))
                     end
-                    
-                    return false
-                end
+                end)
                 
                 while getgenv().AutoAttack do
                     local enemy = getClosestEnemy()
@@ -397,31 +418,6 @@ Tabs.Main:AddToggle("DamageMobs", {
                             }
                         }
                         remoteEvent:FireServer(unpack(args))
-                        
-                        -- Kiểm tra biểu tượng retreat trước khi cho pet tấn công
-                        retreatFlag = checkForRetreatFlag()
-                        
-                        -- Chỉ cho pet tấn công khi xuất hiện biểu tượng retreat
-                        if retreatFlag then
-                            -- Hiển thị thông báo khi phát hiện retreat flag (tùy chọn)
-                            -- print("Phát hiện biểu tượng Retreat, kích hoạt pet tấn công!")
-                            
-                            -- Kích hoạt pet tấn công
-                            fireShowPetsRemote() -- Sử dụng hàm đã định nghĩa trước đó
-                            
-                            local petArgs = {
-                                [1] = {
-                                    [1] = {
-                                        ["PetPos"] = {},
-                                        ["AttackType"] = "All",
-                                        ["Event"] = "Attack",
-                                        ["Enemy"] = enemy.Name
-                                    },
-                                    [2] = "\7"
-                                }
-                            }
-                            remoteEvent:FireServer(unpack(petArgs))
-                        end
                     end
                     
                     task.wait(attackDelay)
