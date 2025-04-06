@@ -361,10 +361,32 @@ Tabs.Main:AddToggle("DamageMobs", {
                     return closestEnemy
                 end
                 
+                -- Biến để theo dõi khi nào hiển thị lá cờ trắng
+                local retreatFlag = false
+                
+                -- Theo dõi giao diện người dùng để phát hiện biểu tượng retreat
+                local function checkForRetreatFlag()
+                    local playerGui = player:FindFirstChild("PlayerGui")
+                    if not playerGui then return false end
+                    
+                    -- Tìm kiếm trong tất cả các UI để tìm biểu tượng retreat
+                    for _, gui in pairs(playerGui:GetChildren()) do
+                        if gui:IsA("ScreenGui") then
+                            for _, element in pairs(gui:GetDescendants()) do
+                                if element:IsA("TextLabel") and element.Text == "Retreat" then
+                                    return true
+                                end
+                            end
+                        end
+                    end
+                    
+                    return false
+                end
+                
                 while getgenv().AutoAttack do
                     local enemy = getClosestEnemy()
                     if enemy then
-                        -- Đấm
+                        -- Đấm người chơi (luôn thực hiện)
                         local args = {
                             [1] = {
                                 [1] = {
@@ -376,28 +398,30 @@ Tabs.Main:AddToggle("DamageMobs", {
                         }
                         remoteEvent:FireServer(unpack(args))
                         
-                        -- Cho pet tấn công
-                        local petsFolder = player.leaderstats.Inventory.Pets
-                        local petPositions = {}
+                        -- Kiểm tra biểu tượng retreat trước khi cho pet tấn công
+                        retreatFlag = checkForRetreatFlag()
                         
-                        for _, pet in pairs(petsFolder:GetChildren()) do
-                            if pet:IsA("Folder") and pet:FindFirstChild("HumanoidRootPart") then
-                                petPositions[pet.Name] = pet.HumanoidRootPart.Position
-                            end
-                        end
-                        
-                        local petArgs = {
-                            [1] = {
+                        -- Chỉ cho pet tấn công khi xuất hiện biểu tượng retreat
+                        if retreatFlag then
+                            -- Hiển thị thông báo khi phát hiện retreat flag (tùy chọn)
+                            -- print("Phát hiện biểu tượng Retreat, kích hoạt pet tấn công!")
+                            
+                            -- Kích hoạt pet tấn công
+                            fireShowPetsRemote() -- Sử dụng hàm đã định nghĩa trước đó
+                            
+                            local petArgs = {
                                 [1] = {
-                                    ["PetPos"] = petPositions,
-                                    ["AttackType"] = "All",
-                                    ["Event"] = "Attack",
-                                    ["Enemy"] = enemy.Name
-                                },
-                                [2] = "\t"
+                                    [1] = {
+                                        ["PetPos"] = {},
+                                        ["AttackType"] = "All",
+                                        ["Event"] = "Attack",
+                                        ["Enemy"] = enemy.Name
+                                    },
+                                    [2] = "\7"
+                                }
                             }
-                        }
-                        remoteEvent:FireServer(unpack(petArgs))
+                            remoteEvent:FireServer(unpack(petArgs))
+                        end
                     end
                     
                     task.wait(attackDelay)
