@@ -13,10 +13,10 @@ local teleportEnabled = false
 local killedNPCs = {}
 local dungeonkill = {}
 local selectedMobName = ""
-local movementMethod = "Tween" -- Default movement method
-local farmingStyle = "Default" -- Default farming style
+local movementMethod = "Tween" -- Phương thức di chuyển mặc định
+local farmingStyle = "Default" -- Phong cách farm mặc định
 
--- Auto-detect new HumanoidRootPart when player resets
+-- Tự động phát hiện HumanoidRootPart mới khi người chơi hồi sinh
 player.CharacterAdded:Connect(function(newCharacter)
     character = newCharacter
     hrp = newCharacter:WaitForChild("HumanoidRootPart")
@@ -232,9 +232,30 @@ local function attackEnemy()
 end
 
 -- Farm Method Selection Dropdown
-local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
-local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
-local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+local Fluent
+local SaveManager
+local InterfaceManager
+
+local success, err = pcall(function()
+    Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+    SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
+    InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+end)
+
+if not success then
+    warn("Lỗi khi tải thư viện Fluent: " .. tostring(err))
+    -- Thử tải từ URL dự phòng
+    pcall(function()
+        Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Fluent.lua"))()
+        SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
+        InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+    end)
+end
+
+if not Fluent then
+    error("Không thể tải thư viện Fluent. Vui lòng kiểm tra kết nối internet hoặc executor.")
+    return
+end
 
 local Window = Fluent:CreateWindow({
     Title = "JFF Hub | Arise Crossover",
@@ -264,8 +285,8 @@ Tabs.Main:AddInput("Input", {
     Placeholder = "Type Here",
     Callback = function(text)
         selectedMobName = text
-        killedNPCs = {} -- Reset killed NPCs when changing mob
-        print("Selected Mob:", selectedMobName) -- Debugging
+        killedNPCs = {} -- Đặt lại danh sách NPC đã tiêu diệt khi thay đổi mob
+        print("Selected Mob:", selectedMobName) -- Gỡ lỗi
     end
 })
 
@@ -274,8 +295,8 @@ Tabs.Main:AddToggle("FarmSelectedMob", {
     Default = false,
     Callback = function(state)
         teleportEnabled = state
-        damageEnabled = state -- Ensures damage mobs is active
-        killedNPCs = {} -- Reset killed NPCs when enabling farm
+        damageEnabled = state -- Đảm bảo tính năng tấn công mobs được kích hoạt
+        killedNPCs = {} -- Đặt lại danh sách NPC đã tiêu diệt khi bắt đầu farm
         if state then
             task.spawn(teleportToSelectedEnemy)
         end
@@ -297,7 +318,7 @@ local Dropdown = Tabs.Main:AddDropdown("MovementMethod", {
     Title = "Farming Method",
     Values = {"Tween", "Teleport"},
     Multi = false,
-    Default = 1, -- Default to "Tween"
+    Default = 1, -- Mặc định là "Tween"
     Callback = function(option)
         movementMethod = option
     end
@@ -336,13 +357,13 @@ Tabs.Main:AddButton({
                             attackatri:SetAttribute("AutoAttack", true)
                         end
 
-                        print("Confirmed the dialog.")
+                        print("Xác nhận hộp thoại.")
                     end
                 },
                 {
                     Title = "No",
                     Callback = function()
-                        print("Cancelled the dialog.")
+                        print("Hủy hộp thoại.")
                     end
                 }
             }
@@ -364,15 +385,15 @@ local function SetSpawnAndReset(spawnName)
     local remote = game:GetService("ReplicatedStorage"):WaitForChild("BridgeNet2"):WaitForChild("dataRemoteEvent")
     remote:FireServer(unpack(args))
 
-    -- Wait a moment before resetting (optional, to ensure spawn is set)
+    -- Đợi một chút trước khi hồi sinh (tùy chọn, để đảm bảo điểm hồi sinh được thiết lập)
     task.wait(0.5)
 
-    -- Reset Character
+    -- Hồi sinh nhân vật
     local player = game.Players.LocalPlayer
 if player.Character and player.Character.Parent then
     local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
     if humanoid then
-        humanoid.Health = 0 -- This triggers a natural death without abruptly deleting the character
+        humanoid.Health = 0 -- Tạo ra cái chết tự nhiên mà không xóa nhân vật đột ngột
     end
 end
 
@@ -382,7 +403,7 @@ Tabs.tp:AddButton({
     Title = "Brum Island",
     Description = "Set spawn & reset",
     Callback = function()
-        SetSpawnAndReset("OPWorld") -- Change to correct spawn name
+        SetSpawnAndReset("OPWorld") -- Thay đổi thành tên điểm hồi sinh đúng
     end
 })
 
@@ -424,28 +445,28 @@ local TweenService = game:GetService("TweenService")
 
 
 
--- Get Player and HumanoidRootPart
+-- Lấy Player và HumanoidRootPart
 local TweenService = game:GetService("TweenService")
 local player = game.Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local hrp = character:WaitForChild("HumanoidRootPart")
 
--- Update HRP when character respawns
+-- Cập nhật HRP khi nhân vật hồi sinh
 player.CharacterAdded:Connect(function(newCharacter)
     character = newCharacter
-    hrp = character:WaitForChild("HumanoidRootPart") -- Get the new HRP after respawn
+    hrp = character:WaitForChild("HumanoidRootPart") -- Lấy HRP mới sau khi hồi sinh
 end)
 
--- Tween Function (Now always uses the latest HRP)
+-- Hàm di chuyển (Luôn sử dụng HRP mới nhất)
 local function teleportWithTween(targetCFrame)
     if hrp then
         local tweenInfo = TweenInfo.new(
-            2, -- Duration (seconds)
+            2, -- Thời gian (giây)
             Enum.EasingStyle.Sine,
             Enum.EasingDirection.Out,
-            0, -- No repeat
-            false, -- No reverse
-            0 -- No delay
+            0, -- Không lặp lại
+            false, -- Không đảo ngược
+            0 -- Không độ trễ
         )
 
         local tweenGoal = {CFrame = targetCFrame}
@@ -585,21 +606,18 @@ Tabs.dungeon:AddToggle("AutoArise", {
 
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Workspace = game:GetService("Workspace")
-
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
-local hrp = character:WaitForChild("HumanoidRootPart") -- Get HumanoidRootPart
+local hrp = character:WaitForChild("HumanoidRootPart")
 
-local dungeonFolder = Workspace:WaitForChild("__Main"):WaitForChild("__Dungeon")
+local dungeonFolder = workspace:WaitForChild("__Main"):WaitForChild("__Dungeon")
 
 -- Variable to control teleporting
 local teleportingEnabled = false
 
 -- Function to create a dungeon
 local function createDungeon()
-    print("[DEBUG] Attempting to create dungeon...")
+    print("[DEBUG] Đang cố gắng tạo dungeon...")
     local args = {
         [1] = {
             [1] = {
@@ -610,7 +628,7 @@ local function createDungeon()
         }
     }
     ReplicatedStorage:WaitForChild("BridgeNet2"):WaitForChild("dataRemoteEvent"):FireServer(unpack(args))
-    print("[DEBUG] Create Dungeon event fired!")
+    print("[DEBUG] Đã kích hoạt sự kiện tạo Dungeon!")
 end
 
 -- Function to start the dungeon
@@ -619,7 +637,7 @@ local function startDungeon()
     if dungeonInstance then
         local dungeonID = dungeonInstance:GetAttribute("ID")
         if dungeonID then
-            print("[DEBUG] Starting dungeon with ID:", dungeonID)
+            print("[DEBUG] Bắt đầu dungeon với ID:", dungeonID)
             local args = {
                 [1] = {
                     [1] = {
@@ -631,57 +649,57 @@ local function startDungeon()
                 }
             }
             ReplicatedStorage:WaitForChild("BridgeNet2"):WaitForChild("dataRemoteEvent"):FireServer(unpack(args))
-            print("[DEBUG] Start Dungeon event fired!")
+            print("[DEBUG] Đã kích hoạt sự kiện bắt đầu Dungeon!")
         else
-            print("[ERROR] Dungeon ID is missing!")
+            print("[LỖI] Không tìm thấy ID của Dungeon!")
         end
     else
-        print("[ERROR] Dungeon instance not found!")
+        print("[LỖI] Không tìm thấy instance của Dungeon!")
     end
 end
 
 -- Function to teleport directly to an object and bypass anti-cheat
 local function teleportToObject(object)
     if object and object:IsA("Part") then
-        print("[DEBUG] Teleporting to:", object.Name)
+        print("[DEBUG] Đang dịch chuyển đến:", object.Name)
 
-        -- Anti-cheat bypass
+        -- Vượt qua anti-cheat
         local f = player.Character and player.Character:FindFirstChild("CharacterScripts") and player.Character.CharacterScripts:FindFirstChild("FlyingFixer")
         if f then f:Destroy() else print("blablabla bleble") end
 
         local cha = player.Character and player.Character:FindFirstChild("CharacterScripts") and player.Character.CharacterScripts:FindFirstChild("CharacterUpdater")
         if cha then cha:Destroy() print("discord") else print("Cid") end
 
-        -- Direct teleport
+        -- Dịch chuyển trực tiếp
         hrp.CFrame = object.CFrame
-        print("[DEBUG] Teleport completed to:", object.Name)
+        print("[DEBUG] Đã hoàn thành dịch chuyển đến:", object.Name)
 
-        task.wait(2) -- Small delay after teleportation
-        createDungeon() -- Fire the create dungeon remote
+        task.wait(2) -- Độ trễ nhỏ sau khi dịch chuyển
+        createDungeon() -- Kích hoạt remote tạo dungeon
 
-        task.wait(1) -- Short delay before starting dungeon
-        startDungeon() -- Fire the start dungeon remote
+        task.wait(1) -- Độ trễ ngắn trước khi bắt đầu dungeon
+        startDungeon() -- Kích hoạt remote bắt đầu dungeon
     else
-        print("[ERROR] Invalid teleport target!")
+        print("[LỖI] Mục tiêu dịch chuyển không hợp lệ!")
     end
 end
 
 -- Function to continuously teleport to objects when enabled
 local function teleportLoop()
     while teleportingEnabled do
-        print("[DEBUG] Searching for dungeon objects...")
+        print("[DEBUG] Đang tìm kiếm các đối tượng dungeon...")
         local foundObject = false
         for _, object in ipairs(dungeonFolder:GetChildren()) do
             if object:IsA("Part") then
                 foundObject = true
                 teleportToObject(object)
-                task.wait(1) -- Prevent excessive execution
+                task.wait(1) -- Ngăn thực thi quá mức
             end
         end
         if not foundObject then
-            print("[WARNING] No valid dungeon objects found!")
+            print("[CẢNH BÁO] Không tìm thấy đối tượng dungeon hợp lệ!")
         end
-        task.wait(0.5) -- Delay before checking again
+        task.wait(0.5) -- Độ trễ trước khi kiểm tra lại
     end
 end
 
@@ -693,9 +711,9 @@ Tabs.dungeon:AddToggle("TeleportToDungeon", {
     Default = false,
     Callback = function(state)
         teleportingEnabled = state
-        print("[DEBUG] Teleporting toggled:", state)
+        print("[DEBUG] Đã bật/tắt dịch chuyển:", state)
         if state then
-            task.spawn(teleportLoop) -- Start teleporting loop when the toggle is enabled
+            task.spawn(teleportLoop) -- Bắt đầu vòng lặp dịch chuyển khi bật
         end
     end
 })
@@ -730,25 +748,25 @@ local function SetSpawnAndReset(spawnName)
     local remote = ReplicatedStorage:WaitForChild("BridgeNet2"):WaitForChild("dataRemoteEvent")
     remote:FireServer(unpack(args))
 
-    -- Wait a moment before resetting (optional, to ensure spawn is set)
+    -- Đợi một chút trước khi hồi sinh (tùy chọn, để đảm bảo điểm hồi sinh được thiết lập)
     task.wait(0.5)
 
-    -- Reset Character
+    -- Hồi sinh nhân vật
     if player.Character then
-        player.Character:BreakJoints() -- This forces the character to respawn
+        player.Character:BreakJoints() -- Buộc nhân vật phải hồi sinh
     end
 end
 
 local function detectDungeon()
     player.PlayerGui.Warn.ChildAdded:Connect(function(dungeon)
         if dungeon:IsA("Frame") and AutoDetectToggle.Value then
-            print("Dungeon detected!")
+            print("Đã phát hiện Dungeon!")
             for _, child in ipairs(dungeon:GetChildren()) do
                 if child:IsA("TextLabel") then
                     for village, spawnName in pairs(villageSpawns) do
                         if string.find(string.lower(child.Text), string.lower(village)) then
                             teleportEnabled = false
-                            print("Detected village:", village)
+                            print("Đã phát hiện làng:", village)
                             SetSpawnAndReset(spawnName)
                             return
                         end
@@ -759,7 +777,7 @@ local function detectDungeon()
     end)
 end
 
--- Ensure function runs
+-- Đảm bảo hàm hoạt động
 AutoDetectToggle:OnChanged(function(value)
     if value then
         detectDungeon()
@@ -769,24 +787,24 @@ end)
 detectDungeon()
 
 local function resetAutoFarm()
-    -- Reset all toggle states and functions
-    killedNPCs = {} -- Reset NPC kills
+    -- Đặt lại tất cả trạng thái và hàm
+    killedNPCs = {} -- Đặt lại số lượng NPC đã tiêu diệt
 
-    print("AutoFarm has been reset!") -- Print message for confirmation
+    print("AutoFarm đã được đặt lại!") -- In thông báo xác nhận
 
-    -- Restart all functions if needed
+    -- Khởi động lại tất cả các hàm nếu cần
 end
 
 task.spawn(function()
     while true do
-        task.wait(120) -- Wait for 10 seconds
-        resetAutoFarm() -- Call the reset function
+        task.wait(120) -- Đợi 120 giây
+        resetAutoFarm() -- Gọi hàm đặt lại
     end
 end)
 
 local rankMapping = { "E", "D", "C", "B", "A", "S", "SS" }
 
--- Dropdown for choosing which ranks to sell
+-- Dropdown để chọn các cấp độ để bán
 local SellDropdown = Tabs.pets:AddDropdown("ChooseRankToSell", {
     Title = "Choose Rank to Sell",
     Values = rankMapping,
@@ -794,7 +812,7 @@ local SellDropdown = Tabs.pets:AddDropdown("ChooseRankToSell", {
     Default = {}
 })
 
--- Dropdown for choosing pets to keep
+-- Dropdown để chọn pet cần giữ lại
 local KeepPetsDropdown = Tabs.pets:AddDropdown("ChoosePetsToKeep", {
     Title = "Pets to Not Delete",
     Values = {},
@@ -802,7 +820,7 @@ local KeepPetsDropdown = Tabs.pets:AddDropdown("ChoosePetsToKeep", {
     Default = {}
 })
 
--- Button to refresh the "Keep Pets" dropdown
+-- Nút để làm mới dropdown "Keep Pets"
 Tabs.pets:AddButton({
     Title = "Refresh Keep Pets List",
     Callback = function()
@@ -810,15 +828,15 @@ Tabs.pets:AddButton({
     end
 })
 
--- Function to get pets by selected rank
+-- Hàm để lấy pet theo cấp độ đã chọn
 local function getPetsByRank(selectedRanks, keepPets)
     local player = game:GetService("Players").LocalPlayer
     local petsFolder = player.leaderstats.Inventory:FindFirstChild("Pets")
     if not petsFolder then return {} end
 
-    local petsByRank = {}  -- Store pets by rank
-    local petsToSell = {}  -- Pets that will be sold
-    local keepOnePet = {}  -- Ensure only 1 pet of each chosen type is kept
+    local petsByRank = {}  -- Lưu trữ pet theo cấp độ
+    local petsToSell = {}  -- Các pet sẽ được bán
+    local keepOnePet = {}  -- Đảm bảo chỉ giữ 1 pet mỗi loại đã chọn
 
     for _, pet in ipairs(petsFolder:GetChildren()) do
         local rankValue = pet:GetAttribute("Rank")
@@ -830,23 +848,23 @@ local function getPetsByRank(selectedRanks, keepPets)
         end
     end
 
-    -- Process each rank
+    -- Xử lý từng cấp độ
     for rank, petList in pairs(petsByRank) do
-        table.sort(petList) -- Sort pets for consistency
+        table.sort(petList) -- Sắp xếp pet để đảm bảo tính nhất quán
 
         local keptOne = false
         for _, pet in ipairs(petList) do
             if keepPets[pet] then
                 if not keepOnePet[pet] then
-                    keepOnePet[pet] = true -- Keep only 1 copy of this pet
+                    keepOnePet[pet] = true -- Chỉ giữ 1 bản sao của pet này
                     keptOne = true
                 else
-                    table.insert(petsToSell, pet) -- Sell extra copies
+                    table.insert(petsToSell, pet) -- Bán các bản sao thừa
                 end
             elseif not keptOne then
-                keptOne = true -- Ensure at least 1 pet per rank is kept
+                keptOne = true -- Đảm bảo ít nhất 1 pet mỗi cấp độ được giữ lại
             else
-                table.insert(petsToSell, pet) -- Sell remaining pets
+                table.insert(petsToSell, pet) -- Bán các pet còn lại
             end
         end
     end
@@ -854,7 +872,7 @@ local function getPetsByRank(selectedRanks, keepPets)
     return petsToSell
 end
 
--- Function to sell pets
+-- Hàm để bán pet
 local function sellPets()
     local selectedRanks = SellDropdown.Value
     local keepPets = KeepPetsDropdown.Value
@@ -874,38 +892,38 @@ local function sellPets()
     end
 end
 
--- Function to update the "Keep Pets" dropdown
+-- Hàm để cập nhật dropdown "Keep Pets"
 function updateKeepPetsDropdown()
     local player = game:GetService("Players").LocalPlayer
     local petsFolder = player.leaderstats.Inventory:FindFirstChild("Pets")
     if not petsFolder then return end
 
-    local petNames = {} -- Array for dropdown
+    local petNames = {} -- Mảng cho dropdown
 
     for _, pet in ipairs(petsFolder:GetChildren()) do
         if not table.find(petNames, pet.Name) then
-            table.insert(petNames, pet.Name) -- Add pet names only once
+            table.insert(petNames, pet.Name) -- Thêm tên pet chỉ một lần
         end
     end
 
-    KeepPetsDropdown:SetValues(petNames) -- Update dropdown with pet names
+    KeepPetsDropdown:SetValues(petNames) -- Cập nhật dropdown với tên pet
 end
 
--- Start the selling loop
+-- Bắt đầu vòng lặp bán
 local function startSellingLoop()
     while true do
         sellPets()
-        wait(1) -- Prevent spamming
+        wait(1) -- Ngăn spam
     end
 end
 
--- Run the loop in a separate thread
+-- Chạy vòng lặp trong một luồng riêng biệt
 spawn(startSellingLoop)
 
--- Initialize pet dropdown on start
+-- Khởi tạo dropdown pet khi bắt đầu
 updateKeepPetsDropdown()
 
--- Refresh pet list when dropdown changes
+-- Làm mới danh sách pet khi dropdown thay đổi
 SellDropdown:OnChanged(updateKeepPetsDropdown)
 KeepPetsDropdown:OnChanged(updateKeepPetsDropdown)
 
@@ -919,21 +937,21 @@ local AntiAfkToggle = Tabs.Player:AddToggle("AntiAfk", {
     Default = false,
     Callback = function(enabled)
         if enabled then
-            print("Anti AFK Enabled")
-            -- Ensure we don't create multiple connections
+            print("Đã bật Anti AFK")
+            -- Đảm bảo không tạo nhiều kết nối
             if not antiAfkConnection then
                 antiAfkConnection = LocalPlayer.Idled:Connect(function()
                     VirtualUser:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
-                    task.wait(1) -- Adjustable wait time
+                    task.wait(1) -- Thời gian chờ có thể điều chỉnh
                     VirtualUser:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
                 end)
             end
         else
-            print("Anti AFK Disabled")
-            -- Disconnect the event when disabling
+            print("Đã tắt Anti AFK")
+            -- Ngắt kết nối sự kiện khi tắt
             if antiAfkConnection then
                 antiAfkConnection:Disconnect()
-                antiAfkConnection = nil -- Reset the connection variable
+                antiAfkConnection = nil -- Đặt lại biến kết nối
             end
         end
     end
@@ -943,35 +961,35 @@ local AntiAfkToggle = Tabs.Player:AddToggle("AntiAfk", {
 
 local function getUniqueWeaponNames()
     local weapons = {}
-    local seenNames = {} -- To track unique names
+    local seenNames = {} -- Để theo dõi tên duy nhất
 
     local playerWeapons = game:GetService("Players").LocalPlayer.leaderstats.Inventory.Weapons:GetChildren()
-    print("Fetching weapons...") -- DEBUG
+    print("Đang lấy danh sách vũ khí...") -- GỠ LỖI
 
     for _, weapon in ipairs(playerWeapons) do
-        local weaponName = weapon:GetAttribute("Name") -- Get "Name" attribute
+        local weaponName = weapon:GetAttribute("Name") -- Lấy thuộc tính "Name"
         if weaponName then
-            print("Found Weapon:", weaponName) -- DEBUG
+            print("Đã tìm thấy vũ khí:", weaponName) -- GỠ LỖI
             if not seenNames[weaponName] then
                 table.insert(weapons, weaponName)
-                seenNames[weaponName] = true -- Mark name as seen
+                seenNames[weaponName] = true -- Đánh dấu tên đã thấy
             end
         end
     end
     return weapons
 end
 
--- Populate dropdown with **unique** weapon names
+-- Tạo dropdown với tên vũ khí **duy nhất**
 local weaponNames = getUniqueWeaponNames()
 local WeaponDropdown = Tabs.misc:AddDropdown("WeaponDropdown", {
     Title = "Select Weapon to Upgrade",
     Description = "Choose a weapon to upgrade",
     Values = weaponNames,
-    Multi = false, -- Single selection
+    Multi = false, -- Chọn một
     Default = ""
 })
 
--- Dropdown for selecting upgrade level (2-6)
+-- Dropdown để chọn cấp độ nâng cấp (2-6)
 local LevelDropdown = Tabs.misc:AddDropdown("LevelDropdown", {
     Title = "Select Upgrade Level",
     Description = "Choose the level for upgrade",
@@ -980,7 +998,7 @@ local LevelDropdown = Tabs.misc:AddDropdown("LevelDropdown", {
     Default = "2"
 })
 
--- Toggle for Auto Upgrade Weapon
+-- Bật/tắt tự động nâng cấp vũ khí
  local AutoUpgradeToggle = Tabs.misc:AddToggle("AutoUpgradeToggle", { Title = "Auto Upgrade Weapon", Default = false })
 
 local function AutoUpgradeWeapon()
@@ -1003,14 +1021,14 @@ local function AutoUpgradeWeapon()
             }
 
             game:GetService("ReplicatedStorage"):WaitForChild("BridgeNet2"):WaitForChild("dataRemoteEvent"):FireServer(unpack(args))
-            task.wait(0.1) -- Adjust delay if needed
+            task.wait(0.1) -- Điều chỉnh độ trễ nếu cần
         else
             Fluent:Notify({
                 Title = "Error",
-                Content = "Please select a weapon before upgrading.",
+                Content = "Vui lòng chọn vũ khí trước khi nâng cấp.",
                 Duration = 5
             })
-            print("ERROR: No weapon selected!") -- DEBUG
+            print("LỖI: Không có vũ khí nào được chọn!") -- GỠ LỖI
             break
         end
     end
@@ -1018,7 +1036,7 @@ end
 
 AutoUpgradeToggle:OnChanged(function(Value)
     if Value then
-        task.spawn(AutoUpgradeWeapon) -- Start upgrading in a separate thread
+        task.spawn(AutoUpgradeWeapon) -- Bắt đầu nâng cấp trong một luồng riêng biệt
     end
 end)
 
@@ -1093,7 +1111,7 @@ function TPReturner()
                     game:GetService("TeleportService"):TeleportToPlaceInstance(PlaceID, ID, Players.LocalPlayer)
                 end)
                 wait(4)
-                break -- Exit the loop after finding a suitable server to teleport to
+                break -- Thoát vòng lặp sau khi tìm thấy máy chủ phù hợp để dịch chuyển đến
             end
         end
     end
@@ -1135,7 +1153,7 @@ local function checkMountsAndTeleport()
             if mountId == invMount then
                 Fluent:Notify({
                     Title = "Mount Detected!",
-                    Content = "Matching mount found! Server hopping...",
+                    Content = "Tìm thấy mount trùng khớp! Đang chuyển máy chủ...",
                     Duration = 5
                 })
                 TPReturner()
@@ -1148,7 +1166,7 @@ local function checkMountsAndTeleport()
         tweenTeleport(targetPosition)
 
         if DelayToggle then
-            task.wait(15)  -- Waits 15 seconds ONLY if toggle is enabled
+            task.wait(15)  -- Đợi 15 giây CHỈ KHI bật toggle
         end
 
         fireProximityPrompts()
@@ -1164,7 +1182,7 @@ local function teleportSequence()
             checkMountsAndTeleport()
             Fluent:Notify({
                 Title = "Mount Collected!",
-                Content = "Server hopping...",
+                Content = "Đang chuyển máy chủ...",
                 Duration = 5
             })
             TPReturner()
@@ -1405,8 +1423,8 @@ end
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 
-local speedValue = 16 -- Default WalkSpeed
-local jumpValue = 50  -- Default JumpPower
+local speedValue = 16 -- Tốc độ di chuyển mặc định
+local jumpValue = 50  -- Lực nhảy mặc định
 local speedEnabled = false
 local jumpEnabled = false
 
@@ -1418,7 +1436,7 @@ local function updateCharacter()
     end
 end
 
--- Speed Input
+-- Nhập tốc độ
 local SpeedInput = Tabs.Player:AddInput("SpeedInput", {
     Title = "Speed",
     Default = tostring(speedValue),
@@ -1427,11 +1445,11 @@ local SpeedInput = Tabs.Player:AddInput("SpeedInput", {
     Finished = true, 
     Callback = function(Value)
         speedValue = tonumber(Value) or 16
-        updateCharacter() -- Update character immediately when speed is changed
+        updateCharacter() -- Cập nhật nhân vật ngay lập tức khi tốc độ thay đổi
     end
 })
 
--- Jump Power Input
+-- Nhập lực nhảy
 local JumpInput = Tabs.Player:AddInput("JumpInput", {
     Title = "Jump Power",
     Default = tostring(jumpValue),
@@ -1440,11 +1458,11 @@ local JumpInput = Tabs.Player:AddInput("JumpInput", {
     Finished = true, 
     Callback = function(Value)
         jumpValue = tonumber(Value) or 50
-        updateCharacter() -- Update character immediately when jump power is changed
+        updateCharacter() -- Cập nhật nhân vật ngay lập tức khi lực nhảy thay đổi
     end
 })
 
--- Speed Toggle
+-- Bật/tắt tốc độ
 local SpeedToggle = Tabs.Player:AddToggle("SpeedToggle", {
     Title = "Enable Speed",
     Default = false
@@ -1452,10 +1470,10 @@ local SpeedToggle = Tabs.Player:AddToggle("SpeedToggle", {
 
 SpeedToggle:OnChanged(function(Value)
     speedEnabled = Value
-    updateCharacter() -- Update character immediately when toggle is changed
+    updateCharacter() -- Cập nhật nhân vật ngay lập tức khi toggle thay đổi
 end)
 
--- Jump Power Toggle
+-- Bật/tắt lực nhảy
 local JumpToggle = Tabs.Player:AddToggle("JumpToggle", {
     Title = "Enable Jump Power",
     Default = false
@@ -1463,16 +1481,16 @@ local JumpToggle = Tabs.Player:AddToggle("JumpToggle", {
 
 JumpToggle:OnChanged(function(Value)
     jumpEnabled = Value
-    updateCharacter() -- Update character immediately when toggle is changed
+    updateCharacter() -- Cập nhật nhân vật ngay lập tức khi toggle thay đổi
 end)
 
--- Update character on respawn
+-- Cập nhật nhân vật khi hồi sinh
 LocalPlayer.CharacterAdded:Connect(function()
-    task.wait(1) -- Wait for the character to fully load
+    task.wait(1) -- Đợi nhân vật tải xong
     updateCharacter()
 end)
 
--- Initial update
+-- Cập nhật ban đầu
 updateCharacter()
 
 local player = game.Players.LocalPlayer
@@ -1487,12 +1505,12 @@ local function tweenCharacter(targetCFrame)
     end
 end
 
--- Add button
+-- Thêm nút
 Tabs.tp:AddButton({
     Title = "Tween to Dedu island",
     Description = "Smoothly moves your character",
     Callback = function()
-        tweenCharacter(CFrame.new(3859.06299, 60.1228409, 3081.9458, -0.987112403, 6.46206388e-07, -0.160028473, 5.63319077e-07, 1, 5.63319418e-07, 0.160028473, 4.65912507e-07, -0.987112403)) -- Change this to your desired position
+        tweenCharacter(CFrame.new(3859.06299, 60.1228409, 3081.9458, -0.987112403, 6.46206388e-07, -0.160028473, 5.63319077e-07, 1, 5.63319418e-07, 0.160028473, 4.65912507e-07, -0.987112403)) -- Thay đổi vị trí theo nhu cầu
     end
 })
 
@@ -1503,7 +1521,7 @@ local NoClipToggle = Tabs.Player:AddToggle("NoClipToggle", {
     Default = false
 })
 
--- NoClip function
+-- Hàm NoClip
 local noclipEnabled = false
 NoClipToggle:OnChanged(function(Value)
     noclipEnabled = Value
@@ -1601,7 +1619,7 @@ Tabs.dungeon:AddToggle("AutoBuyDungeonTicket", {
                     }
 
                     game:GetService("ReplicatedStorage"):WaitForChild("BridgeNet2"):WaitForChild("dataRemoteEvent"):FireServer(unpack(args))
-                    task.wait(5) -- Wait 5 seconds before firing again
+                    task.wait(5) -- Đợi 5 giây trước khi gửi lại
                 end
             end)
         end
@@ -1641,7 +1659,7 @@ local function findClosestTarget()
         if enemy:IsA("Model") and enemy:FindFirstChild("HumanoidRootPart") then
             local enemyType = enemy:GetAttribute("ID")
             
-            -- Ensure the script ignores dead enemies
+            -- Đảm bảo script bỏ qua các kẻ địch đã chết
             if not defeatedEnemies[enemy.Name] then
                 local distance = (playerPos - enemy:GetPivot().Position).Magnitude
                 
@@ -1659,7 +1677,7 @@ local function findClosestTarget()
         end
     end
 
-    -- Priority: JJ2 > JJ3 > JJ4
+    -- Ưu tiên: JJ2 > JJ3 > JJ4
     return closestJJ2 or closestJJ3 or closestJJ4
 end
 
@@ -1752,7 +1770,7 @@ local Inventory = LocalPlayer:FindFirstChild("leaderstats") and LocalPlayer.lead
 local SelectedLevel = 1
 local SellingEnabled = false
 
--- Dropdown for selecting the weapon level (moved to Misc tab)
+-- Dropdown để chọn cấp độ vũ khí (đã chuyển sang tab Misc)
 local Dropdown = Tabs.misc:AddDropdown("WeaponLevel", {
     Title = "Select Weapon Level",
     Values = {"1", "2", "4", "5", "6", "7"},
@@ -1764,14 +1782,14 @@ Dropdown:OnChanged(function(Value)
     SelectedLevel = tonumber(Value)
 end)
 
--- Toggle for auto-selling (moved to Misc tab)
+-- Bật/tắt tự động bán (đã chuyển sang tab Misc)
 local Toggle = Tabs.misc:AddToggle("AutoSell", { Title = "Auto-Sell Weapons", Default = false })
 
 Toggle:OnChanged(function(Value)
     SellingEnabled = Value
 end)
 
--- Function to sell weapons based on the selected level
+-- Hàm để bán vũ khí dựa trên cấp độ đã chọn
 local function SellWeapons()
     if not Inventory or not SellingEnabled then return end
     
@@ -1794,7 +1812,7 @@ local function SellWeapons()
     end
 end
 
--- Loop to continuously check for weapons to sell
+-- Vòng lặp liên tục kiểm tra vũ khí để bán
 task.spawn(function()
     while task.wait(0.5) do
         if SellingEnabled then
@@ -1819,7 +1837,7 @@ local function EnterDungeon()
         }
 
         game:GetService("ReplicatedStorage"):WaitForChild("BridgeNet2"):WaitForChild("dataRemoteEvent"):FireServer(unpack(args))
-        task.wait(0.5) -- Adjust delay if needed
+        task.wait(0.5) -- Điều chỉnh độ trễ nếu cần
     end
 end
 
@@ -1830,13 +1848,13 @@ AutoEnterDungeon:OnChanged(function(Value)
 end)
 
 Tabs.Discord:AddParagraph({
-    Title = "🎉 Welcome to Etherbyte Hub Premium!",
-    Content = "Unlock the best experience with our premium features!\n\n" ..
-              "✅ **Advanced Anti-Cheat Bypass** – Stay undetected and safe.\n" ..
-              "⚡ **Faster Execution & Optimization** – Enjoy smoother gameplay.\n" ..
-              "🔄 **Exclusive Updates** – Get early access to new features.\n" ..
-              "🎁 **Premium Support & Community** – Connect with other elite users.\n\n" ..
-              "Upgrade now and enhance your gaming experience!"
+    Title = "🎉 Chào mừng đến với Etherbyte Hub Premium!",
+    Content = "Mở khóa trải nghiệm tốt nhất với các tính năng cao cấp của chúng tôi!\n\n" ..
+              "✅ **Vượt qua Anti-Cheat nâng cao** – Luôn an toàn và không bị phát hiện.\n" ..
+              "⚡ **Thực thi nhanh hơn & Tối ưu hóa** – Tận hưởng gameplay mượt mà hơn.\n" ..
+              "🔄 **Cập nhật độc quyền** – Tiếp cận sớm các tính năng mới.\n" ..
+              "🎁 **Hỗ trợ & Cộng đồng cao cấp** – Kết nối với các người dùng ưu tú khác.\n\n" ..
+              "Nâng cấp ngay và nâng cao trải nghiệm chơi game của bạn!"
 })
 
 Tabs.Discord:AddButton({
@@ -1845,17 +1863,12 @@ Tabs.Discord:AddButton({
     Callback = function()
         setclipboard("https://discord.gg/W77Vj2HNBA")
         Fluent:Notify({
-            Title = "Copied!",
-            Content = "Discord link copied to clipboard.",
+            Title = "Đã sao chép!",
+            Content = "Đường dẫn Discord đã được sao chép vào clipboard.",
             Duration = 3
         })
     end
 })
-
-
-
-
-
 
 
 SaveManager:SetLibrary(Fluent)
@@ -1870,39 +1883,95 @@ Window:SelectTab(1)
 
 Fluent:Notify({
     Title = "JFF Hub",
-    Content = "Script Loaded!",
+    Content = "Script đã tải xong!",
     Duration = 3
 })
 
 SaveManager:LoadAutoloadConfig()
---[[
-	WARNING: Heads up! This script has not been verified by ScriptBlox. Use at your own risk!
-]]
 
-repeat task.wait(0.25) until game:IsLoaded();
-getgenv().Image = "rbxassetid://130997882132914"; -- put a asset id in here to make it work
-getgenv().ToggleUI = "LeftControl" -- This where you can Toggle the Fluent ui library
+-- Thêm hỗ trợ Mobile UI
+repeat task.wait(0.25) until game:IsLoaded()
+getgenv().Image = "rbxassetid://13099788281" -- ID tài nguyên hình ảnh đã sửa
+getgenv().ToggleUI = "LeftControl" -- Phím để bật/tắt giao diện
 
+-- Tạo giao diện mobile cho người dùng điện thoại
 task.spawn(function()
-    if not getgenv().LoadedMobileUI == true then getgenv().LoadedMobileUI = true
-        local OpenUI = Instance.new("ScreenGui");
-        local ImageButton = Instance.new("ImageButton");
-        local UICorner = Instance.new("UICorner");
-        OpenUI.Name = "OpenUI";
-        OpenUI.Parent = game:GetService("CoreGui");
-        OpenUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling;
-        ImageButton.Parent = OpenUI;
-        ImageButton.BackgroundColor3 = Color3.fromRGB(105,105,105);
-        ImageButton.BackgroundTransparency = 0.8
-        ImageButton.Position = UDim2.new(0.9,0,0.1,0);
-        ImageButton.Size = UDim2.new(0,50,0,50);
-        ImageButton.Image = getgenv().Image;
-        ImageButton.Draggable = true;
-        ImageButton.Transparency = 1;
-        UICorner.CornerRadius = UDim.new(0,200);
-        UICorner.Parent = ImageButton;
-        ImageButton.MouseButton1Click:Connect(function()
-            game:GetService("VirtualInputManager"):SendKeyEvent(true,getgenv().ToggleUI,false,game);
-        end)
+    local success, errorMsg = pcall(function()
+        if not getgenv().LoadedMobileUI == true then 
+            getgenv().LoadedMobileUI = true
+            local OpenUI = Instance.new("ScreenGui")
+            local ImageButton = Instance.new("ImageButton")
+            local UICorner = Instance.new("UICorner")
+            
+            -- Kiểm tra thiết bị
+            if syn and syn.protect_gui then
+                syn.protect_gui(OpenUI)
+                OpenUI.Parent = game:GetService("CoreGui")
+            elseif gethui then
+                OpenUI.Parent = gethui()
+            else
+                OpenUI.Parent = game:GetService("CoreGui")
+            end
+            
+            OpenUI.Name = "OpenUI"
+            OpenUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+            
+            ImageButton.Parent = OpenUI
+            ImageButton.BackgroundColor3 = Color3.fromRGB(105,105,105)
+            ImageButton.BackgroundTransparency = 0.8
+            ImageButton.Position = UDim2.new(0.9,0,0.1,0)
+            ImageButton.Size = UDim2.new(0,50,0,50)
+            ImageButton.Image = getgenv().Image
+            ImageButton.Draggable = true
+            ImageButton.Transparency = 0.2
+            
+            UICorner.CornerRadius = UDim.new(0,200)
+            UICorner.Parent = ImageButton
+            
+            ImageButton.MouseButton1Click:Connect(function()
+                game:GetService("VirtualInputManager"):SendKeyEvent(true,getgenv().ToggleUI,false,game)
+            end)
+        end
+    end)
+    
+    if not success then
+        warn("Lỗi khi tạo nút Mobile UI: " .. tostring(errorMsg))
     end
 end)
+
+-- Kiểm tra script đã tải thành công
+local scriptSuccess, scriptError = pcall(function()
+    Fluent:Notify({
+        Title = "Script đã khởi động thành công",
+        Content = "JFF Hub | Arise Crossover đang hoạt động",
+        Duration = 5
+    })
+end)
+
+if not scriptSuccess then
+    warn("Lỗi khi khởi động script: " .. tostring(scriptError))
+    -- Thử cách khác để thông báo người dùng
+    if game:GetService("Players").LocalPlayer and game:GetService("Players").LocalPlayer:FindFirstChild("PlayerGui") then
+        local screenGui = Instance.new("ScreenGui")
+        screenGui.Parent = game:GetService("Players").LocalPlayer.PlayerGui
+        
+        local textLabel = Instance.new("TextLabel")
+        textLabel.Size = UDim2.new(0.3, 0, 0.1, 0)
+        textLabel.Position = UDim2.new(0.35, 0, 0.45, 0)
+        textLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+        textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        textLabel.Text = "JFF Hub đã khởi động nhưng gặp lỗi. Hãy thử lại."
+        textLabel.Parent = screenGui
+        
+        local uiCorner = Instance.new("UICorner")
+        uiCorner.CornerRadius = UDim.new(0, 8)
+        uiCorner.Parent = textLabel
+        
+        game:GetService("Debris"):AddItem(screenGui, 5)
+    end
+end
+
+
+
+
+
