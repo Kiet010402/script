@@ -259,7 +259,7 @@ end
 
 local Window = Fluent:CreateWindow({
     Title = "Kaihon Hub | Arise Crossover",
-    SubTitle = "By DuongTuan",
+    SubTitle = "",
     TabWidth = 140,
     Size = UDim2.fromOffset(450, 350),
     Acrylic = false,
