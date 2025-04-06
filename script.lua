@@ -1873,21 +1873,70 @@ Tabs.Discord:AddButton({
 
 SaveManager:SetLibrary(Fluent)
 InterfaceManager:SetLibrary(Fluent)
-InterfaceManager:SetFolder("JffScriptHub")
-SaveManager:SetFolder("JffScriptHub/AriseCrossover")
 
-InterfaceManager:BuildInterfaceSection(Tabs.Settings)
-SaveManager:BuildConfigSection(Tabs.Settings)
+-- Thay đổi cách lưu cấu hình để sử dụng tên người chơi
+local playerName = game:GetService("Players").LocalPlayer.Name
+InterfaceManager:SetFolder("JffScriptHub")
+SaveManager:SetFolder("JffScriptHub/AriseCrossover/" .. playerName)
+
+-- Xóa đoạn xây dựng phần cấu hình trong Settings tab
+-- InterfaceManager:BuildInterfaceSection(Tabs.Settings)
+-- SaveManager:BuildConfigSection(Tabs.Settings)
+
+-- Thêm thông tin vào tab Settings
+Tabs.Settings:AddParagraph({
+    Title = "Cấu hình tự động",
+    Content = "Cấu hình của bạn đang được tự động lưu theo tên nhân vật: " .. playerName
+})
+
+Tabs.Settings:AddParagraph({
+    Title = "Phím tắt",
+    Content = "Nhấn LeftControl để ẩn/hiện giao diện"
+})
+
+-- Thêm nút xóa cấu hình hiện tại
+Tabs.Settings:AddButton({
+    Title = "Xóa cấu hình hiện tại",
+    Description = "Đặt lại tất cả cài đặt về mặc định",
+    Callback = function()
+        SaveManager:Delete("AutoSave_" .. playerName)
+        Fluent:Notify({
+            Title = "Đã xóa cấu hình",
+            Content = "Tất cả cài đặt đã được đặt lại về mặc định",
+            Duration = 3
+        })
+    end
+})
 
 Window:SelectTab(1)
 
 Fluent:Notify({
     Title = "JFF Hub",
-    Content = "Script đã tải xong!",
+    Content = "Script đã tải xong! Cấu hình tự động lưu theo tên người chơi: " .. playerName,
     Duration = 3
 })
 
-SaveManager:LoadAutoloadConfig()
+-- Thay đổi cách tải cấu hình
+local function AutoSaveConfig()
+    local configName = "AutoSave_" .. playerName
+    
+    -- Tự động lưu cấu hình hiện tại
+    task.spawn(function()
+        while task.wait(10) do -- Lưu mỗi 10 giây
+            pcall(function()
+                SaveManager:Save(configName)
+            end)
+        end
+    end)
+    
+    -- Tải cấu hình đã lưu nếu có
+    pcall(function()
+        SaveManager:Load(configName)
+    end)
+end
+
+-- Thực thi tự động lưu/tải cấu hình
+AutoSaveConfig()
 
 -- Thêm hỗ trợ Mobile UI
 repeat task.wait(0.25) until game:IsLoaded()
