@@ -511,6 +511,14 @@ Tabs.tp:AddButton({
     end
 })
 
+Tabs.tp:AddButton({
+    Title = "Mori Town",
+    Description = "Set spawn & reset",
+    Callback = function()
+        SetSpawnAndReset("JojoWorld")
+    end
+})
+
 local TweenService = game:GetService("TweenService")
 
 
