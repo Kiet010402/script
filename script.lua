@@ -258,8 +258,8 @@ if not Fluent then
 end
 
 local Window = Fluent:CreateWindow({
-    Title = "JFF Hub | Arise Crossover",
-    SubTitle = "By Kazona",
+    Title = "Kaihon Hub | Arise Crossover",
+    SubTitle = "By DuongTuan",
     TabWidth = 140,
     Size = UDim2.fromOffset(450, 350),
     Acrylic = false,
@@ -1876,8 +1876,8 @@ InterfaceManager:SetLibrary(Fluent)
 
 -- Thay đổi cách lưu cấu hình để sử dụng tên người chơi
 local playerName = game:GetService("Players").LocalPlayer.Name
-InterfaceManager:SetFolder("JffScriptHub")
-SaveManager:SetFolder("JffScriptHub/AriseCrossover/" .. playerName)
+InterfaceManager:SetFolder("KaihonScriptHub")
+SaveManager:SetFolder("KaihonScriptHub/AriseCrossover/" .. playerName)
 
 -- Xóa đoạn xây dựng phần cấu hình trong Settings tab
 -- InterfaceManager:BuildInterfaceSection(Tabs.Settings)
@@ -1911,7 +1911,7 @@ Tabs.Settings:AddButton({
 Window:SelectTab(1)
 
 Fluent:Notify({
-    Title = "JFF Hub",
+    Title = "Kaihon Hub",
     Content = "Script đã tải xong! Cấu hình tự động lưu theo tên người chơi: " .. playerName,
     Duration = 3
 })
@@ -1992,7 +1992,7 @@ end)
 local scriptSuccess, scriptError = pcall(function()
     Fluent:Notify({
         Title = "Script đã khởi động thành công",
-        Content = "JFF Hub | Arise Crossover đang hoạt động",
+        Content = "Kaihon Hub | Arise Crossover đang hoạt động",
         Duration = 5
     })
 end)
@@ -2009,7 +2009,7 @@ if not scriptSuccess then
         textLabel.Position = UDim2.new(0.35, 0, 0.45, 0)
         textLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
         textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        textLabel.Text = "JFF Hub đã khởi động nhưng gặp lỗi. Hãy thử lại."
+        textLabel.Text = "Kaihon Hub đã khởi động nhưng gặp lỗi. Hãy thử lại."
         textLabel.Parent = screenGui
         
         local uiCorner = Instance.new("UICorner")
