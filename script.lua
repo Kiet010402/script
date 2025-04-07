@@ -236,24 +236,295 @@ local Fluent
 local SaveManager
 local InterfaceManager
 
+-- Hàm kiểm tra tên executor hiện tại
+local function getExecutorName()
+    local executor = (syn and "Synapse X") or
+                    (getexecutorname and getexecutorname()) or
+                    (identifyexecutor and identifyexecutor()) or
+                    (delta and "Delta") or
+                    "Unknown"
+    return executor
+end
+
+-- Hàm tải thư viện dự phòng với nhiều cách khác nhau
+local function tryLoadLibrary(libraryUrls, libraryName)
+    -- Hàm thực hiện HTTP request tương thích với nhiều executor
+    local function safeHttpGet(url)
+        local success, result
+        
+        -- Thử phương pháp 1: HttpGet trực tiếp
+        success, result = pcall(function()
+            return game:HttpGet(url)
+        end)
+        
+        if success and result then
+            return result
+        end
+        
+        -- Thử phương pháp 2: Request nếu có sẵn (Delta)
+        if request then
+            success, result = pcall(function()
+                local response = request({
+                    Url = url,
+                    Method = "GET"
+                })
+                if response.Success then
+                    return response.Body
+                end
+                return nil
+            end)
+            
+            if success and result then
+                return result
+            end
+        end
+        
+        -- Thử phương pháp 3: http_request nếu có sẵn
+        if http_request then
+            success, result = pcall(function()
+                local response = http_request({
+                    Url = url,
+                    Method = "GET"
+                })
+                if response.Success then
+                    return response.Body
+                end
+                return nil
+            end)
+            
+            if success and result then
+                return result
+            end
+        end
+        
+        -- Thử phương pháp 4: syn.request nếu có sẵn
+        if syn and syn.request then
+            success, result = pcall(function()
+                local response = syn.request({
+                    Url = url,
+                    Method = "GET"
+                })
+                if response.Success then
+                    return response.Body
+                end
+                return nil
+            end)
+            
+            if success and result then
+                return result
+            end
+        end
+        
+        return nil
+    end
+
+    for _, url in ipairs(libraryUrls) do
+        local content = safeHttpGet(url)
+        
+        if content then
+            local success, result = pcall(function()
+                return loadstring(content)()
+            end)
+            
+            if success and result then
+                print("Đã tải thành công " .. libraryName .. " từ " .. url)
+                return result
+            else
+                warn("Không thể tải " .. libraryName .. " từ " .. url .. ": " .. tostring(result))
+            end
+        else
+            warn("Không thể tải nội dung từ " .. url)
+        end
+    end
+    
+    return nil
+end
+
+local executor = getExecutorName()
+print("Đang chạy trên executor: " .. executor)
+
+-- Sử dụng phương pháp tải thư viện khác nhau dựa trên executor
 local success, err = pcall(function()
-    Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
-    SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
-    InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+    -- Danh sách URLs dự phòng (sử dụng raw.githubusercontent.com vì Delta có thể xử lý tốt hơn)
+    local fluentUrls = {
+        "https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Fluent.lua",
+        "https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua",
+        "https://raw.githubusercontent.com/Linnexes/Fluent/main/main.lua" -- URL thay thế nếu lưu trữ riêng
+    }
+    
+    local saveManagerUrls = {
+        "https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua",
+        "https://raw.githubusercontent.com/Linnexes/Fluent/main/SaveManager.lua" -- URL thay thế nếu lưu trữ riêng
+    }
+    
+    local interfaceManagerUrls = {
+        "https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua",
+        "https://raw.githubusercontent.com/Linnexes/Fluent/main/InterfaceManager.lua" -- URL thay thế nếu lưu trữ riêng
+    }
+    
+    if executor == "Delta" then
+        print("Đang sử dụng phương pháp tải thay thế cho Delta...")
+        
+        -- Thử từng URL với phương pháp khác
+        Fluent = tryLoadLibrary(fluentUrls, "Fluent")
+        SaveManager = tryLoadLibrary(saveManagerUrls, "SaveManager")
+        InterfaceManager = tryLoadLibrary(interfaceManagerUrls, "InterfaceManager")
+    else
+        -- Phương pháp tải mặc định
+        Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Fluent.lua"))()
+        SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
+        InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+    end
 end)
 
 if not success then
     warn("Lỗi khi tải thư viện Fluent: " .. tostring(err))
     -- Thử tải từ URL dự phòng
     pcall(function()
-        Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Fluent.lua"))()
-        SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
-        InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+        local backupUrls = {
+            fluent = "https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Fluent.lua",
+            saveManager = "https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua",
+            interfaceManager = "https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"
+        }
+        
+        print("Đang thử phương thức tải dự phòng...")
+        Fluent = loadstring(game:HttpGet(backupUrls.fluent))()
+        SaveManager = loadstring(game:HttpGet(backupUrls.saveManager))()
+        InterfaceManager = loadstring(game:HttpGet(backupUrls.interfaceManager))()
     end)
 end
 
 if not Fluent then
-    error("Không thể tải thư viện Fluent. Vui lòng kiểm tra kết nối internet hoặc executor.")
+    -- Thử tạo UI thay thế với nhiều thư viện khác nhau
+    print("Không thể tải Fluent UI, đang thử UI thay thế...")
+    
+    -- Thử với Orion Library
+    local success, OrionLib = pcall(function()
+        return loadstring(game:HttpGet('https://raw.githubusercontent.com/shlexware/Orion/main/source'))()
+    end)
+    
+    if success and OrionLib then
+        print("Đã tải Orion UI thành công, sử dụng UI thay thế")
+        local Window = OrionLib:MakeWindow({
+            Name = "Kaihon Hub | Delta Mode", 
+            HidePremium = true,
+            SaveConfig = true,
+            IntroEnabled = false,
+            ConfigFolder = "KaihonHub"
+        })
+        
+        local Tab = Window:MakeTab({
+            Name = "Main",
+            Icon = "rbxassetid://4483345998",
+            PremiumOnly = false
+        })
+        
+        Tab:AddParagraph("Delta Compatibility Mode", "Script đang chạy ở chế độ tương thích với Delta. Một số tính năng có thể bị giới hạn.")
+        
+        -- Thêm các chức năng cơ bản nhất
+        local mobName = ""
+        Tab:AddTextbox({
+            Name = "Enter Mob Name",
+            Default = "",
+            TextDisappear = false,
+            Callback = function(text)
+                mobName = text
+                print("Selected Mob: " .. mobName)
+            end	  
+        })
+        
+        local farmEnabled = false
+        Tab:AddToggle({
+            Name = "Auto Farm",
+            Default = false,
+            Callback = function(state)
+                farmEnabled = state
+                if state then
+                    -- Đoạn code farm đơn giản
+                    task.spawn(function()
+                        print("Bắt đầu farm với mob: " .. mobName)
+                        -- Thêm code farm ở đây
+                    end)
+                else
+                    print("Dừng farm")
+                end
+            end
+        })
+        
+        Tab:AddToggle({
+            Name = "Gamepass Shadow Farm",
+            Default = false,
+            Callback = function(state)
+                local attackatri = game:GetService("Players").LocalPlayer.Settings
+                if attackatri then
+                    attackatri:SetAttribute("AutoAttack", state)
+                    print("Shadow farm: " .. (state and "ON" or "OFF"))
+                end
+            end
+        })
+        
+        local infoTab = Window:MakeTab({
+            Name = "Info",
+            Icon = "rbxassetid://4483345998",
+            PremiumOnly = false
+        })
+        
+        infoTab:AddParagraph("Executor Info", "Executor hiện tại: " .. executor)
+        infoTab:AddButton({
+            Name = "Copy Discord",
+            Callback = function()
+                if setclipboard then
+                    setclipboard("https://discord.gg/W77Vj2HNBA")
+                    OrionLib:MakeNotification({
+                        Name = "Đã sao chép!",
+                        Content = "Đã sao chép link Discord vào clipboard",
+                        Image = "rbxassetid://4483345998",
+                        Time = 5
+                    })
+                else
+                    print("Discord: https://discord.gg/W77Vj2HNBA")
+                end
+            end
+        })
+        
+        infoTab:AddButton({
+            Name = "Thử lại tải Fluent UI",
+            Callback = function()
+                OrionLib:MakeNotification({
+                    Name = "Reloading",
+                    Content = "Đang thử tải lại script...",
+                    Image = "rbxassetid://4483345998",
+                    Time = 5
+                })
+                
+                -- Thử tải lại script
+                pcall(function()
+                    loadstring(game:HttpGet("https://raw.githubusercontent.com/Linnexes/KaihonHub/main/AriseCrossover.lua"))()
+                end)
+            end
+        })
+        
+        return -- Trả về để không thực thi code bên dưới
+    end
+    
+    -- Thử với Kavo UI nếu Orion cũng không được
+    success, _ = pcall(function()
+        local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
+        local Window = Library.CreateLib("Kaihon Hub | Fallback Mode", "DarkTheme")
+        local Tab = Window:NewTab("Error")
+        local Section = Tab:NewSection("Error Loading UI")
+        Section:NewLabel("Không thể tải thư viện UI chính")
+        Section:NewLabel("Delta có thể không hỗ trợ các API cần thiết")
+        Section:NewLabel("Hãy thử executor khác như Krnl")
+        return true
+    end)
+    
+    if success then
+        return
+    end
+    
+    -- Nếu không tải được UI nào, hiển thị thông báo lỗi thông thường
+    error("Không thể tải thư viện UI. Delta có thể không hỗ trợ các API cần thiết. Vui lòng thử executor khác như Krnl.")
     return
 end
 
