@@ -328,72 +328,9 @@ Tabs.Main:AddToggle("DamageMobs", {
     Title = "Damage Mobs ENABLE THIS",
     Default = false,
     Callback = function(state)
-        getgenv().AutoAttack = state
+        damageEnabled = state
         if state then
-            local ReplicatedStorage = game:GetService("ReplicatedStorage")
-            local remoteEvent = ReplicatedStorage.BridgeNet2.dataRemoteEvent
-            local enemyFolder = workspace.__Main.__Enemies.Client
-            local attackDelay = 0.1  
-            local player = game.Players.LocalPlayer
-            local character = player.Character or player.CharacterAdded:Wait()
-            local petsFolder = player.leaderstats.Inventory.Pets  
-            local function getClosestEnemy()
-                local closestEnemy = nil
-                local minDistance = math.huge  
-
-                for _, enemy in pairs(enemyFolder:GetChildren()) do
-                    if enemy:IsA("Model") then
-                        local rootPart = enemy:FindFirstChild("HumanoidRootPart")  
-                        if rootPart then
-                            local distance = (character.HumanoidRootPart.Position - rootPart.Position).Magnitude
-                            if distance < minDistance then
-                                minDistance = distance
-                                closestEnemy = enemy
-                            end
-                        end
-                    end
-                end
-
-                return closestEnemy
-            end
-
-            while getgenv().AutoAttack do
-                local enemy = getClosestEnemy()
-                if enemy then
-                    local args = {
-                        [1] = {
-                            [1] = {
-                                ["Event"] = "PunchAttack",
-                                ["Enemy"] = enemy.Name 
-                            },
-                            [2] = "\4"
-                        }
-                    }
-                    remoteEvent:FireServer(unpack(args))
-                    
-                    local petPositions = {}
-                    for _, pet in pairs(petsFolder:GetChildren()) do
-                        if pet:IsA("Model") and pet:FindFirstChild("HumanoidRootPart") then
-                            petPositions[pet.Name] = pet.HumanoidRootPart.Position
-                        end
-                    end
-
-                    local petArgs = {
-                        [1] = {
-                            [1] = {
-                                ["PetPos"] = petPositions,
-                                ["AttackType"] = "All",
-                                ["Event"] = "Attack",
-                                ["Enemy"] = enemy.Name
-                            },
-                            [2] = "\t"
-                        }
-                    }
-                    remoteEvent:FireServer(unpack(petArgs))
-                end
-                
-                wait(attackDelay)
-            end
+            task.spawn(attackEnemy)
         end
     end
 })
@@ -402,35 +339,24 @@ Tabs.Main:AddToggle("DamageMobs", {
 
 Tabs.dungeon:AddToggle("TeleportMobs", { Title = "Auto farm Dungeon", Default = false, Callback = function(state) teleportEnabled = state if state then task.spawn(teleportDungeon) end end })
 
-Tabs.Main:AddButton({
+Tabs.Main:AddToggle("GamepassShadowFarm", {
     Title = "Gamepass Shadow farm",
-    Description = "Dantes is best",
-    Callback = function()
-        Window:Dialog({
-            Title = "YAY",
-            Content = "join the dc",
-            Buttons = {
-                {
-                    Title = "YES",
-                    Callback = function()
-                        local attackatri = game:GetService("Players").LocalPlayer.Settings
-                        local atri = attackatri:GetAttribute("AutoAttack")
-
-                        if atri == false then
-                            attackatri:SetAttribute("AutoAttack", true)
-                        end
-
-                        print("Xác nhận hộp thoại.")
-                    end
-                },
-                {
-                    Title = "No",
-                    Callback = function()
-                        print("Hủy hộp thoại.")
-                    end
-                }
-            }
-        })
+    Default = false,
+    Callback = function(state)
+        local attackatri = game:GetService("Players").LocalPlayer.Settings
+        local atri = attackatri:GetAttribute("AutoAttack")
+        
+        if state then
+            -- Bật tính năng
+            if atri == false then
+                attackatri:SetAttribute("AutoAttack", true)
+            end
+            print("Shadow farm đã bật")
+        else
+            -- Tắt tính năng
+            attackatri:SetAttribute("AutoAttack", false)
+            print("Shadow farm đã tắt")
+        end
     end
 })
 
