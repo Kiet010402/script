@@ -329,100 +329,71 @@ Tabs.Main:AddToggle("DamageMobs", {
     Default = false,
     Callback = function(state)
         getgenv().AutoAttack = state
-        
         if state then
-            task.spawn(function()
-                local ReplicatedStorage = game:GetService("ReplicatedStorage")
-                local remoteEvent = ReplicatedStorage.BridgeNet2.dataRemoteEvent
-                local enemyFolder = workspace.__Main.__Enemies.Client
-                local attackDelay = 0.1
-                local player = game.Players.LocalPlayer
-                local userInputService = game:GetService("UserInputService")
-                local mouse = player:GetMouse()
-                
-                local function getClosestEnemy()
-                    local character = player.Character or player.CharacterAdded:Wait()
-                    if not character or not character:FindFirstChild("HumanoidRootPart") then return nil end
-                    
-                    local closestEnemy = nil
-                    local minDistance = math.huge
-                    
-                    for _, enemy in pairs(enemyFolder:GetChildren()) do
-                        if enemy:IsA("Model") then
-                            local rootPart = enemy:FindFirstChild("HumanoidRootPart")
-                            if rootPart then
-                                local distance = (character.HumanoidRootPart.Position - rootPart.Position).Magnitude
-                                if distance < minDistance then
-                                    minDistance = distance
-                                    closestEnemy = enemy
-                                end
+            local ReplicatedStorage = game:GetService("ReplicatedStorage")
+            local remoteEvent = ReplicatedStorage.BridgeNet2.dataRemoteEvent
+            local enemyFolder = workspace.__Main.__Enemies.Client
+            local attackDelay = 0.1  
+            local player = game.Players.LocalPlayer
+            local character = player.Character or player.CharacterAdded:Wait()
+            local petsFolder = player.leaderstats.Inventory.Pets  
+            local function getClosestEnemy()
+                local closestEnemy = nil
+                local minDistance = math.huge  
+
+                for _, enemy in pairs(enemyFolder:GetChildren()) do
+                    if enemy:IsA("Model") then
+                        local rootPart = enemy:FindFirstChild("HumanoidRootPart")  
+                        if rootPart then
+                            local distance = (character.HumanoidRootPart.Position - rootPart.Position).Magnitude
+                            if distance < minDistance then
+                                minDistance = distance
+                                closestEnemy = enemy
                             end
                         end
                     end
+                end
+
+                return closestEnemy
+            end
+
+            while getgenv().AutoAttack do
+                local enemy = getClosestEnemy()
+                if enemy then
+                    local args = {
+                        [1] = {
+                            [1] = {
+                                ["Event"] = "PunchAttack",
+                                ["Enemy"] = enemy.Name 
+                            },
+                            [2] = "\4"
+                        }
+                    }
+                    remoteEvent:FireServer(unpack(args))
                     
-                    return closestEnemy
+                    local petPositions = {}
+                    for _, pet in pairs(petsFolder:GetChildren()) do
+                        if pet:IsA("Model") and pet:FindFirstChild("HumanoidRootPart") then
+                            petPositions[pet.Name] = pet.HumanoidRootPart.Position
+                        end
+                    end
+
+                    local petArgs = {
+                        [1] = {
+                            [1] = {
+                                ["PetPos"] = petPositions,
+                                ["AttackType"] = "All",
+                                ["Event"] = "Attack",
+                                ["Enemy"] = enemy.Name
+                            },
+                            [2] = "\t"
+                        }
+                    }
+                    remoteEvent:FireServer(unpack(petArgs))
                 end
                 
-                -- Theo dõi kẻ địch được nhấp vào
-                local clickedEnemy = nil
-                
-                -- Thiết lập sự kiện nhấp chuột để phát hiện khi nhấp vào kẻ địch
-                mouse.Button1Down:Connect(function()
-                    if not getgenv().AutoAttack then return end
-                    
-                    local target = mouse.Target
-                    if not target then return end
-                    
-                    -- Tìm mô hình kẻ địch từ phần được nhấp
-                    local model = target:FindFirstAncestorOfClass("Model")
-                    if model and model:IsDescendantOf(enemyFolder) then
-                        clickedEnemy = model
-                        
-                        -- Kích hoạt pet tấn công ngay khi nhấp vào kẻ địch
-                        local args = {
-                            [1] = {
-                                [1] = {
-                                    ["Event"] = "ShowPets"
-                                },
-                                [2] = "\t"
-                            }
-                        }
-                        remoteEvent:FireServer(unpack(args))
-                        
-                        local petArgs = {
-                            [1] = {
-                                [1] = {
-                                    ["PetPos"] = {},
-                                    ["AttackType"] = "All",
-                                    ["Event"] = "Attack",
-                                    ["Enemy"] = model.Name
-                                },
-                                [2] = "\7"
-                            }
-                        }
-                        remoteEvent:FireServer(unpack(petArgs))
-                    end
-                end)
-                
-                while getgenv().AutoAttack do
-                    local enemy = getClosestEnemy()
-                    if enemy then
-                        -- Đấm người chơi (luôn thực hiện)
-                        local args = {
-                            [1] = {
-                                [1] = {
-                                    ["Event"] = "PunchAttack",
-                                    ["Enemy"] = enemy.Name
-                                },
-                                [2] = "\4"
-                            }
-                        }
-                        remoteEvent:FireServer(unpack(args))
-                    end
-                    
-                    task.wait(attackDelay)
-                end
-            end)
+                wait(attackDelay)
+            end
         end
     end
 })
@@ -528,14 +499,6 @@ Tabs.tp:AddButton({
     Description = "Set spawn & reset",
     Callback = function()
         SetSpawnAndReset("BCWorld")
-    end
-})
-
-Tabs.tp:AddButton({
-    Title = "Mori Town",
-    Description = "Set spawn & reset",
-    Callback = function()
-        SetSpawnAndReset("JojoWorld")
     end
 })
 
