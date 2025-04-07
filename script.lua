@@ -484,70 +484,135 @@ local TeleportDistanceSlider = PlayTab:CreateSlider({
 
 -- Farm toggle
 local farmConnection = nil
+local killedMobs = {} -- Track killed mobs
+local autoFarmActive = false -- Flag to control farming loop
+
+-- Function to check if mob is dead or almost dead
+local function isMobDead(mob)
+    if not mob or not mob.Parent then return true end
+    
+    -- Try to check health if available
+    local humanoid = mob:FindFirstChildOfClass("Humanoid")
+    if humanoid and humanoid.Health <= 0 then
+        return true
+    end
+    
+    return false
+end
+
+-- Separate function for farm loop logic
+local function farmLoop()
+    while autoFarmActive do
+        -- Get latest character and humanoid root part
+        local character = player.Character or player.CharacterAdded:Wait()
+        local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+        
+        if not humanoidRootPart then
+            task.wait(1)
+            continue
+        end
+        
+        -- Find mobs
+        local mobsFolder = workspace:FindFirstChild("Mobs")
+        if not mobsFolder then
+            task.wait(1)
+            continue
+        end
+        
+        local targetMob = nil
+        
+        -- Choose target based on selection
+        if selectedMob == "All Mobs" then
+            -- Find the closest mob that's not killed
+            local closestDistance = math.huge
+            for _, mob in pairs(mobsFolder:GetChildren()) do
+                if mob:FindFirstChild("HumanoidRootPart") and not killedMobs[mob.Name] and not isMobDead(mob) then
+                    local distance = (mob.HumanoidRootPart.Position - humanoidRootPart.Position).Magnitude
+                    if distance < closestDistance then
+                        closestDistance = distance
+                        targetMob = mob
+                    end
+                end
+            end
+            
+            -- If no valid mob found, reset killed list and try again
+            if not targetMob then
+                killedMobs = {}
+                task.wait(1)
+                continue
+            end
+        else
+            -- Find the selected mob type
+            if mobsFolder:FindFirstChild(selectedMob) and 
+               mobsFolder[selectedMob]:FindFirstChild("HumanoidRootPart") and 
+               not killedMobs[mobsFolder[selectedMob].Name] and
+               not isMobDead(mobsFolder[selectedMob]) then
+                targetMob = mobsFolder[selectedMob]
+            else
+                -- If no valid target found, reset killed list and try again
+                killedMobs = {}
+                task.wait(1)
+                continue
+            end
+        end
+        
+        -- Teleport to mob if found
+        if targetMob and targetMob:FindFirstChild("HumanoidRootPart") then
+            local teleportDistance = ConfigSystem.CurrentConfig.TeleportDistance or 5
+            local mobPosition = targetMob.HumanoidRootPart.Position
+            local direction = (humanoidRootPart.Position - mobPosition).Unit
+            local targetPosition = mobPosition + (direction * teleportDistance)
+            
+            -- Teleport to the mob with offset
+            humanoidRootPart.CFrame = CFrame.new(targetPosition, mobPosition)
+            
+            -- Auto attack
+            game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("Combat"):FireServer()
+            
+            -- Wait until the mob is dead or a timeout occurs
+            local startTime = os.time()
+            local timeout = 10 -- 10 seconds max per mob
+            
+            repeat
+                task.wait(0.1)
+                -- If mob no longer exists or player died, break
+                if not targetMob.Parent or isMobDead(targetMob) or not character.Parent then
+                    break
+                end
+            until os.time() - startTime > timeout
+            
+            -- Mark as killed
+            killedMobs[targetMob.Name] = true
+            
+            -- Update kill count
+            updateMobKillCount()
+        end
+        
+        -- Brief delay between targets
+        task.wait(0.5)
+    end
+end
+
 local AutoFarmToggle = PlayTab:CreateToggle({
     Name = "Auto Farm",
     CurrentValue = ConfigSystem.CurrentConfig.AutoFarm or false,
     Flag = "AutoFarm",
     Callback = function(Value)
-        -- Get the character and humanoid root part
-        local character = player.Character or player.CharacterAdded:Wait()
-        local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+        -- Set the auto farm state
+        autoFarmActive = Value
         
         if Value then
-            -- Start auto farm
-            if farmConnection then farmConnection:Disconnect() end
+            -- Start auto farm in a separate thread
+            killedMobs = {} -- Reset killed mobs list
             
-            farmConnection = game:GetService("RunService").Heartbeat:Connect(function()
-                -- Find mobs
-                local mobsFolder = workspace:FindFirstChild("Mobs")
-                if not mobsFolder then
-                    Rayfield:Notify({
-                        Title = "Error",
-                        Content = "Mobs folder not found!",
-                        Duration = 3,
-                        Image = "alert-triangle", -- Lucide icon
-                    })
-                    AutoFarmToggle:Set(false)
-                    return
-                end
-                
-                local targetMob = nil
-                
-                -- Choose target based on selection
-                if selectedMob == "All Mobs" then
-                    -- Find the closest mob
-                    local closestDistance = math.huge
-                    for _, mob in pairs(mobsFolder:GetChildren()) do
-                        if mob:FindFirstChild("HumanoidRootPart") then
-                            local distance = (mob.HumanoidRootPart.Position - humanoidRootPart.Position).Magnitude
-                            if distance < closestDistance then
-                                closestDistance = distance
-                                targetMob = mob
-                            end
-                        end
-                    end
-                else
-                    -- Find the selected mob type
-                    if mobsFolder:FindFirstChild(selectedMob) and mobsFolder[selectedMob]:FindFirstChild("HumanoidRootPart") then
-                        targetMob = mobsFolder[selectedMob]
-                    end
-                end
-                
-                -- Teleport to mob if found
-                if targetMob and targetMob:FindFirstChild("HumanoidRootPart") then
-                    local teleportDistance = ConfigSystem.CurrentConfig.TeleportDistance or 5
-                    local mobPosition = targetMob.HumanoidRootPart.Position
-                    local direction = (humanoidRootPart.Position - mobPosition).Unit
-                    local targetPosition = mobPosition + (direction * teleportDistance)
-                    
-                    -- Teleport to the mob with offset
-                    humanoidRootPart.CFrame = CFrame.new(targetPosition, mobPosition)
-                    
-                    -- Auto attack if enabled
-                    game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("Combat"):FireServer()
-                    wait(0.5) -- Small delay to prevent overwhelming the server
-                end
-            end)
+            -- Disconnect previous connection if exists
+            if farmConnection then 
+                farmConnection:Disconnect()
+                farmConnection = nil
+            end
+            
+            -- Start farm loop in a new thread
+            task.spawn(farmLoop)
             
             Rayfield:Notify({
                 Title = "Auto Farm Enabled",
@@ -555,19 +620,33 @@ local AutoFarmToggle = PlayTab:CreateToggle({
                 Duration = 3,
                 Image = "target", -- Lucide icon
             })
+            
+            -- Start tracking character respawns
+            if not farmConnection then
+                farmConnection = player.CharacterAdded:Connect(function(newCharacter)
+                    -- Wait for the character to be fully loaded
+                    task.wait(1)
+                    if autoFarmActive then
+                        -- Continue farming with new character
+                        task.spawn(farmLoop)
+                    end
+                end)
+            end
         else
             -- Stop auto farm
+            autoFarmActive = false
+            
             if farmConnection then 
                 farmConnection:Disconnect()
                 farmConnection = nil
-                
-                Rayfield:Notify({
-                    Title = "Auto Farm Disabled",
-                    Content = "Auto farming has been stopped",
-                    Duration = 3,
-                    Image = "square", -- Lucide icon
-                })
             end
+            
+            Rayfield:Notify({
+                Title = "Auto Farm Disabled",
+                Content = "Auto farming has been stopped",
+                Duration = 3,
+                Image = "square", -- Lucide icon
+            })
         end
         
         -- Save to config
