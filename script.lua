@@ -16,6 +16,55 @@ local selectedMobName = ""
 local movementMethod = "Tween" -- Phương thức di chuyển mặc định
 local farmingStyle = "Default" -- Phong cách farm mặc định
 
+-- Hệ thống lưu trữ mới
+local ConfigSystem = {}
+ConfigSystem.FileName = "AriseConfigV2_" .. player.Name .. ".json"
+ConfigSystem.DefaultConfig = {
+    SelectedMobName = "",
+    FarmSelectedMob = false,
+    AutoFarmNearestNPCs = false,
+    MainAutoDestroy = false,
+    MainAutoArise = false,
+    FarmingMethod = "Tween",
+    DamageMobs = false
+}
+ConfigSystem.CurrentConfig = {}
+
+-- Hàm để lưu cấu hình
+ConfigSystem.SaveConfig = function()
+    local success, err = pcall(function()
+        writefile(ConfigSystem.FileName, game:GetService("HttpService"):JSONEncode(ConfigSystem.CurrentConfig))
+    end)
+    if success then
+        print("Đã lưu cấu hình thành công!")
+    else
+        warn("Lưu cấu hình thất bại:", err)
+    end
+end
+
+-- Hàm để tải cấu hình
+ConfigSystem.LoadConfig = function()
+    local success, content = pcall(function()
+        if isfile(ConfigSystem.FileName) then
+            return readfile(ConfigSystem.FileName)
+        end
+        return nil
+    end)
+    
+    if success and content then
+        local data = game:GetService("HttpService"):JSONDecode(content)
+        ConfigSystem.CurrentConfig = data
+        return true
+    else
+        ConfigSystem.CurrentConfig = table.clone(ConfigSystem.DefaultConfig)
+        ConfigSystem.SaveConfig()
+        return false
+    end
+end
+
+-- Tải cấu hình khi khởi động
+ConfigSystem.LoadConfig()
+
 -- Tự động phát hiện HumanoidRootPart mới khi người chơi hồi sinh
 player.CharacterAdded:Connect(function(newCharacter)
     character = newCharacter
@@ -281,11 +330,12 @@ local Tabs = {
 
 Tabs.Main:AddInput("MobNameInput", {
     Title = "Enter Mob Name",
-    Default = "",
+    Default = ConfigSystem.CurrentConfig.SelectedMobName or "",
     Placeholder = "Type Here",
-    Flag = "SelectedMobName", -- Thêm Flag để lưu cấu hình
     Callback = function(text)
         selectedMobName = text
+        ConfigSystem.CurrentConfig.SelectedMobName = text
+        ConfigSystem.SaveConfig()
         killedNPCs = {} -- Đặt lại danh sách NPC đã tiêu diệt khi thay đổi mob
         print("Selected Mob:", selectedMobName) -- Gỡ lỗi
     end
@@ -293,11 +343,12 @@ Tabs.Main:AddInput("MobNameInput", {
 
 Tabs.Main:AddToggle("FarmSelectedMob", {
     Title = "Farm Selected Mob",
-    Default = false,
-    Flag = "FarmSelectedMob", -- Thêm Flag để lưu cấu hình
+    Default = ConfigSystem.CurrentConfig.FarmSelectedMob or false,
     Callback = function(state)
         teleportEnabled = state
         damageEnabled = state -- Đảm bảo tính năng tấn công mobs được kích hoạt
+        ConfigSystem.CurrentConfig.FarmSelectedMob = state
+        ConfigSystem.SaveConfig()
         killedNPCs = {} -- Đặt lại danh sách NPC đã tiêu diệt khi bắt đầu farm
         if state then
             task.spawn(teleportToSelectedEnemy)
@@ -307,10 +358,11 @@ Tabs.Main:AddToggle("FarmSelectedMob", {
 
 Tabs.Main:AddToggle("TeleportMobs", {
     Title = "Auto farm (nearest NPCs)",
-    Default = false,
-    Flag = "AutoFarmNearestNPCs", -- Đã có flag nhưng đảm bảo đúng
+    Default = ConfigSystem.CurrentConfig.AutoFarmNearestNPCs or false,
     Callback = function(state)
         teleportEnabled = state
+        ConfigSystem.CurrentConfig.AutoFarmNearestNPCs = state
+        ConfigSystem.SaveConfig()
         if state then
             task.spawn(teleportAndTrackDeath)
         end
@@ -321,19 +373,21 @@ local Dropdown = Tabs.Main:AddDropdown("MovementMethod", {
     Title = "Farming Method",
     Values = {"Tween", "Teleport"},
     Multi = false,
-    Default = 1, -- Mặc định là "Tween"
-    Flag = "FarmingMethod", -- Thêm Flag để lưu cấu hình
+    Default = ConfigSystem.CurrentConfig.FarmingMethod == "Teleport" and 2 or 1,
     Callback = function(option)
         movementMethod = option
+        ConfigSystem.CurrentConfig.FarmingMethod = option
+        ConfigSystem.SaveConfig()
     end
 })
 
 Tabs.Main:AddToggle("DamageMobs", {
     Title = "Damage Mobs ENABLE THIS",
-    Default = false,
-    Flag = "DamageMobs", -- Thêm Flag để lưu cấu hình
+    Default = ConfigSystem.CurrentConfig.DamageMobs or false,
     Callback = function(state)
         damageEnabled = state
+        ConfigSystem.CurrentConfig.DamageMobs = state
+        ConfigSystem.SaveConfig()
         if state then
             task.spawn(attackEnemy)
         end
@@ -571,10 +625,11 @@ end
 -- Auto Destroy Toggle
 Tabs.Main:AddToggle("AutoDestroy", {
     Title = "Auto Destroy",
-    Default = false,
-    Flag = "MainAutoDestroy", -- Đã có flag nhưng đảm bảo đúng
+    Default = ConfigSystem.CurrentConfig.MainAutoDestroy or false,
     Callback = function(state)
         autoDestroy = state
+        ConfigSystem.CurrentConfig.MainAutoDestroy = state
+        ConfigSystem.SaveConfig()
         if state then
             task.spawn(fireDestroy)
         end
@@ -584,10 +639,11 @@ Tabs.Main:AddToggle("AutoDestroy", {
 -- Auto Arise Toggle
 Tabs.Main:AddToggle("AutoArise", {
     Title = "Auto Arise",
-    Default = false,
-    Flag = "MainAutoArise", -- Đã có flag nhưng đảm bảo đúng
+    Default = ConfigSystem.CurrentConfig.MainAutoArise or false,
     Callback = function(state)
         autoArise = state
+        ConfigSystem.CurrentConfig.MainAutoArise = state
+        ConfigSystem.SaveConfig()
         if state then
             task.spawn(fireArise)
         end
