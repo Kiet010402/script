@@ -236,46 +236,27 @@ local Fluent
 local SaveManager
 local InterfaceManager
 
--- Kiểm tra executor
-local executor = identifyexecutor() or "Unknown"
+local success, err = pcall(function()
+    Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+    SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
+    InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+end)
 
--- Thông báo executor đang sử dụng
-if executor == "Synapse X" then
-    print("Đang chạy trên Synapse X")
-elseif executor == "Fluxus" then
-    print("Đang chạy trên Fluxus")
-elseif executor == "Codex" then
-    print("Đang chạy trên Codex")
-else
-    warn("Executor không được hỗ trợ. Vui lòng sử dụng Synapse X, Fluxus, hoặc Codex.")
-    return
-end
-
--- Sử dụng getgenv() để lưu cấu hình
-local settings = getgenv().settings or {}
-
--- Hàm để tải thư viện Fluent
-local function loadFluent()
-    local success, err = pcall(function()
-        Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+if not success then
+    warn("Lỗi khi tải thư viện Fluent: " .. tostring(err))
+    -- Thử tải từ URL dự phòng
+    pcall(function()
+        Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Fluent.lua"))()
         SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
         InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
     end)
-    
-    if not success then
-        warn("Lỗi khi tải thư viện Fluent: " .. tostring(err))
-        return false
-    end
-    return true
 end
 
--- Tải Fluent và kiểm tra
-if not loadFluent() then
-    warn("Không thể tải thư viện Fluent. Vui lòng kiểm tra kết nối internet hoặc executor.")
+if not Fluent then
+    error("Không thể tải thư viện Fluent. Vui lòng kiểm tra kết nối internet hoặc executor.")
     return
 end
 
--- Tạo cửa sổ Fluent
 local Window = Fluent:CreateWindow({
     Title = "Kaihon Hub | Arise Crossover",
     SubTitle = "",
@@ -286,50 +267,17 @@ local Window = Fluent:CreateWindow({
     MinimizeKey = Enum.KeyCode.LeftControl
 })
 
--- Thêm các tab và chức năng khác ở đây...
-
--- Ví dụ: Thêm tab Main
 local Tabs = {
-    Main = Window:AddTab({ Title = "Main", Icon = "" })
+    Discord = Window:AddTab({ Title = "INFO", Icon = ""}),
+    Main = Window:AddTab({ Title = "Main", Icon = "" }),
+    tp = Window:AddTab({ Title = "Teleports", Icon = "" }),
+    mount = Window:AddTab({ Title = "Mount Location/farm", Icon = "" }),
+    dungeon = Window:AddTab({ Title = "Dungeon ", Icon = "" }),
+    pets = Window:AddTab({ Title = "Pets ", Icon = "" }),
+    Player = Window:AddTab({ Title = "Player", Icon = "" }),
+    misc = Window:AddTab({ Title = "misc", Icon = "" }),
+    Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
 }
-
-Tabs.Main:AddToggle("AutoFarm", {
-    Title = "Auto Farm",
-    Default = false,
-    Callback = function(state)
-        if state then
-            print("Auto Farm đã bật")
-        else
-            print("Auto Farm đã tắt")
-        end
-    end
-})
-
--- Thêm các chức năng khác tùy theo nhu cầu của bạn...
-
--- Thông báo khi script khởi động thành công
-Fluent:Notify({
-    Title = "Kaihon Hub",
-    Content = "Script đã tải xong!",
-    Duration = 5
-})
-
--- Lưu cấu hình tự động
-SaveManager:SetLibrary(Fluent)
-InterfaceManager:SetLibrary(Fluent)
-SaveManager:SetFolder("KaihonScriptHub")
-InterfaceManager:SetFolder("KaihonScriptHub")
-
--- Tự động lưu cấu hình mỗi 10 giây
-task.spawn(function()
-    while true do
-        task.wait(10)
-        SaveManager:Save("AutoSave")
-    end
-end)
-
--- Tải cấu hình đã lưu
-SaveManager:Load("AutoSave")
 
 Tabs.Main:AddInput("MobNameInput", {
     Title = "Enter Mob Name",
@@ -1469,7 +1417,7 @@ local hrp = character:WaitForChild("HumanoidRootPart")
 
 local targetCFrame = CFrame.new(
     3648.76318, 223.552261, 2637.36719, 
-    0.846323907, 7.72367986e-07, -0.532668591, 
+    0.846323907, 7.72367986e-18, -0.532668591, 
     -1.10462046e-17, 1, -3.05065368e-18, 
     0.532668591, 8.46580728e-18, 0.846323907
 )
