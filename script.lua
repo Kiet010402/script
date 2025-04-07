@@ -442,6 +442,14 @@ Tabs.tp:AddButton({
     end
 })
 
+Tabs.tp:AddButton({
+    Title = "Mori Town",
+    Description = "Set spawn & reset",
+    Callback = function()
+        SetSpawnAndReset("JojoWorld")
+    end
+})
+
 local TweenService = game:GetService("TweenService")
 
 
@@ -1929,7 +1937,7 @@ local function AutoSaveConfig()
     
     -- Tự động lưu cấu hình hiện tại
     task.spawn(function()
-        while task.wait(10) do -- Lưu mỗi 10 giây
+        while task.wait(5) do -- Lưu mỗi 5 giây
             pcall(function()
                 SaveManager:Save(configName)
             end)
