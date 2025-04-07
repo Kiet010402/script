@@ -26,11 +26,7 @@ ConfigSystem.DefaultConfig = {
     MainAutoDestroy = false,
     MainAutoArise = false,
     FarmingMethod = "Tween",
-    DamageMobs = false,
-    SelectedDungeonMap = "Grass Village",
-    SelectedDungeonRanks = {},
-    TeleportToDungeon = false,
-    AutoDetectDungeon = true
+    DamageMobs = false
 }
 ConfigSystem.CurrentConfig = {}
 
@@ -760,70 +756,21 @@ local function teleportToObject(object)
     end
 end
 
--- Function to check if dungeon is of selected map and ranks
-local function isDungeonValid(dungeonObj)
-    if not dungeonObj or not dungeonObj:IsA("Part") then
-        return false
-    end
-    
-    -- First check for map selection
-    local dungeonMapName = selectedDungeonMap
-    local dungeonInfo = dungeonObj:GetAttribute("Info")
-    
-    if not dungeonInfo then
-        return false
-    end
-    
-    -- Check if the dungeon map matches our selection
-    if not string.find(string.lower(dungeonInfo), string.lower(dungeonMapName)) then
-        return false
-    end
-    
-    -- If no specific ranks selected, any matching map is valid
-    if not selectedDungeonRanks or not next(selectedDungeonRanks) then
-        return true
-    end
-    
-    -- Check for rank match
-    for rank, _ in pairs(selectedDungeonRanks) do
-        if string.find(dungeonInfo, rank) then
-            return true
-        end
-    end
-    
-    return false
-end
-
 -- Function to continuously teleport to objects when enabled
 local function teleportLoop()
     while teleportingEnabled do
         print("[DEBUG] Đang tìm kiếm các đối tượng dungeon...")
         local foundObject = false
-        
-        -- Set spawn to selected map first
-        local spawnName = villageSpawns[selectedDungeonMap]
-        if spawnName then
-            print("[DEBUG] Đang đặt điểm hồi sinh về:", selectedDungeonMap)
-            SetSpawnAndReset(spawnName)
-            task.wait(3) -- Wait for respawn
-        end
-        
-        -- Look for matching dungeons
         for _, object in ipairs(dungeonFolder:GetChildren()) do
-            if object:IsA("Part") and isDungeonValid(object) then
+            if object:IsA("Part") then
                 foundObject = true
-                print("[DEBUG] Đã tìm thấy dungeon phù hợp:", object:GetAttribute("Info"))
                 teleportToObject(object)
                 task.wait(1) -- Ngăn thực thi quá mức
             end
         end
-        
         if not foundObject then
-            print("[CẢNH BÁO] Không tìm thấy dungeon phù hợp với map:", selectedDungeonMap, "và rank đã chọn!")
-            -- Wait a bit then try again or server hop
-            task.wait(5)
+            print("[CẢNH BÁO] Không tìm thấy đối tượng dungeon hợp lệ!")
         end
-        
         task.wait(0.5) -- Độ trễ trước khi kiểm tra lại
     end
 end
@@ -832,12 +779,10 @@ end
 
 -- Add the toggle button to start/stop teleporting
 Tabs.dungeon:AddToggle("TeleportToDungeon", {
-    Title = "Teleport to Selected Dungeon",
-    Default = ConfigSystem.CurrentConfig.TeleportToDungeon or false,
+    Title = "Teleport to Dungeon",
+    Default = false,
     Callback = function(state)
         teleportingEnabled = state
-        ConfigSystem.CurrentConfig.TeleportToDungeon = state
-        ConfigSystem.SaveConfig()
         print("[DEBUG] Đã bật/tắt dịch chuyển:", state)
         if state then
             task.spawn(teleportLoop) -- Bắt đầu vòng lặp dịch chuyển khi bật
@@ -846,14 +791,7 @@ Tabs.dungeon:AddToggle("TeleportToDungeon", {
 })
 
 
-local AutoDetectToggle = Tabs.dungeon:AddToggle("AutoDetectDungeon", {
-    Title = "Auto Detect Dungeon (Backup Option)",
-    Default = ConfigSystem.CurrentConfig.AutoDetectDungeon ~= nil and ConfigSystem.CurrentConfig.AutoDetectDungeon or true,
-    Callback = function(value)
-        ConfigSystem.CurrentConfig.AutoDetectDungeon = value
-        ConfigSystem.SaveConfig()
-    end
-})
+local AutoDetectToggle = Tabs.dungeon:AddToggle("AutoDetectDungeon", {Title = "Auto Detect Dungeon (KEEP THIS ON)", Default = true})
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -865,7 +803,8 @@ local villageSpawns = {
     ["BRUM ISLAND"] = "OPWorld",
     ["Leveling City"] = "SoloWorld",
     ["FACEHEAL TOWN"] = "BleachWorld",
-    ["Lucky"] = "BCWorld"
+    ["Lucky"] = "BCWorld",
+    ["Mori Town"] = "JojoWorld"
 }
 
 local function SetSpawnAndReset(spawnName)
@@ -893,7 +832,7 @@ end
 
 local function detectDungeon()
     player.PlayerGui.Warn.ChildAdded:Connect(function(dungeon)
-        if dungeon:IsA("Frame") and AutoDetectToggle.Value and not teleportingEnabled then
+        if dungeon:IsA("Frame") and AutoDetectToggle.Value then
             print("Đã phát hiện Dungeon!")
             for _, child in ipairs(dungeon:GetChildren()) do
                 if child:IsA("TextLabel") then
@@ -1762,7 +1701,7 @@ Tabs.dungeon:AddToggle("AutoBuyDungeonTicket", {
 
 
 
-local localPlayer = game:GetService("Players").LocalPlayer
+    local localPlayer = game:GetService("Players").LocalPlayer
 local playerCharacter = localPlayer.Character or localPlayer.CharacterAdded:Wait()
 local playerHRP = playerCharacter:WaitForChild("HumanoidRootPart")
 local enemyContainer = workspace:WaitForChild("__Main"):WaitForChild("__Enemies"):WaitForChild("Client")
@@ -2172,58 +2111,3 @@ end
 -- Thực thi tự động lưu/tải cấu hình
 AutoSaveConfig()
 setupSaveEvents() -- Thêm dòng này
-
--- Add dungeon map and rank selection
-local dungeonMapNames = {"Grass Village", "BRUM ISLAND", "Leveling City", "FACEHEAL TOWN", "Lucky"}
-local rankMapping = { "E", "D", "C", "B", "A", "S", "SS" }
-
-Tabs.dungeon:AddParagraph({
-    Title = "How to Use Dungeon Selector",
-    Content = "1. Select your desired map from the dropdown.\n" ..
-              "2. Choose one or more ranks you want to farm.\n" ..
-              "3. Turn on 'Teleport to Selected Dungeon'.\n" ..
-              "The script will automatically teleport to a dungeon matching your selections."
-})
-
-local selectedDungeonMap = dungeonMapNames[1]
-local selectedDungeonRanks = {}
-
-local DungeonMapDropdown = Tabs.dungeon:AddDropdown("DungeonMapDropdown", {
-    Title = "Select Dungeon Map",
-    Values = dungeonMapNames,
-    Multi = false,
-    Default = selectedDungeonMap,
-    Callback = function(value)
-        selectedDungeonMap = value
-        ConfigSystem.CurrentConfig.SelectedDungeonMap = value
-        ConfigSystem.SaveConfig()
-    end
-})
-
-local DungeonRankDropdown = Tabs.dungeon:AddDropdown("DungeonRankDropdown", {
-    Title = "Select Dungeon Ranks",
-    Values = rankMapping,
-    Multi = true,
-    Default = {},
-    Callback = function(value)
-        selectedDungeonRanks = value
-        ConfigSystem.CurrentConfig.SelectedDungeonRanks = value
-        ConfigSystem.SaveConfig()
-    end
-})
-
--- Load saved selections if available
-if ConfigSystem.CurrentConfig.SelectedDungeonMap then
-    selectedDungeonMap = ConfigSystem.CurrentConfig.SelectedDungeonMap
-    DungeonMapDropdown:SetValue(selectedDungeonMap)
-end
-
-if ConfigSystem.CurrentConfig.SelectedDungeonRanks then
-    selectedDungeonRanks = ConfigSystem.CurrentConfig.SelectedDungeonRanks
-    DungeonRankDropdown:SetValue(selectedDungeonRanks)
-end
-
-
-
-
-
