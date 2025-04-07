@@ -3,22 +3,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 local workspace = game:GetService("Workspace")
 
--- Kiểm tra và khai báo các biến toàn cục cần thiết để hỗ trợ đa executor
-local function initializeUniversalSupport()
-    -- Hỗ trợ các global functions
-    getgenv = getgenv or function() return _G end
-    if not getgenv().fireproximityprompt and game.GameId == 4483381587 then
-        getgenv().fireproximityprompt = function(prompt)
-            if prompt and prompt.ClassName == "ProximityPrompt" then
-                prompt.Triggered:Fire()
-            end
-        end
-    end
-end
-
--- Khởi tạo các hàm hỗ trợ
-initializeUniversalSupport()
-
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local hrp = character:WaitForChild("HumanoidRootPart")
@@ -31,7 +15,6 @@ local dungeonkill = {}
 local selectedMobName = ""
 local movementMethod = "Tween" -- Phương thức di chuyển mặc định
 local farmingStyle = "Default" -- Phong cách farm mặc định
-local damageEnabled = false -- Thêm biến này để tránh lỗi undefined
 
 -- Tự động phát hiện HumanoidRootPart mới khi người chơi hồi sinh
 player.CharacterAdded:Connect(function(newCharacter)
@@ -253,27 +236,46 @@ local Fluent
 local SaveManager
 local InterfaceManager
 
-local success, err = pcall(function()
-    Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
-    SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
-    InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
-end)
+-- Kiểm tra executor
+local executor = identifyexecutor() or "Unknown"
 
-if not success then
-    warn("Lỗi khi tải thư viện Fluent: " .. tostring(err))
-    -- Thử tải từ URL dự phòng
-    pcall(function()
-        Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Fluent.lua"))()
-        SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
-        InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
-    end)
-end
-
-if not Fluent then
-    error("Không thể tải thư viện Fluent. Vui lòng kiểm tra kết nối internet hoặc executor.")
+-- Thông báo executor đang sử dụng
+if executor == "Synapse X" then
+    print("Đang chạy trên Synapse X")
+elseif executor == "Fluxus" then
+    print("Đang chạy trên Fluxus")
+elseif executor == "Codex" then
+    print("Đang chạy trên Codex")
+else
+    warn("Executor không được hỗ trợ. Vui lòng sử dụng Synapse X, Fluxus, hoặc Codex.")
     return
 end
 
+-- Sử dụng getgenv() để lưu cấu hình
+local settings = getgenv().settings or {}
+
+-- Hàm để tải thư viện Fluent
+local function loadFluent()
+    local success, err = pcall(function()
+        Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+        SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
+        InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+    end)
+    
+    if not success then
+        warn("Lỗi khi tải thư viện Fluent: " .. tostring(err))
+        return false
+    end
+    return true
+end
+
+-- Tải Fluent và kiểm tra
+if not loadFluent() then
+    warn("Không thể tải thư viện Fluent. Vui lòng kiểm tra kết nối internet hoặc executor.")
+    return
+end
+
+-- Tạo cửa sổ Fluent
 local Window = Fluent:CreateWindow({
     Title = "Kaihon Hub | Arise Crossover",
     SubTitle = "",
@@ -284,17 +286,50 @@ local Window = Fluent:CreateWindow({
     MinimizeKey = Enum.KeyCode.LeftControl
 })
 
+-- Thêm các tab và chức năng khác ở đây...
+
+-- Ví dụ: Thêm tab Main
 local Tabs = {
-    Discord = Window:AddTab({ Title = "INFO", Icon = ""}),
-    Main = Window:AddTab({ Title = "Main", Icon = "" }),
-    tp = Window:AddTab({ Title = "Teleports", Icon = "" }),
-    mount = Window:AddTab({ Title = "Mount Location/farm", Icon = "" }),
-    dungeon = Window:AddTab({ Title = "Dungeon ", Icon = "" }),
-    pets = Window:AddTab({ Title = "Pets ", Icon = "" }),
-    Player = Window:AddTab({ Title = "Player", Icon = "" }),
-    misc = Window:AddTab({ Title = "misc", Icon = "" }),
-    Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
+    Main = Window:AddTab({ Title = "Main", Icon = "" })
 }
+
+Tabs.Main:AddToggle("AutoFarm", {
+    Title = "Auto Farm",
+    Default = false,
+    Callback = function(state)
+        if state then
+            print("Auto Farm đã bật")
+        else
+            print("Auto Farm đã tắt")
+        end
+    end
+})
+
+-- Thêm các chức năng khác tùy theo nhu cầu của bạn...
+
+-- Thông báo khi script khởi động thành công
+Fluent:Notify({
+    Title = "Kaihon Hub",
+    Content = "Script đã tải xong!",
+    Duration = 5
+})
+
+-- Lưu cấu hình tự động
+SaveManager:SetLibrary(Fluent)
+InterfaceManager:SetLibrary(Fluent)
+SaveManager:SetFolder("KaihonScriptHub")
+InterfaceManager:SetFolder("KaihonScriptHub")
+
+-- Tự động lưu cấu hình mỗi 10 giây
+task.spawn(function()
+    while true do
+        task.wait(10)
+        SaveManager:Save("AutoSave")
+    end
+end)
+
+-- Tải cấu hình đã lưu
+SaveManager:Load("AutoSave")
 
 Tabs.Main:AddInput("MobNameInput", {
     Title = "Enter Mob Name",
@@ -540,14 +575,7 @@ local function fireDestroy()
 
                 if DestroyPrompt then
                     DestroyPrompt:SetAttribute("MaxActivationDistance", 100000)
-                    if fireproximityprompt then
-                        fireproximityprompt(DestroyPrompt)
-                    elseif fire_proximity_prompt then
-                        fire_proximity_prompt(DestroyPrompt)
-                    else
-                        -- Phương pháp thay thế nếu không có sẵn hàm
-                        DestroyPrompt.Triggered:Fire()
-                    end
+                    fireproximityprompt(DestroyPrompt)
                 end
             end
         end
@@ -572,14 +600,7 @@ local function fireArise()
 
                 if arisePrompt then
                     arisePrompt:SetAttribute("MaxActivationDistance", 100000)
-                    if fireproximityprompt then
-                        fireproximityprompt(arisePrompt)
-                    elseif fire_proximity_prompt then
-                        fire_proximity_prompt(arisePrompt)
-                    else
-                        -- Phương pháp thay thế nếu không có sẵn hàm
-                        arisePrompt.Triggered:Fire()
-                    end
+                    fireproximityprompt(arisePrompt)
                 end
             end
         end
@@ -1895,246 +1916,20 @@ Tabs.Discord:AddParagraph({
               "Nâng cấp ngay và nâng cao trải nghiệm chơi game của bạn!"
 })
 
--- Thay thế đoạn code bảo vệ GUI để hỗ trợ tất cả executor
-task.spawn(function()
-    local success, errorMsg = pcall(function()
-        if not getgenv().LoadedMobileUI == true then 
-            getgenv().LoadedMobileUI = true
-            local OpenUI = Instance.new("ScreenGui")
-            local ImageButton = Instance.new("ImageButton")
-            local UICorner = Instance.new("UICorner")
-            
-            -- Sử dụng phương pháp đa nền tảng để bảo vệ GUI
-            if syn and syn.protect_gui then
-                syn.protect_gui(OpenUI)
-                OpenUI.Parent = game:GetService("CoreGui")
-            elseif gethui then
-                OpenUI.Parent = gethui()
-            elseif KRNL_LOADED and KRNL_SAFE_CALL then 
-                KRNL_SAFE_CALL(function() 
-                    OpenUI.Parent = game:GetService("CoreGui")
-                end)
-            elseif FLUXUS_LOADED then
-                OpenUI.Parent = game:GetService("CoreGui")
-            elseif DELTA_LOADED then
-                OpenUI.Parent = game:GetService("CoreGui") 
-            elseif COMET_LOADED then
-                OpenUI.Parent = game:GetService("CoreGui")
-            elseif OXYGEN_LOADED then 
-                OpenUI.Parent = game:GetService("CoreGui")
-            elseif CODEX_LOADED then
-                OpenUI.Parent = game:GetService("CoreGui")
-            else
-                OpenUI.Parent = game:GetService("CoreGui")
-            end
-            
-            OpenUI.Name = "OpenUI"
-            OpenUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-            
-            ImageButton.Parent = OpenUI
-            ImageButton.BackgroundColor3 = Color3.fromRGB(105,105,105)
-            ImageButton.BackgroundTransparency = 0.8
-            ImageButton.Position = UDim2.new(0.9,0,0.1,0)
-            ImageButton.Size = UDim2.new(0,50,0,50)
-            ImageButton.Image = getgenv().Image
-            ImageButton.Draggable = true
-            ImageButton.Transparency = 0.2
-            
-            UICorner.CornerRadius = UDim.new(0,200)
-            UICorner.Parent = ImageButton
-            
-            ImageButton.MouseButton1Click:Connect(function()
-                game:GetService("VirtualInputManager"):SendKeyEvent(true,getgenv().ToggleUI,false,game)
-            end)
-        end
-    end)
-    
-    if not success then
-        warn("Lỗi khi tạo nút Mobile UI: " .. tostring(errorMsg))
-    end
-end)
-
--- Sửa hàm setclipboard để hỗ trợ đa nền tảng
-local function copyToClipboard(text)
-    local success, result = pcall(function()
-        if setclipboard then
-            setclipboard(text)
-            return true
-        elseif toclipboard then
-            toclipboard(text)
-            return true
-        elseif Clipboard and Clipboard.set then
-            Clipboard.set(text)
-            return true
-        elseif syn and syn.write_clipboard then
-            syn.write_clipboard(text)
-            return true
-        end
-        return false
-    end)
-    
-    return success and result
-end
-
--- Thay thế hàm setclipboard trong đoạn copy Discord link
 Tabs.Discord:AddButton({
     Title = "Copy Discord Link",
     Description = "Copies the Discord invite link to clipboard",
     Callback = function()
-        local success = copyToClipboard("https://discord.gg/W77Vj2HNBA")
-        if success then
-            Fluent:Notify({
-                Title = "Đã sao chép!",
-                Content = "Đường dẫn Discord đã được sao chép vào clipboard.",
-                Duration = 3
-            })
-        else
-            Fluent:Notify({
-                Title = "Thông báo",
-                Content = "Discord link: https://discord.gg/W77Vj2HNBA (Không thể sao chép tự động)",
-                Duration = 5
-            })
-        end
+        setclipboard("https://discord.gg/W77Vj2HNBA")
+        Fluent:Notify({
+            Title = "Đã sao chép!",
+            Content = "Đường dẫn Discord đã được sao chép vào clipboard.",
+            Duration = 3
+        })
     end
 })
 
--- Sửa hàm fireproximityprompt (đôi khi được gọi khác nhau trong các executor)
-local function firePrompt(prompt)
-    local success, err = pcall(function()
-        if fireproximityprompt then
-            fireproximityprompt(prompt)
-        elseif fire_proximity_prompt then
-            fire_proximity_prompt(prompt)
-        else
-            -- Phương pháp thay thế nếu không có sẵn hàm
-            prompt.Triggered:Fire()
-        end
-    end)
-    
-    if not success then
-        warn("Lỗi khi kích hoạt proximity prompt: " .. tostring(err))
-    end
-end
 
--- Sửa hàm fireDestroy để sử dụng hàm mới
-local function fireDestroy()
-    while autoDestroy do
-        task.wait(0.3)  -- Delay to prevent overloading
-
-        for _, enemy in ipairs(enemiesFolder:GetChildren()) do
-            if enemy:IsA("Model") then
-                local rootPart = enemy:FindFirstChild("HumanoidRootPart")
-                local DestroyPrompt = rootPart and rootPart:FindFirstChild("DestroyPrompt")
-
-                if DestroyPrompt then
-                    DestroyPrompt:SetAttribute("MaxActivationDistance", 100000)
-                    if fireproximityprompt then
-                        fireproximityprompt(DestroyPrompt)
-                    elseif fire_proximity_prompt then
-                        fire_proximity_prompt(DestroyPrompt)
-                    else
-                        -- Phương pháp thay thế nếu không có sẵn hàm
-                        DestroyPrompt.Triggered:Fire()
-                    end
-                end
-            end
-        end
-    end
-end
-
--- Sửa hàm fireArise để sử dụng hàm mới
-local function fireArise()
-    while autoArise do
-        task.wait(0.3)  -- Delay to prevent overloading
-
-        for _, enemy in ipairs(enemiesFolder:GetChildren()) do
-            if enemy:IsA("Model") then
-                local rootPart = enemy:FindFirstChild("HumanoidRootPart")
-                local arisePrompt = rootPart and rootPart:FindFirstChild("ArisePrompt")
-
-                if arisePrompt then
-                    arisePrompt:SetAttribute("MaxActivationDistance", 100000)
-                    if fireproximityprompt then
-                        fireproximityprompt(arisePrompt)
-                    elseif fire_proximity_prompt then
-                        fire_proximity_prompt(arisePrompt)
-                    else
-                        -- Phương pháp thay thế nếu không có sẵn hàm
-                        arisePrompt.Triggered:Fire()
-                    end
-                end
-            end
-        end
-    end
-end
-
--- Sửa đổi phương thức lưu/tải cấu hình
-local function safeWriteFile(fileName, data)
-    local success, result = pcall(function()
-        if writefile then
-            writefile(fileName, data)
-            return true
-        end
-        return false
-    end)
-    
-    return success and result
-end
-
-local function safeReadFile(fileName)
-    local success, result = pcall(function()
-        if readfile and isfile and isfile(fileName) then
-            return readfile(fileName)
-        end
-        return nil
-    end)
-    
-    if success then
-        return result
-    end
-    return nil
-end
-
--- Thay thế phần lưu File trong TPReturner
-if not File then
-    table.insert(AllIDs, actualHour)
-    local success = safeWriteFile("NotSameServers.json", game:GetService('HttpService'):JSONEncode(AllIDs))
-    if not success then
-        warn("Không thể lưu file NotSameServers.json - executor có thể không hỗ trợ writefile")
-    end
-end
-
--- Cải thiện phương thức khởi động Fluent UI để tương thích nhiều executor
-local success, err = pcall(function()
-    Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
-    SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
-    InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
-end)
-
-if not success then
-    warn("Lỗi khi tải thư viện Fluent: " .. tostring(err))
-    -- Thử tải từ URL dự phòng hoặc nguồn khác
-    pcall(function()
-        Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Fluent.lua"))()
-        SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
-        InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
-    end)
-    
-    -- Thử các URL thay thế nếu cả hai nguồn trên đều không hoạt động
-    if not Fluent then
-        pcall(function()
-            Fluent = loadstring(game:HttpGet("https://raw.githubusercontent.com/1201for/V.G-Hub/main/Gui"))()
-            -- Dùng UI thay thế nếu Fluent không hoạt động
-        end)
-    end
-end
-
-if not Fluent then
-    error("Không thể tải thư viện UI. Vui lòng kiểm tra kết nối internet hoặc executor.")
-    return
-end
-
--- Thêm phần khởi chạy cuối cùng để đảm bảo script hoạt động trên mọi executor
 SaveManager:SetLibrary(Fluent)
 InterfaceManager:SetLibrary(Fluent)
 
@@ -2142,6 +1937,10 @@ InterfaceManager:SetLibrary(Fluent)
 local playerName = game:GetService("Players").LocalPlayer.Name
 InterfaceManager:SetFolder("KaihonScriptHub")
 SaveManager:SetFolder("KaihonScriptHub/AriseCrossover/" .. playerName)
+
+-- Xóa đoạn xây dựng phần cấu hình trong Settings tab
+-- InterfaceManager:BuildInterfaceSection(Tabs.Settings)
+-- SaveManager:BuildConfigSection(Tabs.Settings)
 
 -- Thêm thông tin vào tab Settings
 Tabs.Settings:AddParagraph({
@@ -2172,7 +1971,7 @@ Window:SelectTab(1)
 
 Fluent:Notify({
     Title = "Kaihon Hub",
-    Content = "Script đã tải xong! Cấu hình tự động lưu theo tên người chơi: " .. playerName .. " - Phiên bản Universal",
+    Content = "Script đã tải xong! Cấu hình tự động lưu theo tên người chơi: " .. playerName,
     Duration = 3
 })
 
@@ -2198,8 +1997,87 @@ end
 -- Thực thi tự động lưu/tải cấu hình
 AutoSaveConfig()
 
--- Đảm bảo script hoạt động trên tất cả executor
-print("Kaihon Hub Universal | Loaded successfully")
+-- Thêm hỗ trợ Mobile UI
+repeat task.wait(0.25) until game:IsLoaded()
+getgenv().Image = "rbxassetid://13099788281" -- ID tài nguyên hình ảnh đã sửa
+getgenv().ToggleUI = "LeftControl" -- Phím để bật/tắt giao diện
+
+-- Tạo giao diện mobile cho người dùng điện thoại
+task.spawn(function()
+    local success, errorMsg = pcall(function()
+        if not getgenv().LoadedMobileUI == true then 
+            getgenv().LoadedMobileUI = true
+            local OpenUI = Instance.new("ScreenGui")
+            local ImageButton = Instance.new("ImageButton")
+            local UICorner = Instance.new("UICorner")
+            
+            -- Kiểm tra thiết bị
+            if syn and syn.protect_gui then
+                syn.protect_gui(OpenUI)
+                OpenUI.Parent = game:GetService("CoreGui")
+            elseif gethui then
+                OpenUI.Parent = gethui()
+            else
+                OpenUI.Parent = game:GetService("CoreGui")
+            end
+            
+            OpenUI.Name = "OpenUI"
+            OpenUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+            
+            ImageButton.Parent = OpenUI
+            ImageButton.BackgroundColor3 = Color3.fromRGB(105,105,105)
+            ImageButton.BackgroundTransparency = 0.8
+            ImageButton.Position = UDim2.new(0.9,0,0.1,0)
+            ImageButton.Size = UDim2.new(0,50,0,50)
+            ImageButton.Image = getgenv().Image
+            ImageButton.Draggable = true
+            ImageButton.Transparency = 0.2
+            
+            UICorner.CornerRadius = UDim.new(0,200)
+            UICorner.Parent = ImageButton
+            
+            ImageButton.MouseButton1Click:Connect(function()
+                game:GetService("VirtualInputManager"):SendKeyEvent(true,getgenv().ToggleUI,false,game)
+            end)
+        end
+    end)
+    
+    if not success then
+        warn("Lỗi khi tạo nút Mobile UI: " .. tostring(errorMsg))
+    end
+end)
+
+-- Kiểm tra script đã tải thành công
+local scriptSuccess, scriptError = pcall(function()
+    Fluent:Notify({
+        Title = "Script đã khởi động thành công",
+        Content = "Kaihon Hub | Arise Crossover đang hoạt động",
+        Duration = 5
+    })
+end)
+
+if not scriptSuccess then
+    warn("Lỗi khi khởi động script: " .. tostring(scriptError))
+    -- Thử cách khác để thông báo người dùng
+    if game:GetService("Players").LocalPlayer and game:GetService("Players").LocalPlayer:FindFirstChild("PlayerGui") then
+        local screenGui = Instance.new("ScreenGui")
+        screenGui.Parent = game:GetService("Players").LocalPlayer.PlayerGui
+        
+        local textLabel = Instance.new("TextLabel")
+        textLabel.Size = UDim2.new(0.3, 0, 0.1, 0)
+        textLabel.Position = UDim2.new(0.35, 0, 0.45, 0)
+        textLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+        textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        textLabel.Text = "Kaihon Hub đã khởi động nhưng gặp lỗi. Hãy thử lại."
+        textLabel.Parent = screenGui
+        
+        local uiCorner = Instance.new("UICorner")
+        uiCorner.CornerRadius = UDim.new(0, 8)
+        uiCorner.Parent = textLabel
+        
+        game:GetService("Debris"):AddItem(screenGui, 5)
+    end
+end
 
 
 
