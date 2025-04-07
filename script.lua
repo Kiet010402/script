@@ -3,9 +3,7 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
--- Load Rayfield UI Library
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local HttpService = game:GetService("HttpService")
 
 -- Player reference
 local player = Players.LocalPlayer
@@ -13,41 +11,69 @@ local playerName = player.Name
 local character = player.Character or player.CharacterAdded:Wait()
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
--- Create Window
+-- Config System (inspired by Arise.lua)
+local ConfigSystem = {}
+ConfigSystem.FileName = "HunterConfig_" .. playerName .. ".json"
+ConfigSystem.DefaultConfig = {
+    AutoRoll = false,
+    RollDelay = 1,
+    AutoAttack = false,
+    AttackDelay = 1,
+    SelectedMap = "",
+    AutoFarm = false,
+    TeleportDistance = 5,
+    SelectedMob = "All Mobs"
+}
+ConfigSystem.CurrentConfig = {}
+
+-- Function to save config
+ConfigSystem.SaveConfig = function()
+    local success, err = pcall(function()
+        writefile(ConfigSystem.FileName, HttpService:JSONEncode(ConfigSystem.CurrentConfig))
+    end)
+    if success then
+        print("Config saved successfully!")
+    else
+        warn("Failed to save config:", err)
+    end
+end
+
+-- Function to load config
+ConfigSystem.LoadConfig = function()
+    local success, content = pcall(function()
+        if isfile(ConfigSystem.FileName) then
+            return readfile(ConfigSystem.FileName)
+        end
+        return nil
+    end)
+    
+    if success and content then
+        local data = HttpService:JSONDecode(content)
+        ConfigSystem.CurrentConfig = data
+        return true
+    else
+        ConfigSystem.CurrentConfig = table.clone(ConfigSystem.DefaultConfig)
+        ConfigSystem.SaveConfig()
+        return false
+    end
+end
+
+-- Load config on startup
+ConfigSystem.LoadConfig()
+
+-- Initialize Rayfield
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+-- Create Window (Without saving functionality)
 local Window = Rayfield:CreateWindow({
     Name = "KaihonHub",
     LoadingTitle = "KaihonHub",
     LoadingSubtitle = "by DuongTuan",
     ConfigurationSaving = {
-        Enabled = true,
-        FolderName = "KaihonConfig",
-        FileName = playerName .. "_Config",
-        AutoSave = true,
-        SaveInterval = 5 -- Save every 5 seconds
+        Enabled = false -- Disable Rayfield's built-in saving
     },
     KeySystem = false
 })
-
--- Function to explicitly save configuration
-local function SaveConfiguration()
-    -- The Rayfield library saves configurations automatically
-    -- No need to call any special method
-    
-    Rayfield:Notify({
-        Title = "Configuration Saved",
-        Content = "Your settings have been saved!",
-        Duration = 2,
-        Image = "save", -- Lucide icon
-    })
-end
-
--- Create Save Button (to be added to all tabs)
-local function CreateSaveButton(tab)
-    return tab:CreateButton({
-        Name = "Save Configuration",
-        Callback = SaveConfiguration
-    })
-end
 
 -- Create Main Tab
 local MainTab = Window:CreateTab("Main", 4483362458) -- Home icon
@@ -58,11 +84,6 @@ local MapTab = Window:CreateTab("Map", 9288394834) -- Map icon
 -- Create Play Tab
 local PlayTab = Window:CreateTab("Play", 4483362927) -- Play icon
 
--- Add Save Buttons to each tab
-local MainSaveButton = CreateSaveButton(MainTab)
-local MapSaveButton = CreateSaveButton(MapTab)
-local PlaySaveButton = CreateSaveButton(PlayTab)
-
 -- Main Section
 local MainSection = MainTab:CreateSection("Roll Settings")
 
@@ -70,7 +91,7 @@ local MainSection = MainTab:CreateSection("Roll Settings")
 local rollConnection = nil
 local AutoRollToggle = MainTab:CreateToggle({
     Name = "Auto Roll",
-    CurrentValue = false,
+    CurrentValue = ConfigSystem.CurrentConfig.AutoRoll or false,
     Flag = "AutoRoll",
     Callback = function(Value)
         if Value then
@@ -79,7 +100,7 @@ local AutoRollToggle = MainTab:CreateToggle({
             
             rollConnection = game:GetService("RunService").Heartbeat:Connect(function()
                 game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("Roll"):InvokeServer()
-                wait(1) -- đợi 1 giây để tránh spam quá nhanh, có thể điều chỉnh
+                wait(ConfigSystem.CurrentConfig.RollDelay or 1) -- Use saved delay
             end)
             
             Rayfield:Notify({
@@ -103,7 +124,9 @@ local AutoRollToggle = MainTab:CreateToggle({
             end
         end
         
-        -- Auto-save is enabled, no need to manually save
+        -- Save to config
+        ConfigSystem.CurrentConfig.AutoRoll = Value
+        ConfigSystem.SaveConfig()
     end,
 })
 
@@ -113,7 +136,7 @@ local RollDelaySlider = MainTab:CreateSlider({
     Range = {0.1, 5},
     Increment = 0.1,
     Suffix = "s",
-    CurrentValue = 1,
+    CurrentValue = ConfigSystem.CurrentConfig.RollDelay or 1,
     Flag = "RollDelay",
     Callback = function(Value)
         -- The delay will be applied on the next toggle enable
@@ -124,7 +147,9 @@ local RollDelaySlider = MainTab:CreateSlider({
             Image = "timer", -- Lucide icon
         })
         
-        -- Auto-save is enabled, no need to manually save
+        -- Save to config
+        ConfigSystem.CurrentConfig.RollDelay = Value
+        ConfigSystem.SaveConfig()
     end,
 })
 
@@ -150,7 +175,7 @@ local AttackSection = MainTab:CreateSection("Attack Settings")
 local attackConnection = nil
 local AutoAttackToggle = MainTab:CreateToggle({
     Name = "Auto Attack",
-    CurrentValue = false,
+    CurrentValue = ConfigSystem.CurrentConfig.AutoAttack or false,
     Flag = "AutoAttack",
     Callback = function(Value)
         if Value then
@@ -159,7 +184,7 @@ local AutoAttackToggle = MainTab:CreateToggle({
             
             attackConnection = game:GetService("RunService").Heartbeat:Connect(function()
                 game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("Combat"):FireServer()
-                wait(1) -- đợi 1 giây để tránh spam quá nhanh, có thể điều chỉnh
+                wait(ConfigSystem.CurrentConfig.AttackDelay or 1) -- Use saved delay
             end)
             
             Rayfield:Notify({
@@ -183,7 +208,9 @@ local AutoAttackToggle = MainTab:CreateToggle({
             end
         end
         
-        -- Auto-save is enabled, no need to manually save
+        -- Save to config
+        ConfigSystem.CurrentConfig.AutoAttack = Value
+        ConfigSystem.SaveConfig()
     end,
 })
 
@@ -193,7 +220,7 @@ local AttackDelaySlider = MainTab:CreateSlider({
     Range = {0.1, 5},
     Increment = 0.1,
     Suffix = "s",
-    CurrentValue = 1,
+    CurrentValue = ConfigSystem.CurrentConfig.AttackDelay or 1,
     Flag = "AttackDelay",
     Callback = function(Value)
         -- The delay will be applied on the next toggle enable
@@ -204,7 +231,9 @@ local AttackDelaySlider = MainTab:CreateSlider({
             Image = "timer", -- Lucide icon
         })
         
-        -- Auto-save is enabled, no need to manually save
+        -- Save to config
+        ConfigSystem.CurrentConfig.AttackDelay = Value
+        ConfigSystem.SaveConfig()
     end,
 })
 
@@ -267,7 +296,7 @@ end
 local MapSelectionSection = MapTab:CreateSection("Map Selection")
 
 -- Map selection variable
-local selectedMap = nil
+local selectedMap = ConfigSystem.CurrentConfig.SelectedMap or nil
 local mapCodes = {
     ["SINGULARITY"] = "DoubleDungeonD",
     ["GOBLIN CAVES"] = "GoblinCave",
@@ -278,7 +307,7 @@ local mapCodes = {
 local MapDropdown = MapTab:CreateDropdown({
     Name = "Chọn Map",
     Options = {"SINGULARITY", "GOBLIN CAVES", "SPIDER CAVERN"},
-    CurrentOption = {}, -- No default selection
+    CurrentOption = selectedMap and {selectedMap} or {}, -- Use saved map
     MultipleOptions = false,
     Flag = "SelectedMap",
     Callback = function(Option)
@@ -290,12 +319,14 @@ local MapDropdown = MapTab:CreateDropdown({
             Image = "map", -- Lucide icon
         })
         
-        -- Auto-save is enabled, no need to manually save
+        -- Save to config
+        ConfigSystem.CurrentConfig.SelectedMap = selectedMap
+        ConfigSystem.SaveConfig()
     end,
 })
 
 -- Current Map Label
-local CurrentMapLabel = MapTab:CreateLabel("Selected Map: None")
+local CurrentMapLabel = MapTab:CreateLabel("Selected Map: " .. (selectedMap or "None"))
 
 -- Update map label when selection changes
 local oldMapCallback = MapDropdown.Callback
@@ -349,8 +380,6 @@ local StartToggle = MapTab:CreateToggle({
             wait(1)
             StartToggle:Set(false)
         end
-        
-        -- Auto-save is enabled, no need to manually save
     end,
 })
 
@@ -407,13 +436,13 @@ local FarmSection = PlayTab:CreateSection("Auto Farm")
 
 -- Available mobs
 local mobList = {"All Mobs", "Golem Mage"}
-local selectedMob = "All Mobs"
+local selectedMob = ConfigSystem.CurrentConfig.SelectedMob or "All Mobs"
 
 -- Mob selection dropdown
 local MobDropdown = PlayTab:CreateDropdown({
     Name = "Select Target",
     Options = mobList,
-    CurrentOption = {"All Mobs"},
+    CurrentOption = {selectedMob}, -- Use saved mob
     MultipleOptions = false,
     Flag = "SelectedMob",
     Callback = function(Option)
@@ -425,7 +454,9 @@ local MobDropdown = PlayTab:CreateDropdown({
             Image = "target", -- Lucide icon
         })
         
-        -- Auto-save is enabled, no need to manually save
+        -- Save to config
+        ConfigSystem.CurrentConfig.SelectedMob = selectedMob
+        ConfigSystem.SaveConfig()
     end,
 })
 
@@ -435,7 +466,7 @@ local TeleportDistanceSlider = PlayTab:CreateSlider({
     Range = {0, 10},
     Increment = 0.5,
     Suffix = "studs",
-    CurrentValue = 5,
+    CurrentValue = ConfigSystem.CurrentConfig.TeleportDistance or 5,
     Flag = "TeleportDistance",
     Callback = function(Value)
         Rayfield:Notify({
@@ -445,7 +476,9 @@ local TeleportDistanceSlider = PlayTab:CreateSlider({
             Image = "ruler", -- Lucide icon
         })
         
-        -- Auto-save is enabled, no need to manually save
+        -- Save to config
+        ConfigSystem.CurrentConfig.TeleportDistance = Value
+        ConfigSystem.SaveConfig()
     end,
 })
 
@@ -453,7 +486,7 @@ local TeleportDistanceSlider = PlayTab:CreateSlider({
 local farmConnection = nil
 local AutoFarmToggle = PlayTab:CreateToggle({
     Name = "Auto Farm",
-    CurrentValue = false,
+    CurrentValue = ConfigSystem.CurrentConfig.AutoFarm or false,
     Flag = "AutoFarm",
     Callback = function(Value)
         -- Get the character and humanoid root part
@@ -502,7 +535,7 @@ local AutoFarmToggle = PlayTab:CreateToggle({
                 
                 -- Teleport to mob if found
                 if targetMob and targetMob:FindFirstChild("HumanoidRootPart") then
-                    local teleportDistance = TeleportDistanceSlider.CurrentValue
+                    local teleportDistance = ConfigSystem.CurrentConfig.TeleportDistance or 5
                     local mobPosition = targetMob.HumanoidRootPart.Position
                     local direction = (humanoidRootPart.Position - mobPosition).Unit
                     local targetPosition = mobPosition + (direction * teleportDistance)
@@ -537,7 +570,9 @@ local AutoFarmToggle = PlayTab:CreateToggle({
             end
         end
         
-        -- Auto-save is enabled, no need to manually save
+        -- Save to config
+        ConfigSystem.CurrentConfig.AutoFarm = Value
+        ConfigSystem.SaveConfig()
     end,
 })
 
@@ -634,10 +669,72 @@ workspace.ChildAdded:Connect(function(child)
     end
 end)
 
+-- Add Config Tab for saving/loading
+local ConfigTab = Window:CreateTab("Config", 4483362458)
+
+-- Config Section
+local ConfigSection = ConfigTab:CreateSection("Configuration")
+
+-- Save Config Button
+local SaveConfigButton = ConfigTab:CreateButton({
+    Name = "Save Configuration",
+    Callback = function()
+        ConfigSystem.SaveConfig()
+        Rayfield:Notify({
+            Title = "Configuration Saved",
+            Content = "Your settings have been saved!",
+            Duration = 2,
+            Image = "save", -- Lucide icon
+        })
+    end,
+})
+
+-- Reset Config Button
+local ResetConfigButton = ConfigTab:CreateButton({
+    Name = "Reset Configuration",
+    Callback = function()
+        ConfigSystem.CurrentConfig = table.clone(ConfigSystem.DefaultConfig)
+        ConfigSystem.SaveConfig()
+        
+        -- Update UI with default values
+        AutoRollToggle:Set(ConfigSystem.DefaultConfig.AutoRoll)
+        RollDelaySlider:Set(ConfigSystem.DefaultConfig.RollDelay)
+        AutoAttackToggle:Set(ConfigSystem.DefaultConfig.AutoAttack)
+        AttackDelaySlider:Set(ConfigSystem.DefaultConfig.AttackDelay)
+        MapDropdown:Set({})
+        CurrentMapLabel:Set("Selected Map: None")
+        AutoFarmToggle:Set(ConfigSystem.DefaultConfig.AutoFarm)
+        TeleportDistanceSlider:Set(ConfigSystem.DefaultConfig.TeleportDistance)
+        MobDropdown:Set({ConfigSystem.DefaultConfig.SelectedMob})
+        
+        Rayfield:Notify({
+            Title = "Configuration Reset",
+            Content = "All settings have been reset to default!",
+            Duration = 2,
+            Image = "refresh-cw", -- Lucide icon
+        })
+    end,
+})
+
+-- Auto Save Timer (save every 60 seconds)
+spawn(function()
+    while true do
+        wait(60)
+        ConfigSystem.SaveConfig()
+    end
+end)
+
+-- Save on game close
+game:GetService("Players").PlayerRemoving:Connect(function(plr)
+    if plr == player then
+        ConfigSystem.SaveConfig()
+    end
+end)
+
 -- Module return
 return {
     UI = Window,
-    SaveConfig = SaveConfiguration,
+    Config = ConfigSystem,
     StopRolling = function()
         if rollConnection then
             rollConnection:Disconnect()
