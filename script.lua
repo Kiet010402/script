@@ -26,7 +26,9 @@ ConfigSystem.DefaultConfig = {
     MainAutoDestroy = false,
     MainAutoArise = false,
     FarmingMethod = "Tween",
-    DamageMobs = false
+    DamageMobs = false,
+    SelectedDungeonMaps = {},
+    SelectedDungeonRanks = {}
 }
 ConfigSystem.CurrentConfig = {}
 
@@ -687,6 +689,10 @@ local dungeonFolder = workspace:WaitForChild("__Main"):WaitForChild("__Dungeon")
 -- Variable to control teleporting
 local teleportingEnabled = false
 
+-- Thêm biến lưu trữ map và rank được chọn
+local selectedMaps = {}
+local selectedRanks = {}
+
 -- Function to create a dungeon
 local function createDungeon()
     print("[DEBUG] Đang cố gắng tạo dungeon...")
@@ -728,6 +734,42 @@ local function startDungeon()
     else
         print("[LỖI] Không tìm thấy instance của Dungeon!")
     end
+end
+
+-- Kiểm tra xem dungeon có phù hợp với các map và rank đã chọn
+local function isDungeonMatch(dungeonFrame)
+    if not dungeonFrame:IsA("Frame") then return false end
+    
+    local matchMap = false
+    local matchRank = false
+    
+    -- Nếu không chọn gì thì mặc định là chấp nhận tất cả
+    if next(selectedMaps) == nil then matchMap = true end
+    if next(selectedRanks) == nil then matchRank = true end
+    
+    for _, child in ipairs(dungeonFrame:GetChildren()) do
+        if child:IsA("TextLabel") then
+            local text = string.lower(child.Text)
+            
+            -- Kiểm tra map phù hợp
+            for mapName, _ in pairs(selectedMaps) do
+                if string.find(text, string.lower(mapName)) then
+                    matchMap = true
+                    break
+                end
+            end
+            
+            -- Kiểm tra rank phù hợp
+            for rank, _ in pairs(selectedRanks) do
+                if string.find(text, string.lower("Rank " .. rank)) then
+                    matchRank = true
+                    break
+                end
+            end
+        end
+    end
+    
+    return matchMap and matchRank
 end
 
 -- Function to teleport directly to an object and bypass anti-cheat
@@ -775,9 +817,75 @@ local function teleportLoop()
     end
 end
 
+-- Thiết lập kết nối để kiểm tra dungeon mới xuất hiện
+local function setupDungeonMonitor()
+    player.PlayerGui.Warn.ChildAdded:Connect(function(dungeonFrame)
+        if teleportingEnabled and isDungeonMatch(dungeonFrame) then
+            print("[DEBUG] Đã phát hiện dungeon phù hợp")
+            local dungeonPart
+            
+            -- Tìm part dungeon
+            for _, object in ipairs(dungeonFolder:GetChildren()) do
+                if object:IsA("Part") then
+                    dungeonPart = object
+                    break
+                end
+            end
+            
+            if dungeonPart then
+                teleportToObject(dungeonPart)
+            end
+        end
+    end)
+end
 
+-- Khởi tạo giám sát dungeon
+setupDungeonMonitor()
 
--- Add the toggle button to start/stop teleporting
+-- Tải cấu hình hiện có nếu có
+if ConfigSystem.LoadConfig() then
+    -- Tải các thiết lập đã lưu
+    if ConfigSystem.CurrentConfig.SelectedDungeonMaps then
+        selectedMaps = ConfigSystem.CurrentConfig.SelectedDungeonMaps
+    end
+    if ConfigSystem.CurrentConfig.SelectedDungeonRanks then
+        selectedRanks = ConfigSystem.CurrentConfig.SelectedDungeonRanks
+    end
+end
+
+-- Lấy danh sách map từ villageSpawns
+local mapNames = {}
+for mapName, _ in pairs(villageSpawns) do
+    table.insert(mapNames, mapName)
+end
+
+-- Thêm dropdown chọn map
+local MapDropdown = Tabs.dungeon:AddDropdown("DungeonMapDropdown", {
+    Title = "Choose Dungeon Maps",
+    Values = mapNames,
+    Multi = true,
+    Default = selectedMaps,
+    Callback = function(value)
+        selectedMaps = value
+        ConfigSystem.CurrentConfig.SelectedDungeonMaps = value
+        ConfigSystem.SaveConfig()
+    end
+})
+
+-- Thêm dropdown chọn rank
+local RankDropdown = Tabs.dungeon:AddDropdown("DungeonRankDropdown", {
+    Title = "Choose Dungeon Ranks",
+    Values = rankMapping,
+    Multi = true,
+    Default = selectedRanks,
+    Callback = function(value)
+        selectedRanks = value
+        ConfigSystem.CurrentConfig.SelectedDungeonRanks = value
+        ConfigSystem.SaveConfig()
+    end
+})
+
+-- Thêm toggle để bật/tắt teleport
 Tabs.dungeon:AddToggle("TeleportToDungeon", {
     Title = "Teleport to Dungeon",
     Default = false,
@@ -790,8 +898,8 @@ Tabs.dungeon:AddToggle("TeleportToDungeon", {
     end
 })
 
-
-local AutoDetectToggle = Tabs.dungeon:AddToggle("AutoDetectDungeon", {Title = "Auto Detect Dungeon (KEEP THIS ON)", Default = true})
+-- Xóa hoặc comment toggle AutoDetectDungeon cũ
+-- local AutoDetectToggle = Tabs.dungeon:AddToggle("AutoDetectDungeon", {Title = "Auto Detect Dungeon (KEEP THIS ON)", Default = true})
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -803,7 +911,8 @@ local villageSpawns = {
     ["BRUM ISLAND"] = "OPWorld",
     ["Leveling City"] = "SoloWorld",
     ["FACEHEAL TOWN"] = "BleachWorld",
-    ["Lucky"] = "BCWorld"
+    ["Lucky"] = "BCWorld",
+    ["Mori Town"] = "JojoWorld"
 }
 
 local function SetSpawnAndReset(spawnName)
@@ -829,10 +938,11 @@ local function SetSpawnAndReset(spawnName)
     end
 end
 
+-- Sửa hàm detectDungeon để sử dụng với hệ thống mới
 local function detectDungeon()
     player.PlayerGui.Warn.ChildAdded:Connect(function(dungeon)
-        if dungeon:IsA("Frame") and AutoDetectToggle.Value then
-            print("Đã phát hiện Dungeon!")
+        if dungeon:IsA("Frame") and teleportingEnabled and isDungeonMatch(dungeon) then
+            print("Đã phát hiện Dungeon phù hợp!")
             for _, child in ipairs(dungeon:GetChildren()) do
                 if child:IsA("TextLabel") then
                     for village, spawnName in pairs(villageSpawns) do
@@ -849,13 +959,7 @@ local function detectDungeon()
     end)
 end
 
--- Đảm bảo hàm hoạt động
-AutoDetectToggle:OnChanged(function(value)
-    if value then
-        detectDungeon()
-    end
-end)
-
+-- Gọi hàm detectDungeon
 detectDungeon()
 
 local function resetAutoFarm()
