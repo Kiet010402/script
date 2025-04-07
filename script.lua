@@ -21,10 +21,32 @@ local Window = Rayfield:CreateWindow({
     ConfigurationSaving = {
         Enabled = true,
         FolderName = "KaihonConfig",
-        FileName = playerName .. "_Config"
+        FileName = playerName .. "_Config",
+        AutoSave = true,
+        SaveInterval = 5 -- Save every 5 seconds
     },
     KeySystem = false
 })
+
+-- Function to explicitly save configuration
+local function SaveConfiguration()
+    Rayfield:SaveConfiguration()
+    
+    Rayfield:Notify({
+        Title = "Configuration Saved",
+        Content = "Your settings have been saved!",
+        Duration = 2,
+        Image = "save", -- Lucide icon
+    })
+end
+
+-- Create Save Button (to be added to all tabs)
+local function CreateSaveButton(tab)
+    return tab:CreateButton({
+        Name = "Save Configuration",
+        Callback = SaveConfiguration
+    })
+end
 
 -- Create Main Tab
 local MainTab = Window:CreateTab("Main", 4483362458) -- Home icon
@@ -34,6 +56,11 @@ local MapTab = Window:CreateTab("Map", 9288394834) -- Map icon
 
 -- Create Play Tab
 local PlayTab = Window:CreateTab("Play", 4483362927) -- Play icon
+
+-- Add Save Buttons to each tab
+local MainSaveButton = CreateSaveButton(MainTab)
+local MapSaveButton = CreateSaveButton(MapTab)
+local PlaySaveButton = CreateSaveButton(PlayTab)
 
 -- Main Section
 local MainSection = MainTab:CreateSection("Roll Settings")
@@ -74,6 +101,9 @@ local AutoRollToggle = MainTab:CreateToggle({
                 })
             end
         end
+        
+        -- Save configuration after toggle change
+        SaveConfiguration()
     end,
 })
 
@@ -93,6 +123,9 @@ local RollDelaySlider = MainTab:CreateSlider({
             Duration = 2,
             Image = "timer", -- Lucide icon
         })
+        
+        -- Save configuration after slider change
+        SaveConfiguration()
     end,
 })
 
@@ -150,6 +183,9 @@ local AutoAttackToggle = MainTab:CreateToggle({
                 })
             end
         end
+        
+        -- Save configuration after toggle change
+        SaveConfiguration()
     end,
 })
 
@@ -169,6 +205,9 @@ local AttackDelaySlider = MainTab:CreateSlider({
             Duration = 2,
             Image = "timer", -- Lucide icon
         })
+        
+        -- Save configuration after slider change
+        SaveConfiguration()
     end,
 })
 
@@ -253,6 +292,9 @@ local MapDropdown = MapTab:CreateDropdown({
             Duration = 2,
             Image = "map", -- Lucide icon
         })
+        
+        -- Save configuration after dropdown change
+        SaveConfiguration()
     end,
 })
 
@@ -311,6 +353,9 @@ local StartToggle = MapTab:CreateToggle({
             wait(1)
             StartToggle:Set(false)
         end
+        
+        -- Save configuration after toggle change
+        SaveConfiguration()
     end,
 })
 
@@ -384,6 +429,9 @@ local MobDropdown = PlayTab:CreateDropdown({
             Duration = 2,
             Image = "target", -- Lucide icon
         })
+        
+        -- Save configuration after dropdown change
+        SaveConfiguration()
     end,
 })
 
@@ -402,6 +450,9 @@ local TeleportDistanceSlider = PlayTab:CreateSlider({
             Duration = 2,
             Image = "ruler", -- Lucide icon
         })
+        
+        -- Save configuration after slider change
+        SaveConfiguration()
     end,
 })
 
@@ -492,6 +543,9 @@ local AutoFarmToggle = PlayTab:CreateToggle({
                 })
             end
         end
+        
+        -- Save configuration after toggle change
+        SaveConfiguration()
     end,
 })
 
@@ -588,9 +642,31 @@ workspace.ChildAdded:Connect(function(child)
     end
 end)
 
+-- Save configuration on game close
+game:GetService("Players").PlayerRemoving:Connect(function(plr)
+    if plr == player then
+        SaveConfiguration()
+    end
+end)
+
+-- Save configuration on script end
+game:GetService("CoreGui").ChildRemoved:Connect(function(child)
+    if child.Name == "Rayfield" then
+        SaveConfiguration()
+    end
+end)
+
+-- Auto-save configuration at regular intervals
+spawn(function()
+    while wait(60) do -- Save every minute as a backup
+        SaveConfiguration()
+    end
+end)
+
 -- Module return
 return {
     UI = Window,
+    SaveConfig = SaveConfiguration,
     StopRolling = function()
         if rollConnection then
             rollConnection:Disconnect()
