@@ -30,7 +30,8 @@ local Window = Rayfield:CreateWindow({
 
 -- Function to explicitly save configuration
 local function SaveConfiguration()
-    Rayfield:SaveConfiguration()
+    -- The Rayfield library saves configurations automatically
+    -- No need to call any special method
     
     Rayfield:Notify({
         Title = "Configuration Saved",
@@ -102,8 +103,7 @@ local AutoRollToggle = MainTab:CreateToggle({
             end
         end
         
-        -- Save configuration after toggle change
-        SaveConfiguration()
+        -- Auto-save is enabled, no need to manually save
     end,
 })
 
@@ -124,8 +124,7 @@ local RollDelaySlider = MainTab:CreateSlider({
             Image = "timer", -- Lucide icon
         })
         
-        -- Save configuration after slider change
-        SaveConfiguration()
+        -- Auto-save is enabled, no need to manually save
     end,
 })
 
@@ -184,8 +183,7 @@ local AutoAttackToggle = MainTab:CreateToggle({
             end
         end
         
-        -- Save configuration after toggle change
-        SaveConfiguration()
+        -- Auto-save is enabled, no need to manually save
     end,
 })
 
@@ -206,8 +204,7 @@ local AttackDelaySlider = MainTab:CreateSlider({
             Image = "timer", -- Lucide icon
         })
         
-        -- Save configuration after slider change
-        SaveConfiguration()
+        -- Auto-save is enabled, no need to manually save
     end,
 })
 
@@ -293,8 +290,7 @@ local MapDropdown = MapTab:CreateDropdown({
             Image = "map", -- Lucide icon
         })
         
-        -- Save configuration after dropdown change
-        SaveConfiguration()
+        -- Auto-save is enabled, no need to manually save
     end,
 })
 
@@ -354,8 +350,7 @@ local StartToggle = MapTab:CreateToggle({
             StartToggle:Set(false)
         end
         
-        -- Save configuration after toggle change
-        SaveConfiguration()
+        -- Auto-save is enabled, no need to manually save
     end,
 })
 
@@ -430,8 +425,7 @@ local MobDropdown = PlayTab:CreateDropdown({
             Image = "target", -- Lucide icon
         })
         
-        -- Save configuration after dropdown change
-        SaveConfiguration()
+        -- Auto-save is enabled, no need to manually save
     end,
 })
 
@@ -451,8 +445,7 @@ local TeleportDistanceSlider = PlayTab:CreateSlider({
             Image = "ruler", -- Lucide icon
         })
         
-        -- Save configuration after slider change
-        SaveConfiguration()
+        -- Auto-save is enabled, no need to manually save
     end,
 })
 
@@ -544,8 +537,7 @@ local AutoFarmToggle = PlayTab:CreateToggle({
             end
         end
         
-        -- Save configuration after toggle change
-        SaveConfiguration()
+        -- Auto-save is enabled, no need to manually save
     end,
 })
 
@@ -639,27 +631,6 @@ workspace.ChildAdded:Connect(function(child)
     if child.Name == "Mobs" then
         wait(1) -- Small delay to ensure the folder is properly set up
         hookMobDeath()
-    end
-end)
-
--- Save configuration on game close
-game:GetService("Players").PlayerRemoving:Connect(function(plr)
-    if plr == player then
-        SaveConfiguration()
-    end
-end)
-
--- Save configuration on script end
-game:GetService("CoreGui").ChildRemoved:Connect(function(child)
-    if child.Name == "Rayfield" then
-        SaveConfiguration()
-    end
-end)
-
--- Auto-save configuration at regular intervals
-spawn(function()
-    while wait(60) do -- Save every minute as a backup
-        SaveConfiguration()
     end
 end)
 
