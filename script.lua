@@ -3,6 +3,22 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 local workspace = game:GetService("Workspace")
 
+-- Kiểm tra và khai báo các biến toàn cục cần thiết để hỗ trợ đa executor
+local function initializeUniversalSupport()
+    -- Hỗ trợ các global functions
+    getgenv = getgenv or function() return _G end
+    if not getgenv().fireproximityprompt and game.GameId == 4483381587 then
+        getgenv().fireproximityprompt = function(prompt)
+            if prompt and prompt.ClassName == "ProximityPrompt" then
+                prompt.Triggered:Fire()
+            end
+        end
+    end
+end
+
+-- Khởi tạo các hàm hỗ trợ
+initializeUniversalSupport()
+
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local hrp = character:WaitForChild("HumanoidRootPart")
@@ -15,6 +31,7 @@ local dungeonkill = {}
 local selectedMobName = ""
 local movementMethod = "Tween" -- Phương thức di chuyển mặc định
 local farmingStyle = "Default" -- Phong cách farm mặc định
+local damageEnabled = false -- Thêm biến này để tránh lỗi undefined
 
 -- Tự động phát hiện HumanoidRootPart mới khi người chơi hồi sinh
 player.CharacterAdded:Connect(function(newCharacter)
@@ -523,7 +540,14 @@ local function fireDestroy()
 
                 if DestroyPrompt then
                     DestroyPrompt:SetAttribute("MaxActivationDistance", 100000)
-                    fireproximityprompt(DestroyPrompt)
+                    if fireproximityprompt then
+                        fireproximityprompt(DestroyPrompt)
+                    elseif fire_proximity_prompt then
+                        fire_proximity_prompt(DestroyPrompt)
+                    else
+                        -- Phương pháp thay thế nếu không có sẵn hàm
+                        DestroyPrompt.Triggered:Fire()
+                    end
                 end
             end
         end
@@ -548,7 +572,14 @@ local function fireArise()
 
                 if arisePrompt then
                     arisePrompt:SetAttribute("MaxActivationDistance", 100000)
-                    fireproximityprompt(arisePrompt)
+                    if fireproximityprompt then
+                        fireproximityprompt(arisePrompt)
+                    elseif fire_proximity_prompt then
+                        fire_proximity_prompt(arisePrompt)
+                    else
+                        -- Phương pháp thay thế nếu không có sẵn hàm
+                        arisePrompt.Triggered:Fire()
+                    end
                 end
             end
         end
@@ -1997,7 +2028,14 @@ local function fireDestroy()
 
                 if DestroyPrompt then
                     DestroyPrompt:SetAttribute("MaxActivationDistance", 100000)
-                    firePrompt(DestroyPrompt)
+                    if fireproximityprompt then
+                        fireproximityprompt(DestroyPrompt)
+                    elseif fire_proximity_prompt then
+                        fire_proximity_prompt(DestroyPrompt)
+                    else
+                        -- Phương pháp thay thế nếu không có sẵn hàm
+                        DestroyPrompt.Triggered:Fire()
+                    end
                 end
             end
         end
@@ -2016,7 +2054,14 @@ local function fireArise()
 
                 if arisePrompt then
                     arisePrompt:SetAttribute("MaxActivationDistance", 100000)
-                    firePrompt(arisePrompt)
+                    if fireproximityprompt then
+                        fireproximityprompt(arisePrompt)
+                    elseif fire_proximity_prompt then
+                        fire_proximity_prompt(arisePrompt)
+                    else
+                        -- Phương pháp thay thế nếu không có sẵn hàm
+                        arisePrompt.Triggered:Fire()
+                    end
                 end
             end
         end
@@ -2088,6 +2133,73 @@ if not Fluent then
     error("Không thể tải thư viện UI. Vui lòng kiểm tra kết nối internet hoặc executor.")
     return
 end
+
+-- Thêm phần khởi chạy cuối cùng để đảm bảo script hoạt động trên mọi executor
+SaveManager:SetLibrary(Fluent)
+InterfaceManager:SetLibrary(Fluent)
+
+-- Thay đổi cách lưu cấu hình để sử dụng tên người chơi
+local playerName = game:GetService("Players").LocalPlayer.Name
+InterfaceManager:SetFolder("KaihonScriptHub")
+SaveManager:SetFolder("KaihonScriptHub/AriseCrossover/" .. playerName)
+
+-- Thêm thông tin vào tab Settings
+Tabs.Settings:AddParagraph({
+    Title = "Cấu hình tự động",
+    Content = "Cấu hình của bạn đang được tự động lưu theo tên nhân vật: " .. playerName
+})
+
+Tabs.Settings:AddParagraph({
+    Title = "Phím tắt",
+    Content = "Nhấn LeftControl để ẩn/hiện giao diện"
+})
+
+-- Thêm nút xóa cấu hình hiện tại
+Tabs.Settings:AddButton({
+    Title = "Xóa cấu hình hiện tại",
+    Description = "Đặt lại tất cả cài đặt về mặc định",
+    Callback = function()
+        SaveManager:Delete("AutoSave_" .. playerName)
+        Fluent:Notify({
+            Title = "Đã xóa cấu hình",
+            Content = "Tất cả cài đặt đã được đặt lại về mặc định",
+            Duration = 3
+        })
+    end
+})
+
+Window:SelectTab(1)
+
+Fluent:Notify({
+    Title = "Kaihon Hub",
+    Content = "Script đã tải xong! Cấu hình tự động lưu theo tên người chơi: " .. playerName .. " - Phiên bản Universal",
+    Duration = 3
+})
+
+-- Thay đổi cách tải cấu hình
+local function AutoSaveConfig()
+    local configName = "AutoSave_" .. playerName
+    
+    -- Tự động lưu cấu hình hiện tại
+    task.spawn(function()
+        while task.wait(10) do -- Lưu mỗi 10 giây
+            pcall(function()
+                SaveManager:Save(configName)
+            end)
+        end
+    end)
+    
+    -- Tải cấu hình đã lưu nếu có
+    pcall(function()
+        SaveManager:Load(configName)
+    end)
+end
+
+-- Thực thi tự động lưu/tải cấu hình
+AutoSaveConfig()
+
+-- Đảm bảo script hoạt động trên tất cả executor
+print("Kaihon Hub Universal | Loaded successfully")
 
 
 
