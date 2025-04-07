@@ -283,6 +283,7 @@ Tabs.Main:AddInput("MobNameInput", {
     Title = "Enter Mob Name",
     Default = "",
     Placeholder = "Type Here",
+    Flag = "SelectedMobName", -- Thêm Flag để lưu cấu hình
     Callback = function(text)
         selectedMobName = text
         killedNPCs = {} -- Đặt lại danh sách NPC đã tiêu diệt khi thay đổi mob
@@ -307,7 +308,7 @@ Tabs.Main:AddToggle("FarmSelectedMob", {
 Tabs.Main:AddToggle("TeleportMobs", {
     Title = "Auto farm (nearest NPCs)",
     Default = false,
-    Flag = "AutoFarmNearestNPCs", -- Thêm Flag để lưu cấu hình
+    Flag = "AutoFarmNearestNPCs", -- Đã có flag nhưng đảm bảo đúng
     Callback = function(state)
         teleportEnabled = state
         if state then
@@ -571,7 +572,7 @@ end
 Tabs.Main:AddToggle("AutoDestroy", {
     Title = "Auto Destroy",
     Default = false,
-    Flag = "MainAutoDestroy", -- Thêm Flag để lưu cấu hình
+    Flag = "MainAutoDestroy", -- Đã có flag nhưng đảm bảo đúng
     Callback = function(state)
         autoDestroy = state
         if state then
@@ -584,7 +585,7 @@ Tabs.Main:AddToggle("AutoDestroy", {
 Tabs.Main:AddToggle("AutoArise", {
     Title = "Auto Arise",
     Default = false,
-    Flag = "MainAutoArise", -- Thêm Flag để lưu cấu hình
+    Flag = "MainAutoArise", -- Đã có flag nhưng đảm bảo đúng
     Callback = function(state)
         autoArise = state
         if state then
@@ -2034,6 +2035,25 @@ if not scriptSuccess then
         game:GetService("Debris"):AddItem(screenGui, 5)
     end
 end
+
+-- Thêm event listener để lưu ngay khi thay đổi giá trị
+local function setupSaveEvents()
+    for _, tab in pairs(Tabs) do
+        for _, element in pairs(tab._components) do
+            if element.OnChanged then
+                element.OnChanged:Connect(function()
+                    pcall(function()
+                        SaveManager:Save("AutoSave_" .. playerName)
+                    end)
+                end)
+            end
+        end
+    end
+end
+
+-- Thực thi tự động lưu/tải cấu hình
+AutoSaveConfig()
+setupSaveEvents() -- Thêm dòng này
 
 
 
