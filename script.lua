@@ -279,7 +279,7 @@ local Tabs = {
     Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
 }
 
-Tabs.Main:AddInput("Input", {
+Tabs.Main:AddInput("MobNameInput", {
     Title = "Enter Mob Name",
     Default = "",
     Placeholder = "Type Here",
@@ -293,6 +293,7 @@ Tabs.Main:AddInput("Input", {
 Tabs.Main:AddToggle("FarmSelectedMob", {
     Title = "Farm Selected Mob",
     Default = false,
+    Flag = "FarmSelectedMob", -- Thêm Flag để lưu cấu hình
     Callback = function(state)
         teleportEnabled = state
         damageEnabled = state -- Đảm bảo tính năng tấn công mobs được kích hoạt
@@ -306,6 +307,7 @@ Tabs.Main:AddToggle("FarmSelectedMob", {
 Tabs.Main:AddToggle("TeleportMobs", {
     Title = "Auto farm (nearest NPCs)",
     Default = false,
+    Flag = "AutoFarmNearestNPCs", -- Thêm Flag để lưu cấu hình
     Callback = function(state)
         teleportEnabled = state
         if state then
@@ -319,6 +321,7 @@ local Dropdown = Tabs.Main:AddDropdown("MovementMethod", {
     Values = {"Tween", "Teleport"},
     Multi = false,
     Default = 1, -- Mặc định là "Tween"
+    Flag = "FarmingMethod", -- Thêm Flag để lưu cấu hình
     Callback = function(option)
         movementMethod = option
     end
@@ -327,6 +330,7 @@ local Dropdown = Tabs.Main:AddDropdown("MovementMethod", {
 Tabs.Main:AddToggle("DamageMobs", {
     Title = "Damage Mobs ENABLE THIS",
     Default = false,
+    Flag = "DamageMobs", -- Thêm Flag để lưu cấu hình
     Callback = function(state)
         damageEnabled = state
         if state then
@@ -337,7 +341,17 @@ Tabs.Main:AddToggle("DamageMobs", {
 
 
 
-Tabs.dungeon:AddToggle("TeleportMobs", { Title = "Auto farm Dungeon", Default = false, Callback = function(state) teleportEnabled = state if state then task.spawn(teleportDungeon) end end })
+Tabs.dungeon:AddToggle("TeleportMobs", { 
+    Title = "Auto farm Dungeon", 
+    Default = false, 
+    Flag = "AutoFarmDungeon", -- Thêm Flag để lưu cấu hình
+    Callback = function(state) 
+        teleportEnabled = state 
+        if state then 
+            task.spawn(teleportDungeon) 
+        end 
+    end 
+})
 
 Tabs.Main:AddToggle("GamepassShadowFarm", {
     Title = "Gamepass Shadow farm",
@@ -549,6 +563,7 @@ end
 Tabs.Main:AddToggle("AutoDestroy", {
     Title = "Auto Destroy",
     Default = false,
+    Flag = "MainAutoDestroy", -- Thêm Flag để lưu cấu hình
     Callback = function(state)
         autoDestroy = state
         if state then
@@ -561,6 +576,7 @@ Tabs.Main:AddToggle("AutoDestroy", {
 Tabs.Main:AddToggle("AutoArise", {
     Title = "Auto Arise",
     Default = false,
+    Flag = "MainAutoArise", -- Thêm Flag để lưu cấu hình
     Callback = function(state)
         autoArise = state
         if state then
@@ -572,6 +588,7 @@ Tabs.Main:AddToggle("AutoArise", {
 Tabs.dungeon:AddToggle("AutoDestroy", {
     Title = "Auto Destroy",
     Default = false,
+    Flag = "DungeonAutoDestroy", -- Thêm Flag để lưu cấu hình
     Callback = function(state)
         autoDestroy = state
         if state then
@@ -584,6 +601,7 @@ Tabs.dungeon:AddToggle("AutoDestroy", {
 Tabs.dungeon:AddToggle("AutoArise", {
     Title = "Auto Arise",
     Default = false,
+    Flag = "DungeonAutoArise", -- Thêm Flag để lưu cấu hình
     Callback = function(state)
         autoArise = state
         if state then
