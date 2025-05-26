@@ -1106,11 +1106,11 @@ local function findAndJoinHighestStory()
     local mapOrder = { "OnePiece", "Namek", "DemonSlayer", "Naruto", "OPM", "TokyoGhoul" }
     local highestMap, highestChapter = nil, nil
 
-    if chapterLevels then
+    if chapterLevels and #chapterLevels:GetChildren() > 0 then
         for i = #mapOrder, 1, -1 do
             local map = mapOrder[i]
             if chapterLevels:FindFirstChild(map .. "_Chapter1") then
-                for j = 10, 0, -1 do
+                for j = 10, 1, -1 do
                     local chapterName = map .. "_Chapter" .. j
                     if chapterLevels:FindFirstChild(chapterName) then
                         highestMap = map
@@ -1121,6 +1121,33 @@ local function findAndJoinHighestStory()
             end
             if highestMap then break end
         end
+    end
+
+    -- THÊM PHẦN NÀY: Nếu không tìm thấy chapter nào, mặc định chọn Chapter1 của OnePiece
+    if not highestMap then
+        highestMap = "OnePiece"
+        highestChapter = "Chapter1"
+        print("Không tìm thấy chapter đã hoàn thành, mặc định chọn " .. highestMap .. "_" .. highestChapter)
+    elseif not highestMap then
+        highestMap = "Namek"
+        highestChapter = "Chapter1"
+        print("Không tìm thấy chapter đã hoàn thành, mặc định chọn " .. highestMap .. "_" .. highestChapter)
+    elseif not highestMap then
+        highestMap = "DemonSlayer"
+        highestChapter = "Chapter1"
+        print("Không tìm thấy chapter đã hoàn thành, mặc định chọn " .. highestMap .. "_" .. highestChapter)
+    elseif not highestMap then
+        highestMap = "Naruto"
+        highestChapter = "Chapter1"
+        print("Không tìm thấy chapter đã hoàn thành, mặc định chọn " .. highestMap .. "_" .. highestChapter)
+    elseif not highestMap then
+        highestMap = "OPM"
+        highestChapter = "Chapter1"
+        print("Không tìm thấy chapter đã hoàn thành, mặc định chọn " .. highestMap .. "_" .. highestChapter)
+    elseif not highestMap then
+        highestMap = "TokyoGhoul"
+        highestChapter = "Chapter1"
+        print("Không tìm thấy chapter đã hoàn thành, mặc định chọn " .. highestMap .. "_" .. highestChapter)
     end
 
     if highestMap and highestChapter then
