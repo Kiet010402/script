@@ -640,9 +640,6 @@ local autoJoinAllStoryLoop = nil
 local currentMapIndex = 1
 local currentChapterIndex = 1
 
--- Biến lưu trạng thái YenMaxLevel
-local yenMaxLevelEnabled = ConfigSystem.CurrentConfig.YenMaxLevel or false
-
 -- Biến lưu trạng thái Ranger Stage
 local selectedRangerMap = ConfigSystem.CurrentConfig.SelectedRangerMap or "OnePiece"
 local selectedRangerDisplayMap = reverseMapNameMapping[selectedRangerMap] or "Voocha Village"
@@ -1751,31 +1748,6 @@ SettingsSection:AddDropdown("ThemeDropdown", {
         ConfigSystem.CurrentConfig.UITheme = Value
         ConfigSystem.SaveConfig()
         print("Đã chọn theme: " .. Value)
-    end
-})
-
--- Toggle YenMaxLevel
-SettingsSection:AddToggle("YenMaxLevelToggle", {
-    Title = "Yen Max Level",
-    Default = yenMaxLevelEnabled,
-    Callback = function(Value)
-        yenMaxLevelEnabled = Value
-        ConfigSystem.CurrentConfig.YenMaxLevel = Value
-        ConfigSystem.SaveConfig()
-        
-        -- Gửi yêu cầu đến server khi toggle thay đổi trạng thái
-        local success, err = pcall(function()
-            local args = {
-                "YenMaxLevel"
-            }
-            game:GetService("ReplicatedStorage"):WaitForChild("Remote"):WaitForChild("Server"):WaitForChild("Gameplay"):WaitForChild("PlayerStats"):FireServer(unpack(args))
-        end)
-        
-        if success then
-            print("Đã " .. (Value and "bật" or "tắt") .. " Yen Max Level")
-        else
-            warn("Lỗi khi kích hoạt Yen Max Level: " .. tostring(err))
-        end
     end
 })
 
