@@ -1397,7 +1397,7 @@ StorySection:AddToggle("AutoJoinAllStoryToggle", {
             end
             
             autoJoinAllStoryLoop = spawn(function()
-                while autoJoinAllStoryEnabled and wait(10) do -- Kiểm tra mỗi 10 giây
+                while autoJoinAllStoryEnabled and wait(5) do -- Kiểm tra mỗi 10 giây
                     -- Chỉ thực hiện khi không ở trong map
                     if not isPlayerInMap() then
                         print("Đợi " .. storyTimeDelay .. " giây trước khi tìm map tiếp theo")
@@ -1408,7 +1408,7 @@ StorySection:AddToggle("AutoJoinAllStoryToggle", {
                             local success = joinNextStory()
                             if not success then
                                 print("Không thể tìm thấy map tiếp theo hoặc đã hoàn thành tất cả map")
-                                wait(30) -- Đợi lâu hơn nếu không tìm thấy map
+                                wait(15) -- Đợi lâu hơn nếu không tìm thấy map
                             end
                         end
                     else
