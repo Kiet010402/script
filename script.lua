@@ -1107,7 +1107,7 @@ local function findAndJoinHighestStory()
     local highestMap, highestChapter = nil, nil
 
     if chapterLevels then
-        for i = #mapOrder, 0, -1 do
+        for i = #mapOrder, 1, -1 do
             local map = mapOrder[i]
             if chapterLevels:FindFirstChild(map .. "_Chapter1") then
                 for j = 10, 0, -1 do
