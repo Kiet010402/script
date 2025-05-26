@@ -429,7 +429,7 @@ ConfigSystem.DefaultConfig = {
     FriendOnly = false,
     AutoJoinMap = false,
     StoryTimeDelay = 5,
-
+    AutoJoinAllStory = false,
     -- Cài đặt Ranger Stage
     SelectedRangerMap = "OnePiece",
     SelectedRangerMaps = {}, -- Thêm cấu hình mặc định cho map đã chọn (ban đầu rỗng hoặc chỉ có map default)
@@ -635,7 +635,7 @@ local friendOnly = ConfigSystem.CurrentConfig.FriendOnly or false
 local autoJoinMapEnabled = ConfigSystem.CurrentConfig.AutoJoinMap or false
 local autoJoinMapLoop = nil
 -- Biến lưu trạng thái Auto Join All Story
-local autoJoinAllStoryEnabled = false
+local autoJoinAllStoryEnabled = ConfigSystem.CurrentConfig.AutoJoinAllStory or false
 local autoJoinAllStoryLoop = nil
 local currentMapIndex = 1
 local currentChapterIndex = 1
@@ -1367,10 +1367,11 @@ StorySection:AddToggle("AutoJoinMapToggle", {
 -- Toggle Auto Join All Story
 StorySection:AddToggle("AutoJoinAllStoryToggle", {
     Title = "Auto Join All Story",
-    Default = autoJoinAllStoryEnabled,
+    Default = ConfigSystem.CurrentConfig.AutoJoinAllStory or false,
     Callback = function(Value)
         autoJoinAllStoryEnabled = Value
-        
+        ConfigSystem.CurrentConfig.AutoJoinAllStory = Value
+        ConfigSystem.SaveConfig()
         if autoJoinAllStoryEnabled then
             -- Tắt Auto Join Map nếu đang bật
             if autoJoinMapEnabled then
