@@ -634,10 +634,11 @@ local selectedDifficulty = ConfigSystem.CurrentConfig.SelectedDifficulty or "Nor
 local friendOnly = ConfigSystem.CurrentConfig.FriendOnly or false
 local autoJoinMapEnabled = ConfigSystem.CurrentConfig.AutoJoinMap or false
 local autoJoinMapLoop = nil
--- Biến lưu trạng thái Auto Join Highest Story
-local autoJoinHighestStoryEnabled = ConfigSystem.CurrentConfig.AutoJoinHighestStory or false
-local autoJoinHighestStoryLoop = nil
-local isInHighestStory = false
+-- Biến lưu trạng thái Auto Join All Story
+local autoJoinAllStoryEnabled = false
+local autoJoinAllStoryLoop = nil
+local currentMapIndex = 1
+local currentChapterIndex = 1
 
 -- Biến lưu trạng thái Ranger Stage
 local selectedRangerMap = ConfigSystem.CurrentConfig.SelectedRangerMap or "OnePiece"
@@ -1076,145 +1077,6 @@ local function isRangerStageAct5RewardsUI()
     return result
 end
 
--- Hàm lấy giá trị Level hiện tại từ DataValue
-local function getCurrentLevel()
-    local levelValue = game:GetService("ReplicatedStorage"):FindFirstChild("Values")
-        and game:GetService("ReplicatedStorage").Values:FindFirstChild("Game")
-        and game:GetService("ReplicatedStorage").Values.Game:FindFirstChild("Level")
-
-    if levelValue then
-        print("Current Level from DataValue:", levelValue.Value)
-        return levelValue.Value
-    end
-
-    return nil
-end
-
--- Hàm tìm và join highest story
-local function findAndJoinHighestStory()
-    if isInHighestStory then
-        print("Người chơi đang ở trong map cao nhất, không thực hiện join.")
-        return
-    end
-
-    local player = game:GetService("Players").LocalPlayer
-    local playerData = game:GetService("ReplicatedStorage"):FindFirstChild("Player_Data")
-    local playerFolder = playerData and playerData:FindFirstChild(player.Name)
-    local chapterLevels = playerFolder and playerFolder:FindFirstChild("ChapterLevels")
-
-    -- Map thứ tự ưu tiên
-    local mapOrder = { "OnePiece", "Namek", "DemonSlayer", "Naruto", "OPM", "TokyoGhoul" }
-    local highestMap, highestChapter = nil, nil
-
-    if chapterLevels and #chapterLevels:GetChildren() > 0 then
-        for i = #mapOrder, 1, -1 do
-            local map = mapOrder[i]
-            if chapterLevels:FindFirstChild(map .. "_Chapter1") then
-                for j = 10, 1, -1 do
-                    local chapterName = map .. "_Chapter" .. j
-                    if chapterLevels:FindFirstChild(chapterName) then
-                        highestMap = map
-                        highestChapter = "Chapter" .. j
-                        break
-                    end
-                end
-            end
-            if highestMap then break end
-        end
-    end
-
-    -- THÊM PHẦN NÀY: Nếu không tìm thấy chapter nào, mặc định chọn Chapter1 của OnePiece
-    if not highestMap then
-        highestMap = "OnePiece"
-        highestChapter = "Chapter1"
-        print("Không tìm thấy chapter đã hoàn thành, mặc định chọn " .. highestMap .. "_" .. highestChapter)
-    elseif not highestMap then
-        highestMap = "Namek"
-        highestChapter = "Chapter1"
-        print("Không tìm thấy chapter đã hoàn thành, mặc định chọn " .. highestMap .. "_" .. highestChapter)
-    elseif not highestMap then
-        highestMap = "DemonSlayer"
-        highestChapter = "Chapter1"
-        print("Không tìm thấy chapter đã hoàn thành, mặc định chọn " .. highestMap .. "_" .. highestChapter)
-    elseif not highestMap then
-        highestMap = "Naruto"
-        highestChapter = "Chapter1"
-        print("Không tìm thấy chapter đã hoàn thành, mặc định chọn " .. highestMap .. "_" .. highestChapter)
-    elseif not highestMap then
-        highestMap = "OPM"
-        highestChapter = "Chapter1"
-        print("Không tìm thấy chapter đã hoàn thành, mặc định chọn " .. highestMap .. "_" .. highestChapter)
-    elseif not highestMap then
-        highestMap = "TokyoGhoul"
-        highestChapter = "Chapter1"
-        print("Không tìm thấy chapter đã hoàn thành, mặc định chọn " .. highestMap .. "_" .. highestChapter)
-    end
-
-    if highestMap and highestChapter then
-        local currentLevel = getCurrentLevel()
-        local highestLevel = highestMap .. "_" .. highestChapter
-
-        if currentLevel == highestLevel then
-            print("Người chơi đang ở level cao nhất: " .. highestLevel)
-            isInHighestStory = true
-            return
-        end
-
-        print("Đã tìm thấy highest story để join: " .. highestLevel)
-
-        -- Thực hiện join map
-        local function joinMap()
-            local Event = game:GetService("ReplicatedStorage"):FindFirstChild("Remote"):FindFirstChild("Server")
-                :FindFirstChild("PlayRoom"):FindFirstChild("Event")
-            if not Event then
-                warn("Không tìm thấy Event để join map.")
-                return
-            end
-            Event:FireServer("Create")
-            wait(0.5)
-            Event:FireServer("Change-World", { ["World"] = highestMap })
-            wait(0.5)
-            Event:FireServer("Change-Chapter", { ["Chapter"] = highestLevel })
-            wait(0.5)
-            Event:FireServer("Change-Difficulty", { ["Difficulty"] = "Normal" })
-            wait(0.5)
-            Event:FireServer("Submit")
-            wait(1)
-            Event:FireServer("Start")
-            print("Đã join map: " .. highestLevel)
-            isInHighestStory = true
-        end
-
-        joinMap()
-    else
-        print("Không tìm thấy highest story để join.")
-    end
-end
-
--- Hàm xử lý toggle Auto Join Highest Story
-local function toggleAutoJoinHighestStory(state)
-    autoJoinHighestStoryEnabled = state
-    ConfigSystem.CurrentConfig.AutoJoinHighestStory = state
-    ConfigSystem.SaveConfig()
-    isInHighestStory = false
-
-    if autoJoinHighestStoryEnabled then
-        print("Auto Join Highest Story đã được bật")
-        autoJoinHighestStoryLoop = task.spawn(function()
-            while autoJoinHighestStoryEnabled do
-                findAndJoinHighestStory()
-                wait(10)
-            end
-        end)
-    else
-        print("Auto Join Highest Story đã được tắt")
-        if autoJoinHighestStoryLoop then
-            task.cancel(autoJoinHighestStoryLoop)
-            autoJoinHighestStoryLoop = nil
-        end
-    end
-end
-
 -- Hàm để tự động tham gia map
 local function joinMap()
     -- Kiểm tra nếu đang ở Ranger Stage: Act 5 - Wings of the Abyss thì join ngay lập tức
@@ -1295,6 +1157,85 @@ local function joinMap()
     end
 
     return true
+end
+
+-- Thứ tự các map theo yêu cầu
+local mapOrder = {"OnePiece", "Namek", "DemonSlayer", "Naruto", "OPM", "TokyoGhoul"}
+
+-- Hàm kiểm tra xem người chơi đã hoàn thành map chapter chưa
+local function isChapterCompleted(mapName, chapterNumber)
+    local success, result = pcall(function()
+        local playerName = game:GetService("Players").LocalPlayer.Name
+        local chapterLevels = game:GetService("ReplicatedStorage").Player_Data[playerName].ChapterLevels
+        local chapterKey = mapName .. "_Chapter" .. chapterNumber
+        
+        -- Nếu có folder map_chapterX trong ChapterLevels, thì đã hoàn thành
+        return chapterLevels:FindFirstChild(chapterKey) ~= nil
+    end)
+    
+    if not success then
+        warn("Lỗi khi kiểm tra chapter đã hoàn thành: " .. tostring(result))
+        return false
+    end
+    
+    return result
+end
+
+-- Hàm tìm map và chapter tiếp theo chưa hoàn thành
+local function findNextChapter()
+    -- Bắt đầu từ chapter và map hiện tại
+    local startMapIndex = currentMapIndex
+    local startChapterIndex = currentChapterIndex
+    
+    -- Kiểm tra từ map và chapter hiện tại
+    for m = startMapIndex, #mapOrder do
+        local startChap = (m == startMapIndex) and startChapterIndex or 1
+        for c = startChap, 10 do
+            if not isChapterCompleted(mapOrder[m], c) then
+                return m, c, true -- Trả về map index, chapter index và true để chỉ rằng đã tìm thấy
+            end
+        end
+    end
+    
+    -- Nếu đã kiểm tra hết tất cả mà không tìm thấy, quay lại từ đầu
+    for m = 1, startMapIndex - 1 do
+        for c = 1, 10 do
+            if not isChapterCompleted(mapOrder[m], c) then
+                return m, c, true
+            end
+        end
+    end
+    
+    return 1, 1, false -- Không tìm thấy chapter nào chưa hoàn thành
+end
+
+-- Hàm join map story tiếp theo
+local function joinNextStory()
+    -- Tìm chapter tiếp theo chưa hoàn thành
+    local nextMapIndex, nextChapterIndex, found = findNextChapter()
+    
+    if not found then
+        print("Tất cả các chapter đã được hoàn thành!")
+        return false
+    end
+    
+    -- Cập nhật chỉ số hiện tại
+    currentMapIndex = nextMapIndex
+    currentChapterIndex = nextChapterIndex
+    
+    -- Cập nhật biến để join map
+    local mapName = mapOrder[nextMapIndex]
+    local chapterName = "Chapter" .. nextChapterIndex
+    
+    print("Chuẩn bị join map: " .. mapName .. " - " .. chapterName)
+    
+    -- Cập nhật các biến toàn cục để sử dụng với hàm joinMap() hiện có
+    selectedMap = mapName
+    selectedDisplayMap = reverseMapNameMapping[mapName] or "Voocha Village"
+    selectedChapter = chapterName
+    
+    -- Gọi hàm joinMap hiện có để tham gia map
+    return joinMap()
 end
 
 -- Dropdown để chọn Map
@@ -1423,11 +1364,69 @@ StorySection:AddToggle("AutoJoinMapToggle", {
     end
 })
 
-StorySection:AddToggle("AutoJoinHighestStoryToggle", {
-    Title = "Auto Join Highest Story",
-    Default = ConfigSystem.CurrentConfig.AutoJoinHighestStory or false,
-    Callback = function(value)
-        toggleAutoJoinHighestStory(value)
+-- Toggle Auto Join All Story
+StorySection:AddToggle("AutoJoinAllStoryToggle", {
+    Title = "Auto Join All Story",
+    Default = autoJoinAllStoryEnabled,
+    Callback = function(Value)
+        autoJoinAllStoryEnabled = Value
+        
+        if autoJoinAllStoryEnabled then
+            -- Tắt Auto Join Map nếu đang bật
+            if autoJoinMapEnabled then
+                autoJoinMapEnabled = false
+                ConfigSystem.CurrentConfig.AutoJoinMap = false
+                ConfigSystem.SaveConfig()
+                print("Đã tắt Auto Join Map vì Auto Join All Story đã được bật")
+                
+                if StorySection._components["AutoJoinMapToggle"] then
+                    StorySection._components["AutoJoinMapToggle"]:Set(false)
+                end
+            end
+        
+            print("Auto Join All Story đã được bật, sẽ tự động tìm và tham gia các map chưa hoàn thành")
+            
+            -- Reset chỉ số để bắt đầu từ đầu
+            currentMapIndex = 1
+            currentChapterIndex = 1
+        
+            -- Tạo vòng lặp Auto Join All Story
+            if autoJoinAllStoryLoop then
+                autoJoinAllStoryLoop:Disconnect()
+                autoJoinAllStoryLoop = nil
+            end
+            
+            autoJoinAllStoryLoop = spawn(function()
+                while autoJoinAllStoryEnabled and wait(10) do -- Kiểm tra mỗi 10 giây
+                    -- Chỉ thực hiện khi không ở trong map
+                    if not isPlayerInMap() then
+                        print("Đợi " .. storyTimeDelay .. " giây trước khi tìm map tiếp theo")
+                        wait(storyTimeDelay)
+                        
+                        -- Kiểm tra lại sau khi delay
+                        if autoJoinAllStoryEnabled and not isPlayerInMap() then
+                            local success = joinNextStory()
+                            if not success then
+                                print("Không thể tìm thấy map tiếp theo hoặc đã hoàn thành tất cả map")
+                                wait(30) -- Đợi lâu hơn nếu không tìm thấy map
+                            end
+                        end
+                    else
+                        -- Người chơi đang ở trong map, đợi đến khi hoàn thành
+                        print("Đang ở trong map, đợi đến khi hoàn thành để tìm map tiếp theo")
+                        -- Đợi cho đến khi người chơi rời khỏi map hoặc Auto Join All Story bị tắt
+                    end
+                end
+            end)
+        else
+            print("Auto Join All Story đã được tắt")
+            
+            -- Hủy vòng lặp nếu có
+            if autoJoinAllStoryLoop then
+                autoJoinAllStoryLoop:Disconnect()
+                autoJoinAllStoryLoop = nil
+            end
+        end
     end
 })
 
@@ -2985,7 +2984,7 @@ InGameSection:AddToggle("AutoVoteToggle", {
 })
 
 -- Hàm để scan unit trong UnitsFolder
-local function scanUnits()
+function scanUnits()
     -- Lấy player
     local Players = game:GetService("Players")
     local player = Players.LocalPlayer
@@ -4465,7 +4464,7 @@ local autoRollStatsEnabled = ConfigSystem.CurrentConfig.AutoRollStats or false
 local autoRollStatsLoop = nil
 
 -- Hàm để quét và lấy danh sách units từ Collection
-local function scanAvailableUnits()
+function scanAvailableUnits()
     local success, result = pcall(function()
         local player = game:GetService("Players").LocalPlayer
         local playerName = player.Name
@@ -5061,7 +5060,7 @@ local autoTraitRerollLoop = nil
 local unitCollectionCache = {}
 
 -- Hàm để quét danh sách unit từ Collection
-local function scanUnitCollection()
+function scanUnitCollection()
     unitCollectionCache = {}
     local displayUnits = {}
 
@@ -5650,7 +5649,7 @@ local function checkRangerCrystalAmount()
 end
 
 -- Hàm để quét unit hợp lệ cho evolve
-local function scanEligibleUnits()
+function scanEligibleUnits()
     _G.eligibleUnits = {}
 
     local player = game:GetService("Players").LocalPlayer
@@ -5821,3 +5820,4 @@ spawn(function()
         _G.crystalInfoLabel:SetDesc("Số lượng: " .. amount .. "\nCó thể evolve: " .. maxEvolvable .. " unit")
     end
 end)
+
