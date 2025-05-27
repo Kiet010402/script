@@ -653,9 +653,6 @@ local rangerFriendOnly = ConfigSystem.CurrentConfig.RangerFriendOnly or false
 local autoJoinRangerEnabled = ConfigSystem.CurrentConfig.AutoJoinRanger or false
 local autoJoinRangerLoop = nil
 
--- Biến lưu trạng thái Boss Event
-local autoBossEventEnabled = ConfigSystem.CurrentConfig.AutoBossEvent or false
-local autoBossEventLoop = nil
 
 -- Biến lưu trạng thái Challenge
 local autoChallengeEnabled = ConfigSystem.CurrentConfig.AutoChallenge or false
@@ -689,7 +686,6 @@ local unitSlots = {}
 -- Biến lưu trạng thái Time Delay
 local storyTimeDelay = ConfigSystem.CurrentConfig.StoryTimeDelay or 5
 local rangerTimeDelay = ConfigSystem.CurrentConfig.RangerTimeDelay or 5
-local bossEventTimeDelay = ConfigSystem.CurrentConfig.BossEventTimeDelay or 5
 
 -- Biến lưu trạng thái AFK
 local autoJoinAFKEnabled = ConfigSystem.CurrentConfig.AutoJoinAFK or false
@@ -2825,6 +2821,38 @@ InGameSection:AddToggle("AutoPlayToggle", {
         else
             print("Trạng thái Auto Play đã phù hợp (" .. (Value and "bật" or "tắt") .. ")")
         end
+        
+        -- Thêm vòng lặp để đảm bảo Auto Play luôn được bật
+        if Value then
+            -- Hủy vòng lặp cũ nếu có
+            if _G.autoPlayCheckLoop then
+                _G.autoPlayCheckLoop:Disconnect()
+                _G.autoPlayCheckLoop = nil
+            end
+            
+            -- Tạo vòng lặp mới kiểm tra liên tục
+            _G.autoPlayCheckLoop = spawn(function()
+                while autoPlayEnabled and wait(3) do -- Kiểm tra mỗi 3 giây
+                    -- Chỉ kiểm tra khi đang ở trong map
+                    if isPlayerInMap() then
+                        local currentState = checkActualAutoPlayState()
+                        if not currentState and autoPlayEnabled then
+                            print("Phát hiện Auto Play bị tắt, đang bật lại...")
+                            toggleAutoPlay()
+                            wait(0.5) -- Đợi để đảm bảo lệnh được xử lý
+                        end
+                    end
+                end
+            end)
+            print("Đã kích hoạt vòng lặp bảo vệ Auto Play")
+        else
+            -- Hủy vòng lặp nếu tắt Auto Play
+            if _G.autoPlayCheckLoop then
+                _G.autoPlayCheckLoop:Disconnect()
+                _G.autoPlayCheckLoop = nil
+                print("Đã hủy vòng lặp bảo vệ Auto Play")
+            end
+        end
     end
 })
 
@@ -3140,47 +3168,7 @@ for i = 1, 6 do
         end
     })
 end
---[[
--- Thêm nút Debug Unit Slots
-UnitsUpdateSection:AddButton({
-    Title = "Debug Unit Slots",
-    Callback = function()
-        local player = game:GetService("Players").LocalPlayer
-        if not player then return end
 
-        local unitsFolder = player:FindFirstChild("UnitsFolder")
-        if not unitsFolder then
-            print("Không tìm thấy UnitsFolder (cần vào map trước)")
-            return
-        end
-
-        print("===== DEBUG UNIT SLOTS =====")
-        local children = unitsFolder:GetChildren()
-        for i, unit in ipairs(children) do
-            if i <= 6 then
-                local slotInfo = "Game Slot "..i..": "
-                if unit:FindFirstChild("Name") then
-                    slotInfo = slotInfo .. unit.Name.Value
-                else
-                    slotInfo = slotInfo .. unit.Name
-                end
-                print(slotInfo)
-            end
-        end
-
-        print("===== MAPPED UNIT SLOTS =====")
-        for i, unit in pairs(unitSlots) do
-            local slotInfo = "UI Slot "..i.." → Game Unit: "
-            if unit:FindFirstChild("Name") then
-                slotInfo = slotInfo .. unit.Name.Value
-            else
-                slotInfo = slotInfo .. unit.Name
-            end
-            print(slotInfo)
-        end
-    end
-})
---]]
 -- Toggle Auto Update
 UnitsUpdateSection:AddToggle("AutoUpdateToggle", {
     Title = "Auto Update",
