@@ -447,7 +447,7 @@ ConfigSystem.DefaultConfig = {
     ChallengeTimeDelay = 5,
 
     -- Cài đặt In-Game
-    AutoPlay = false,
+    AutoPlay = true,
     AutoRetry = false,
     AutoNext = false,
     AutoVote = false,
