@@ -5810,3 +5810,123 @@ spawn(function()
     end
 end)
 
+-- Thêm section Boss Event trong tab Play
+local BossEventSection = PlayTab:AddSection("Boss Event")
+
+-- Tạo table toàn cục để lưu trữ các biến Boss Event
+if not _G.BossEventVars then
+    _G.BossEventVars = {
+        autoBossEventEnabled = ConfigSystem.CurrentConfig.AutoBossEvent or false,
+        autoBossEventLoop = nil,
+        bossEventTimeDelay = ConfigSystem.CurrentConfig.BossEventTimeDelay or 5,
+        bossEventTimeDelayInput = nil
+    }
+end
+
+-- Hàm để tham gia Boss Event
+local function joinBossEvent()
+    -- Kiểm tra xem người chơi đã ở trong map chưa
+    if isPlayerInMap() then
+        print("Đã phát hiện người chơi đang ở trong map, không thực hiện join Boss Event")
+        return false
+    end
+
+    local success, err = pcall(function()
+        local args = {
+            "Boss-Event"
+        }
+        game:GetService("ReplicatedStorage"):WaitForChild("Remote"):WaitForChild("Server"):WaitForChild("PlayRoom"):WaitForChild("Event"):FireServer(unpack(args))
+        print("Đã tham gia Boss Event")
+    end)
+
+    if not success then
+        warn("Lỗi khi tham gia Boss Event: " .. tostring(err))
+        return false
+    end
+
+    return true
+end
+
+-- Input cho Boss Event Time Delay
+_G.BossEventVars.bossEventTimeDelayInput = BossEventSection:AddInput("BossEventTimeDelayInput", {
+    Title = "Delay (1-30s)",
+    Placeholder = "Nhập delay",
+    Default = tostring(_G.BossEventVars.bossEventTimeDelay),
+    Numeric = true,
+    Finished = true,
+    Callback = function(Value)
+        local numValue = tonumber(Value)
+        if numValue and numValue >= 1 and numValue <= 30 then
+            _G.BossEventVars.bossEventTimeDelay = numValue
+            ConfigSystem.CurrentConfig.BossEventTimeDelay = numValue
+            ConfigSystem.SaveConfig()
+            print("Đã đặt Boss Event Time Delay: " .. numValue .. " giây")
+        else
+            print("Giá trị delay không hợp lệ (1-30)")
+            if _G.BossEventVars.bossEventTimeDelayInput and _G.BossEventVars.bossEventTimeDelayInput.Set then
+                _G.BossEventVars.bossEventTimeDelayInput:Set(tostring(_G.BossEventVars.bossEventTimeDelay))
+            end
+        end
+    end
+})
+
+-- Toggle Auto Boss Event
+BossEventSection:AddToggle("AutoBossEventToggle", {
+    Title = "Auto Join Boss Event",
+    Default = ConfigSystem.CurrentConfig.AutoBossEvent or false,
+    Callback = function(Value)
+        _G.BossEventVars.autoBossEventEnabled = Value
+        ConfigSystem.CurrentConfig.AutoBossEvent = Value
+        ConfigSystem.SaveConfig()
+
+        if Value then
+            -- Kiểm tra ngay lập tức nếu người chơi đang ở trong map
+            if isPlayerInMap() then
+                print("Đang ở trong map, Auto Boss Event sẽ hoạt động khi bạn rời khỏi map")
+            else
+                print("Auto Boss Event đã được bật, sẽ bắt đầu sau " .. _G.BossEventVars.bossEventTimeDelay .. " giây")
+
+                -- Thực hiện join Boss Event sau thời gian delay
+                spawn(function()
+                    wait(_G.BossEventVars.bossEventTimeDelay)
+                    if _G.BossEventVars.autoBossEventEnabled and not isPlayerInMap() then
+                        joinBossEvent()
+                    end
+                end)
+            end
+
+            -- Tạo vòng lặp Auto Join Boss Event
+            if _G.BossEventVars.autoBossEventLoop then
+                _G.BossEventVars.autoBossEventLoop:Disconnect()
+                _G.BossEventVars.autoBossEventLoop = nil
+            end
+
+            _G.BossEventVars.autoBossEventLoop = spawn(function()
+                while _G.BossEventVars.autoBossEventEnabled and wait(10) do -- Thử join Boss Event mỗi 10 giây
+                    if not isPlayerInMap() then
+                        -- Áp dụng time delay
+                        print("Đợi " .. _G.BossEventVars.bossEventTimeDelay .. " giây trước khi join Boss Event")
+                        wait(_G.BossEventVars.bossEventTimeDelay)
+
+                        -- Kiểm tra lại sau khi delay
+                        if _G.BossEventVars.autoBossEventEnabled and not isPlayerInMap() then
+                            joinBossEvent()
+                        end
+                    else
+                        -- Người chơi đang ở trong map, không cần join
+                        print("Đang ở trong map, đợi đến khi người chơi rời khỏi map")
+                    end
+                end
+            end)
+        else
+            print("Auto Boss Event đã được tắt")
+            
+            -- Hủy vòng lặp nếu có
+            if _G.BossEventVars.autoBossEventLoop then
+                _G.BossEventVars.autoBossEventLoop:Disconnect()
+                _G.BossEventVars.autoBossEventLoop = nil
+            end
+        end
+    end
+})
+
