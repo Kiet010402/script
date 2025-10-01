@@ -17,8 +17,8 @@ end
 --// Gửi Embed cho đẹp
 local function sendToWebhook(embed)
     local data = {
-        username = "🌱 Shop Stock Bot 🌱",
-        avatar_url = "https://i.imgur.com/h3H1vYb.png", -- icon cây cho đẹp
+        username = "Shop Stock Bot",
+        avatar_url = "", -- icon cây cho đẹp
         embeds = {embed}
     }
 
@@ -54,3 +54,4 @@ Timer:GetPropertyChangedSignal("Text"):Connect(function()
         sendToWebhook(embed)
     end
 end)
+
