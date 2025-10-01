@@ -1,4 +1,3 @@
---// CONFIG
 local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Plots = workspace:WaitForChild("Plots")
@@ -28,19 +27,30 @@ local function sendToWebhook()
     local success, err = pcall(function()
         local Seeds = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Seeds")
         local description = ""
+        local hasStock = false
         
         for _, seed in pairs(Seeds:GetChildren()) do
             local price = seed:GetAttribute("Price") or 0
             local stock = seed:GetAttribute("Stock") or 0
             local plant = seed:GetAttribute("Plant") or seed.Name
             
-            description = description .. string.format(
-                "**%s**\n🌱 Plant: `%s`\n💰 Price: `%s`\n📦 Stock: `%s`\n\n", 
-                seed.Name, 
-                plant,
-                formatNumber(price), 
-                tostring(stock)
-            )
+            -- Chỉ hiển thị nếu stock > 0
+            if stock > 0 then
+                hasStock = true
+                description = description .. string.format(
+                    "**%s**\nPlant: `%s`\nPrice: `%s$`\nStock: `+%s`\n\n", 
+                    seed.Name, 
+                    plant,
+                    formatNumber(price), 
+                    tostring(stock)
+                )
+            end
+        end
+        
+        -- Nếu không có seed nào có stock thì không gửi webhook
+        if not hasStock then
+            print("⚠️ Không có seed nào có stock > 0, bỏ qua việc gửi webhook")
+            return
         end
         
         local embed = {
@@ -128,7 +138,3 @@ end)
 
 print("🚀 Script đã khởi động! Đang theo dõi timer...")
 print("📡 Request function:", requestFunc and "✅ Có sẵn" or "❌ Không có")
-
--- Test gửi webhook ngay khi khởi động (bỏ comment để test)
--- task.wait(2)
--- sendToWebhook()
