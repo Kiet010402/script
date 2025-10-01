@@ -38,7 +38,7 @@ local function sendToWebhook()
             if stock > 0 then
                 hasStock = true
                 description = description .. string.format(
-                    "**%s**\nPlant: `%s`\nPrice: `%s$`\nStock: `+%s`\n\n", 
+                    "**%s**\n🌱Plant: `%s`\n💰Price: `%s$`\n📦Stock: `+%s`\n\n", 
                     seed.Name, 
                     plant,
                     formatNumber(price), 
@@ -138,5 +138,6 @@ end)
 
 print(" Script đã khởi động! Đang theo dõi timer...")
 print(" Request function:", requestFunc and " Có sẵn" or " Không có")
+
 
 
