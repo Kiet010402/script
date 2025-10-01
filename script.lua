@@ -7,7 +7,7 @@ local WebhookURL = "https://discord.com/api/webhooks/1358845419244879932/lLSX0Fj
 local requestFunc = request or http_request or syn.request
 
 if not requestFunc then
-    warn("❌ Executor của bạn không hỗ trợ HTTP requests!")
+    warn(" Executor của bạn không hỗ trợ HTTP requests!")
     return
 end
 
@@ -49,7 +49,7 @@ local function sendToWebhook()
         
         -- Nếu không có seed nào có stock thì không gửi webhook
         if not hasStock then
-            print("⚠️ Không có seed nào có stock > 0, bỏ qua việc gửi webhook")
+            print(" Không có seed nào có stock > 0, bỏ qua việc gửi webhook")
             return
         end
         
@@ -79,14 +79,14 @@ local function sendToWebhook()
         })
         
         if response.StatusCode == 200 or response.StatusCode == 204 then
-            print("✅ Webhook sent successfully!")
+            print(" Webhook sent successfully!")
         else
-            warn("⚠️ Webhook response:", response.StatusCode, response.Body)
+            warn(" Webhook response:", response.StatusCode, response.Body)
         end
     end)
     
     if not success then
-        warn("❌ Lỗi khi gửi webhook:", err)
+        warn(" Lỗi khi gửi webhook:", err)
     end
 end
 
@@ -105,13 +105,13 @@ local function setupTimer(plot)
         local timer = timerFolder:WaitForChild("Timer", 5)
         if not timer or not timer:IsA("TextLabel") then return end
         
-        print("✅ Đã gắn timer cho plot:", plot.Name)
+        print(" đã tìm thấy time :", plot.Name)
         
         -- Gắn sự kiện khi text đổi
         timer:GetPropertyChangedSignal("Text"):Connect(function()
             if timer.Text == "00:00" then
                 print("⏰ Timer đã về 00:00, đang gửi webhook...")
-                task.wait(1)
+                task.wait(2)
                 sendToWebhook()
             end
         end)
@@ -138,3 +138,4 @@ end)
 
 print("🚀 Script đã khởi động! Đang theo dõi timer...")
 print("📡 Request function:", requestFunc and "✅ Có sẵn" or "❌ Không có")
+
