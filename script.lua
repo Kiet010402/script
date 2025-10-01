@@ -12,15 +12,15 @@ if not requestFunc then
     return
 end
 
---// Format số (1000 -> 1k, 1000000 -> 1m)
+--// Format số với dấu phẩy (1000 -> 1,000)
 local function formatNumber(n)
-    if n >= 1e6 then
-        return string.format("%.1fm", n/1e6)
-    elseif n >= 1e3 then
-        return string.format("%.1fk", n/1e3)
-    else
-        return tostring(n)
+    local formatted = tostring(n)
+    local k
+    while true do
+        formatted, k = string.gsub(formatted, "^(-?%d+)(%d%d%d)", '%1,%2')
+        if k == 0 then break end
     end
+    return formatted
 end
 
 --// Hàm gửi webhook
