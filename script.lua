@@ -1,59 +1,84 @@
 local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- Webhook của bạn (thay URL ở đây)
-local WEBHOOK_URL = "https://discord.com/api/webhooks/1421839599407333438/GNFpTJi0tFwx-76k6o6gYDVZZEd4ojtEDehQfBLc62F8HPSIGR2ShqXE_nJnnzBTSSl8"
+-- Thay URL webhook của bạn vào đây
+local WEBHOOK_URL = "https://discord.com/api/webhooks/1353364994905079828/dUnPYd2A2GzaagDKIXiZLPd5LZMi9HCHTrtNMAkIKbyHdGnwn26leSxfjlVJkvQNWEkp"
 
--- Folder chứa seeds
-local seedsFolder = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Seeds")
-
--- Hàm lấy dữ liệu seeds
-local function collectSeedsData()
-	local data = {}
-	
-	for _, seed in ipairs(seedsFolder:GetChildren()) do
-		if seed:IsA("Model") or seed:IsA("Folder") or seed:IsA("Part") then
-			local seedInfo = {}
-			for _, attrName in ipairs(seed:GetAttributes()) do
-				seedInfo[attrName] = seed:GetAttribute(attrName)
-			end
-			data[seed.Name] = seedInfo
-		end
-	end
-	
-	return data
+-- Hàm lấy thông tin seeds
+local function getSeedsData()
+    local seedsFolder = ReplicatedStorage:FindFirstChild("Assets")
+    if seedsFolder then
+        seedsFolder = seedsFolder:FindFirstChild("Seeds")
+    end
+    
+    if not seedsFolder then
+        warn("Không tìm thấy folder Seeds")
+        return nil
+    end
+    
+    local seedsData = {}
+    
+    for _, seed in ipairs(seedsFolder:GetChildren()) do
+        local seedInfo = {
+            Name = seed.Name,
+            Price = seed:GetAttribute("Price") or 0,
+            Stock = seed:GetAttribute("Stock") or 0,
+            Plant = seed:GetAttribute("Plant") or "Unknown"
+        }
+        table.insert(seedsData, seedInfo)
+    end
+    
+    return seedsData
 end
 
--- Hàm gửi webhook
-local function sendWebhook()
-	local seedsData = collectSeedsData()
-	
-	local payload = {
-		content = "**Seeds Data Update**",
-		embeds = {{
-			title = "Seeds Info",
-			description = "Tổng hợp toàn bộ Seeds trong game",
-			color = 3447003,
-			fields = {}
-		}}
-	}
-	
-	-- Thêm từng seed vào embed
-	for seedName, info in pairs(seedsData) do
-		table.insert(payload.embeds[1].fields, {
-			name = seedName,
-			value = string.format("Price: %s\nStock: %s", tostring(info.Price), tostring(info.Stock)),
-			inline = false
-		})
-	end
-	
-	-- Gửi request
-	local jsonData = HttpService:JSONEncode(payload)
-	HttpService:PostAsync(WEBHOOK_URL, jsonData, Enum.HttpContentType.ApplicationJson)
+-- Hàm gửi data về webhook
+local function sendToWebhook(data)
+    if not data then return end
+    
+    local embedFields = {}
+    
+    for _, seed in ipairs(data) do
+        table.insert(embedFields, {
+            name = seed.Name,
+            value = string.format("🌱 Plant: %s\n💰 Price: %d\n📦 Stock: %d", 
+                seed.Plant, seed.Price, seed.Stock),
+            inline = true
+        })
+    end
+    
+    local payload = {
+        embeds = {{
+            title = "🌾 Seeds Information",
+            description = "Thông tin chi tiết về tất cả seeds",
+            color = 3066993,
+            fields = embedFields,
+            timestamp = os.date("!%Y-%m-%dT%H:%M:%S")
+        }}
+    }
+    
+    local jsonPayload = HttpService:JSONEncode(payload)
+    
+    local success, response = pcall(function()
+        return request({
+            Url = WEBHOOK_URL,
+            Method = "POST",
+            Headers = {
+                ["Content-Type"] = "application/json"
+            },
+            Body = jsonPayload
+        })
+    end)
+    
+    if success then
+        print("✅ Đã gửi data về webhook thành công!")
+    else
+        warn("❌ Lỗi khi gửi webhook:", response)
+    end
 end
 
--- Lặp lại mỗi 10 giây
+-- Loop gửi mỗi 10 giây
 while true do
-	sendWebhook()
-	wait(10)
+    local seedsData = getSeedsData()
+    sendToWebhook(seedsData)
+    wait(10)
 end
