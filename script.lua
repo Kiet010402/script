@@ -54,7 +54,7 @@ local function sendToWebhook()
         end
         
         local embed = {
-            title = "🌾 Shop Stock Update 🌾",
+            title = "🌾 Shop Plant Stock Update 🌾",
             description = description,
             color = 5763719,
             footer = { text = "Cập nhật tự động từ game" },
@@ -62,7 +62,7 @@ local function sendToWebhook()
         }
         
         local data = {
-            username = "🌱 Shop Stock Bot 🌱",
+            username = "🌱 Shop Plant Stock Bot 🌱",
             embeds = {embed}
         }
         
@@ -110,7 +110,7 @@ local function setupTimer(plot)
         -- Gắn sự kiện khi text đổi
         timer:GetPropertyChangedSignal("Text"):Connect(function()
             if timer.Text == "00:00" then
-                print("⏰ Timer đã về 00:00, đang gửi webhook...")
+                print("Timer đã về 00:00, đang gửi webhook...")
                 task.wait(2)
                 sendToWebhook()
             end
@@ -118,7 +118,7 @@ local function setupTimer(plot)
     end)
     
     if not success then
-        warn("⚠️ Không thể setup timer cho plot:", plot.Name, "-", err)
+        warn(" Không thể setup timer cho plot:", plot.Name, "-", err)
     end
 end
 
@@ -136,6 +136,7 @@ Plots.ChildAdded:Connect(function(plot)
     end)
 end)
 
-print("🚀 Script đã khởi động! Đang theo dõi timer...")
-print("📡 Request function:", requestFunc and "✅ Có sẵn" or "❌ Không có")
+print(" Script đã khởi động! Đang theo dõi timer...")
+print(" Request function:", requestFunc and " Có sẵn" or " Không có")
+
 
