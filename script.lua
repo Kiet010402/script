@@ -1,48 +1,59 @@
 local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local remote = Instance.new("RemoteEvent")
-remote.Name = "SendStockWebhook"
-remote.Parent = ReplicatedStorage
 
-local WebhookURL = "https://discord.com/api/webhooks/1353364994905079828/dUnPYd2A2GzaagDKIXiZLPd5LZMi9HCHTrtNMAkIKbyHdGnwn26leSxfjlVJkvQNWEkp"
+-- Webhook của bạn (thay URL ở đây)
+local WEBHOOK_URL = "https://discord.com/api/webhooks/1421839599407333438/GNFpTJi0tFwx-76k6o6gYDVZZEd4ojtEDehQfBLc62F8HPSIGR2ShqXE_nJnnzBTSSl8"
 
-local function formatNumber(n)
-    if n >= 1e6 then
-        return string.format("%dm", n/1e6)
-    elseif n >= 1e3 then
-        return string.format("%dk", n/1e3)
-    else
-        return tostring(n)
-    end
+-- Folder chứa seeds
+local seedsFolder = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("Seeds")
+
+-- Hàm lấy dữ liệu seeds
+local function collectSeedsData()
+	local data = {}
+	
+	for _, seed in ipairs(seedsFolder:GetChildren()) do
+		if seed:IsA("Model") or seed:IsA("Folder") or seed:IsA("Part") then
+			local seedInfo = {}
+			for _, attrName in ipairs(seed:GetAttributes()) do
+				seedInfo[attrName] = seed:GetAttribute(attrName)
+			end
+			data[seed.Name] = seedInfo
+		end
+	end
+	
+	return data
 end
 
-local function sendToWebhook()
-    local Seeds = ReplicatedStorage.Assets.Seeds
-    local description = ""
-
-    for _, seed in pairs(Seeds:GetChildren()) do
-        local price = seed:FindFirstChild("Price") and seed.Price.Value or 0
-        local stock = seed:FindFirstChild("Stock") and seed.Stock.Value or "?"
-        description ..= string.format("**%s**\nPrice: `%s`\nStock: `%s`\n\n", seed.Name, formatNumber(price), stock)
-    end
-
-    local embed = {
-        title = "🌾 Shop Stock Update 🌾",
-        description = description,
-        color = 0x57F287,
-        footer = { text = "Cập nhật tự động từ game" },
-        timestamp = DateTime.now():ToIsoDate()
-    }
-
-    local data = {
-        username = "🌱 Shop Stock Bot 🌱",
-        embeds = {embed}
-    }
-
-    local jsonData = HttpService:JSONEncode(data)
-    HttpService:PostAsync(WebhookURL, jsonData, Enum.HttpContentType.ApplicationJson)
+-- Hàm gửi webhook
+local function sendWebhook()
+	local seedsData = collectSeedsData()
+	
+	local payload = {
+		content = "**Seeds Data Update**",
+		embeds = {{
+			title = "Seeds Info",
+			description = "Tổng hợp toàn bộ Seeds trong game",
+			color = 3447003,
+			fields = {}
+		}}
+	}
+	
+	-- Thêm từng seed vào embed
+	for seedName, info in pairs(seedsData) do
+		table.insert(payload.embeds[1].fields, {
+			name = seedName,
+			value = string.format("Price: %s\nStock: %s", tostring(info.Price), tostring(info.Stock)),
+			inline = false
+		})
+	end
+	
+	-- Gửi request
+	local jsonData = HttpService:JSONEncode(payload)
+	HttpService:PostAsync(WEBHOOK_URL, jsonData, Enum.HttpContentType.ApplicationJson)
 end
 
-remote.OnServerEvent:Connect(function()
-    sendToWebhook()
-end)
+-- Lặp lại mỗi 10 giây
+while true do
+	sendWebhook()
+	wait(10)
+end
