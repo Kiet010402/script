@@ -1,7 +1,7 @@
 local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Plots = workspace:WaitForChild("Plots")
-local WebhookURL = "https://discord.com/api/webhooks/1358845419244879932/lLSX0FjOYnWJ-NK9HK-t96YVZMpn35NozjcHWPx_0rPVA2gbvxHbVKZ4sMZaUw683oBP" -- thay link webhook vào
+local WebhookURL = "https://discord.com/api/webhooks/1422960759096475718/UwACHuy5dP5TouHVUvRkhBtKTFt2Ug7Jz7_fqRa5CPmSrkNJaIJlEhHCCQ8OGIQFX8rK" -- thay link webhook vào
 
 --// Tự động detect request function
 local requestFunc = request or http_request or syn.request
@@ -138,6 +138,7 @@ end)
 
 print(" Script đã khởi động! Đang theo dõi timer...")
 print(" Request function:", requestFunc and " Có sẵn" or " Không có")
+
 
 
 
