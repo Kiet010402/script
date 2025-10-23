@@ -1,10 +1,8 @@
 -- Load UI Library với error handling
 local success, err = pcall(function()
     Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
-    SaveManager = loadstring(game:HttpGet(
-    "https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
-    InterfaceManager = loadstring(game:HttpGet(
-    "https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+    SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
+    InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
 end)
 
 if not success then
@@ -49,7 +47,7 @@ ConfigSystem.LoadConfig = function()
         end
         return nil
     end)
-
+    
     if success and content then
         local data = game:GetService("HttpService"):JSONDecode(content)
         ConfigSystem.CurrentConfig = data
@@ -71,6 +69,21 @@ local webhookUrl = ConfigSystem.CurrentConfig.WebhookUrl or ""
 -- Biến lưu trạng thái Auto Hide UI
 local autoHideUIEnabled = ConfigSystem.CurrentConfig.AutoHideUIEnabled or false
 
+-- Hàm tự động ẩn UI sau 3 giây khi bật
+local function autoHideUI()
+    if not Window then return end
+    task.spawn(function()
+        print("Auto Hide UI: Sẽ tự động ẩn sau 3 giây...")
+        task.wait(3)
+        if Window.Minimize then
+            Window:Minimize()
+            print("UI đã được ẩn!")
+        elseif Window.Visible ~= nil then
+            Window.Visible = false
+            print("UI đã bị ẩn thông qua Visible!")
+        end
+    end)
+end
 
 -- Lấy tên người chơi
 local playerName = game:GetService("Players").LocalPlayer.Name
@@ -88,8 +101,6 @@ local Window = Fluent:CreateWindow({
 
 -- Hệ thống Tạo Tab
 
--- Tạo Tab Info để ở đầu
-local InfoTab = Window:AddTab({ Title = "Info", Icon = "rbxassetid://13311798888" })
 -- Tạo Tab Webhook
 local WebhookTab = Window:AddTab({ Title = "Webhook", Icon = "rbxassetid://13311802307" })
 -- Tạo Tab Settings
@@ -196,56 +207,22 @@ if pg:FindFirstChild("ResultsUI") then
     watchResultsUI()
 end
 
--- Hàm tự động ẩn UI sau 3 giây khi bật
-local function autoHideUI()
-    if not Window then return end
-    task.spawn(function()
-        print("Auto Hide UI: Sẽ tự động ẩn sau 3 giây...")
-        task.wait(3)
-        if Window.Minimize then
-            Window:Minimize()
-            print("UI đã được ẩn!")
-        elseif Window.Visible ~= nil then
-            Window.Visible = false
-            print("UI đã bị ẩn thông qua Visible!")
+-- Thêm Toggle Auto Hide UI vào Settings tab
+SettingsSection:AddToggle("AutoHideUIToggle", {
+    Title = "Auto Hide UI",
+    Description = "Tự động ẩn UI sau 3 giây khi bật",
+    Default = autoHideUIEnabled,
+    Callback = function(enabled)
+        autoHideUIEnabled = enabled
+        ConfigSystem.CurrentConfig.AutoHideUIEnabled = autoHideUIEnabled
+        ConfigSystem.SaveConfig()
+        if autoHideUIEnabled then
+            autoHideUI()
+        else
+            print("Auto Hide UI đã tắt")
         end
-    end)
-end
-
--- Section Stats trong tab Info
-local InfoSection = InfoTab:AddSection("Stats")
-
--- Hiển thị số lượng Pumpkin liên tục
-local pumpkinLabel = InfoSection:AddParagraph({
-    Title = "Pumpkins:",
-    Content = "Đang tải..."
-})
-
-local function updatePumpkinDisplay()
-    local player = game:GetService("Players").LocalPlayer
-    local stats = player:FindFirstChild("_stats")
-    if not stats then return end
-    local pumpkinObj = stats:FindFirstChild("_resourcePumkinToken")
-    if not pumpkinObj then return end
-    pumpkinLabel:SetDesc(tostring(pumpkinObj.Value))
-    if not pumpkinObj:IsA("ValueBase") then return end
-    pumpkinObj:GetPropertyChangedSignal("Value"):Connect(function()
-        pumpkinLabel:SetDesc(tostring(pumpkinObj.Value))
-    end)
-end
-
--- Khởi tạo khi loader xong và khi vào tab Info
-pcall(updatePumpkinDisplay)
-InfoTab:OnOpened(updatePumpkinDisplay)
-
--- Luôn chọn Info tab khi load UI
-pcall(function()
-    if InfoTab and InfoTab.Select then
-        InfoTab:Select()
-    elseif Window and Window.SelectTab then
-        Window:SelectTab(1)
     end
-end)
+})
 
 -- Integration with SaveManager
 SaveManager:SetLibrary(Fluent)
@@ -266,23 +243,6 @@ SettingsTab:AddParagraph({
     Content = "Nhấn LeftControl để ẩn/hiện giao diện"
 })
 
--- Thêm Toggle Auto Hide UI vào Settings tab
-SettingsSection:AddToggle("AutoHideUIToggle", {
-    Title = "Auto Hide UI",
-    Description = "Tự động ẩn UI sau 3 giây khi bật",
-    Default = autoHideUIEnabled,
-    Callback = function(enabled)
-        autoHideUIEnabled = enabled
-        ConfigSystem.CurrentConfig.AutoHideUIEnabled = autoHideUIEnabled
-        ConfigSystem.SaveConfig()
-        if autoHideUIEnabled then
-            autoHideUI()
-        else
-            print("Auto Hide UI đã tắt")
-        end
-    end
-})
-
 -- Auto Save Config
 local function AutoSaveConfig()
     spawn(function()
@@ -299,7 +259,7 @@ AutoSaveConfig()
 
 -- Thêm event listener để lưu ngay khi thay đổi giá trị
 local function setupSaveEvents()
-    for _, tab in pairs({ MainTab, SettingsTab }) do
+    for _, tab in pairs({MainTab, SettingsTab}) do
         if tab and tab._components then
             for _, element in pairs(tab._components) do
                 if element and element.OnChanged then
@@ -320,12 +280,12 @@ setupSaveEvents()
 -- Tạo logo để mở lại UI khi đã minimize
 task.spawn(function()
     local success, errorMsg = pcall(function()
-        if not getgenv().LoadedMobileUI == true then
+        if not getgenv().LoadedMobileUI == true then 
             getgenv().LoadedMobileUI = true
             local OpenUI = Instance.new("ScreenGui")
             local ImageButton = Instance.new("ImageButton")
             local UICorner = Instance.new("UICorner")
-
+            
             -- Kiểm tra môi trường
             if syn and syn.protect_gui then
                 syn.protect_gui(OpenUI)
@@ -335,29 +295,29 @@ task.spawn(function()
             else
                 OpenUI.Parent = game:GetService("CoreGui")
             end
-
+            
             OpenUI.Name = "OpenUI"
             OpenUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-
+            
             ImageButton.Parent = OpenUI
-            ImageButton.BackgroundColor3 = Color3.fromRGB(105, 105, 105)
+            ImageButton.BackgroundColor3 = Color3.fromRGB(105,105,105)
             ImageButton.BackgroundTransparency = 0.8
-            ImageButton.Position = UDim2.new(0.9, 0, 0.1, 0)
-            ImageButton.Size = UDim2.new(0, 50, 0, 50)
+            ImageButton.Position = UDim2.new(0.9,0,0.1,0)
+            ImageButton.Size = UDim2.new(0,50,0,50)
             ImageButton.Image = "rbxassetid://13099788281" -- Logo HT Hub
             ImageButton.Draggable = true
             ImageButton.Transparency = 0.2
-
-            UICorner.CornerRadius = UDim.new(0, 200)
+            
+            UICorner.CornerRadius = UDim.new(0,200)
             UICorner.Parent = ImageButton
-
+            
             -- Khi click vào logo sẽ mở lại UI
             ImageButton.MouseButton1Click:Connect(function()
-                game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.LeftControl, false, game)
+                game:GetService("VirtualInputManager"):SendKeyEvent(true,Enum.KeyCode.LeftControl,false,game)
             end)
         end
     end)
-
+    
     if not success then
         warn("Lỗi khi tạo nút Logo UI: " .. tostring(errorMsg))
     end
