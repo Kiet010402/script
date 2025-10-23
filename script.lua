@@ -69,22 +69,6 @@ local webhookUrl = ConfigSystem.CurrentConfig.WebhookUrl or ""
 -- Biến lưu trạng thái Auto Hide UI
 local autoHideUIEnabled = ConfigSystem.CurrentConfig.AutoHideUIEnabled or false
 
--- Hàm tự động ẩn UI sau 3 giây khi bật
-local function autoHideUI()
-    if not Window then return end
-    task.spawn(function()
-        print("Auto Hide UI: Sẽ tự động ẩn sau 3 giây...")
-        task.wait(3)
-        if Window.Minimize then
-            Window:Minimize()
-            print("UI đã được ẩn!")
-        elseif Window.Visible ~= nil then
-            Window.Visible = false
-            print("UI đã bị ẩn thông qua Visible!")
-        end
-    end)
-end
-
 -- Lấy tên người chơi
 local playerName = game:GetService("Players").LocalPlayer.Name
 
@@ -205,6 +189,22 @@ pg.ChildAdded:Connect(function(child)
 end)
 if pg:FindFirstChild("ResultsUI") then
     watchResultsUI()
+end
+
+-- Hàm tự động ẩn UI sau 3 giây khi bật
+local function autoHideUI()
+    if not Window then return end
+    task.spawn(function()
+        print("Auto Hide UI: Sẽ tự động ẩn sau 3 giây...")
+        task.wait(3)
+        if Window.Minimize then
+            Window:Minimize()
+            print("UI đã được ẩn!")
+        elseif Window.Visible ~= nil then
+            Window.Visible = false
+            print("UI đã bị ẩn thông qua Visible!")
+        end
+    end)
 end
 
 -- Thêm Toggle Auto Hide UI vào Settings tab
