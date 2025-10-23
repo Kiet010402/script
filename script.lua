@@ -89,16 +89,12 @@ local Window = Fluent:CreateWindow({
 local WebhookTab = Window:AddTab({ Title = "Webhook", Icon = "rbxassetid://13311802307" })
 -- Tạo Tab Settings
 local SettingsTab = Window:AddTab({ Title = "Settings", Icon = "rbxassetid://13311798537" })
--- Tạo Tab Info
-local InfoTab = Window:AddTab({ Title = "Info", Icon = "rbxassetid://6074260337" })
 
 -- Tab Webhook
 -- Section Webhook Settings trong tab Webhook
 local WebhookSection = WebhookTab:AddSection("Webhook Settings")
 -- Section Script Settings trong tab Settings
 local SettingsSection = SettingsTab:AddSection("Script Settings")
--- Section Stats trong tab Info
-local InfoSection = InfoTab:AddSection("Stats")
 
 -- Thêm Input để nhập Webhook URL
 WebhookSection:AddInput("WebhookURLInput", {
@@ -194,32 +190,6 @@ end)
 if pg:FindFirstChild("ResultsUI") then
     watchResultsUI()
 end
-
--- Lấy giá trị ban đầu cho pumpkinsStatText
-local pumpkinsStatText = nil
-
-local function updatePumpkinStat()
-    local player = game:GetService("Players").LocalPlayer
-    local pumpkins = 0
-    pcall(function()
-        pumpkins = player._stats._resourcePumkinToken.Value or 0
-    end)
-    if pumpkinsStatText then
-        pumpkinsStatText:Set("Pumpkins: " .. tostring(pumpkins))
-    end
-end
-
-pumpkinsStatText = InfoSection:AddParagraph({
-    Title = "Pumpkins",
-    Content = "Pumpkins: loading..."
-})
-
-task.spawn(function()
-    while true do
-        updatePumpkinStat()
-        task.wait(1)
-    end
-end)
 
 -- Hàm tự động ẩn UI sau 3 giây khi bật
 local function autoHideUI()
