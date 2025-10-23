@@ -86,12 +86,12 @@ local Window = Fluent:CreateWindow({
 
 -- Hệ thống Tạo Tab
 
+-- Tạo Tab Info để ở đầu
+local InfoTab = Window:AddTab({ Title = "Info", Icon = "rbxassetid://13311798888" })
 -- Tạo Tab Webhook
 local WebhookTab = Window:AddTab({ Title = "Webhook", Icon = "rbxassetid://13311802307" })
 -- Tạo Tab Settings
 local SettingsTab = Window:AddTab({ Title = "Settings", Icon = "rbxassetid://13311798537" })
--- Tạo Tab Info để ở đầu
-local InfoTab = Window:AddTab({ Title = "Info", Icon = "rbxassetid://13311798888" })
 
 -- Tab Webhook
 -- Section Webhook Settings trong tab Webhook
@@ -236,6 +236,14 @@ end
 pcall(updatePumpkinDisplay)
 InfoTab:OnOpened(updatePumpkinDisplay)
 
+-- Luôn chọn Info tab khi load UI
+pcall(function()
+    if InfoTab and InfoTab.Select then
+        InfoTab:Select()
+    elseif Window and Window.SelectTab then
+        Window:SelectTab(1)
+    end
+end)
 
 -- Integration with SaveManager
 SaveManager:SetLibrary(Fluent)
