@@ -94,6 +94,8 @@ local SettingsTab = Window:AddTab({ Title = "Settings", Icon = "rbxassetid://133
 -- Tab Webhook
 -- Section Webhook Settings trong tab Webhook
 local WebhookSection = WebhookTab:AddSection("Webhook Settings")
+-- Section Script Settings trong tab Settings
+local SettingsSection = SettingsTab:AddSection("Script Settings")
 
 -- Thêm Input để nhập Webhook URL
 WebhookSection:AddInput("WebhookURLInput", {
@@ -222,9 +224,6 @@ SettingsSection:AddToggle("AutoHideUIToggle", {
         end
     end
 })
--- Tab Settings
--- Section Script Settings trong tab Settings
-local SettingsSection = SettingsTab:AddSection("Script Settings")
 
 -- Integration with SaveManager
 SaveManager:SetLibrary(Fluent)
