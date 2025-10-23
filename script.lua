@@ -1,8 +1,10 @@
 -- Load UI Library với error handling
 local success, err = pcall(function()
     Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
-    SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
-    InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+    SaveManager = loadstring(game:HttpGet(
+    "https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
+    InterfaceManager = loadstring(game:HttpGet(
+    "https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
 end)
 
 if not success then
@@ -47,7 +49,7 @@ ConfigSystem.LoadConfig = function()
         end
         return nil
     end)
-    
+
     if success and content then
         local data = game:GetService("HttpService"):JSONDecode(content)
         ConfigSystem.CurrentConfig = data
@@ -297,7 +299,7 @@ AutoSaveConfig()
 
 -- Thêm event listener để lưu ngay khi thay đổi giá trị
 local function setupSaveEvents()
-    for _, tab in pairs({MainTab, SettingsTab}) do
+    for _, tab in pairs({ MainTab, SettingsTab }) do
         if tab and tab._components then
             for _, element in pairs(tab._components) do
                 if element and element.OnChanged then
@@ -318,12 +320,12 @@ setupSaveEvents()
 -- Tạo logo để mở lại UI khi đã minimize
 task.spawn(function()
     local success, errorMsg = pcall(function()
-        if not getgenv().LoadedMobileUI == true then 
+        if not getgenv().LoadedMobileUI == true then
             getgenv().LoadedMobileUI = true
             local OpenUI = Instance.new("ScreenGui")
             local ImageButton = Instance.new("ImageButton")
             local UICorner = Instance.new("UICorner")
-            
+
             -- Kiểm tra môi trường
             if syn and syn.protect_gui then
                 syn.protect_gui(OpenUI)
@@ -333,29 +335,29 @@ task.spawn(function()
             else
                 OpenUI.Parent = game:GetService("CoreGui")
             end
-            
+
             OpenUI.Name = "OpenUI"
             OpenUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-            
+
             ImageButton.Parent = OpenUI
-            ImageButton.BackgroundColor3 = Color3.fromRGB(105,105,105)
+            ImageButton.BackgroundColor3 = Color3.fromRGB(105, 105, 105)
             ImageButton.BackgroundTransparency = 0.8
-            ImageButton.Position = UDim2.new(0.9,0,0.1,0)
-            ImageButton.Size = UDim2.new(0,50,0,50)
+            ImageButton.Position = UDim2.new(0.9, 0, 0.1, 0)
+            ImageButton.Size = UDim2.new(0, 50, 0, 50)
             ImageButton.Image = "rbxassetid://13099788281" -- Logo HT Hub
             ImageButton.Draggable = true
             ImageButton.Transparency = 0.2
-            
-            UICorner.CornerRadius = UDim.new(0,200)
+
+            UICorner.CornerRadius = UDim.new(0, 200)
             UICorner.Parent = ImageButton
-            
+
             -- Khi click vào logo sẽ mở lại UI
             ImageButton.MouseButton1Click:Connect(function()
-                game:GetService("VirtualInputManager"):SendKeyEvent(true,Enum.KeyCode.LeftControl,false,game)
+                game:GetService("VirtualInputManager"):SendKeyEvent(true, Enum.KeyCode.LeftControl, false, game)
             end)
         end
     end)
-    
+
     if not success then
         warn("Lỗi khi tạo nút Logo UI: " .. tostring(errorMsg))
     end
