@@ -23,7 +23,6 @@ ConfigSystem.DefaultConfig = {
     -- Webhook Settings
     WebhookEnabled = false,
     WebhookUrl = "",
-    -- Settings
     AutoHideUIEnabled = false,
 }
 ConfigSystem.CurrentConfig = {}
@@ -66,6 +65,7 @@ ConfigSystem.LoadConfig()
 -- Biến lưu trạng thái của tab Webhook
 local webhookEnabled = ConfigSystem.CurrentConfig.WebhookEnabled or false
 local webhookUrl = ConfigSystem.CurrentConfig.WebhookUrl or ""
+
 -- Biến lưu trạng thái Auto Hide UI
 local autoHideUIEnabled = ConfigSystem.CurrentConfig.AutoHideUIEnabled or false
 
@@ -90,6 +90,8 @@ local Window = Fluent:CreateWindow({
 local WebhookTab = Window:AddTab({ Title = "Webhook", Icon = "rbxassetid://13311802307" })
 -- Tạo Tab Settings
 local SettingsTab = Window:AddTab({ Title = "Settings", Icon = "rbxassetid://13311798537" })
+-- Tạo Tab Info để ở đầu
+local InfoTab = Window:AddTab({ Title = "Info", Icon = "rbxassetid://13311798888" })
 
 -- Tab Webhook
 -- Section Webhook Settings trong tab Webhook
@@ -208,22 +210,32 @@ local function autoHideUI()
     end)
 end
 
--- Thêm Toggle Auto Hide UI vào Settings tab
-SettingsSection:AddToggle("AutoHideUIToggle", {
-    Title = "Auto Hide UI",
-    Description = "Tự động ẩn UI sau 3 giây khi bật",
-    Default = autoHideUIEnabled,
-    Callback = function(enabled)
-        autoHideUIEnabled = enabled
-        ConfigSystem.CurrentConfig.AutoHideUIEnabled = autoHideUIEnabled
-        ConfigSystem.SaveConfig()
-        if autoHideUIEnabled then
-            autoHideUI()
-        else
-            print("Auto Hide UI đã tắt")
-        end
-    end
+-- Section Stats trong tab Info
+local InfoSection = InfoTab:AddSection("Stats")
+
+-- Hiển thị số lượng Pumpkin liên tục
+local pumpkinLabel = InfoSection:AddParagraph({
+    Title = "Pumpkins:",
+    Content = "Đang tải..."
 })
+
+local function updatePumpkinDisplay()
+    local player = game:GetService("Players").LocalPlayer
+    local stats = player:FindFirstChild("_stats")
+    if not stats then return end
+    local pumpkinObj = stats:FindFirstChild("_resourcePumkinToken")
+    if not pumpkinObj then return end
+    pumpkinLabel:SetDesc(tostring(pumpkinObj.Value))
+    if not pumpkinObj:IsA("ValueBase") then return end
+    pumpkinObj:GetPropertyChangedSignal("Value"):Connect(function()
+        pumpkinLabel:SetDesc(tostring(pumpkinObj.Value))
+    end)
+end
+
+-- Khởi tạo khi loader xong và khi vào tab Info
+pcall(updatePumpkinDisplay)
+InfoTab:OnOpened(updatePumpkinDisplay)
+
 
 -- Integration with SaveManager
 SaveManager:SetLibrary(Fluent)
@@ -242,6 +254,23 @@ SettingsTab:AddParagraph({
 SettingsTab:AddParagraph({
     Title = "Phím tắt",
     Content = "Nhấn LeftControl để ẩn/hiện giao diện"
+})
+
+-- Thêm Toggle Auto Hide UI vào Settings tab
+SettingsSection:AddToggle("AutoHideUIToggle", {
+    Title = "Auto Hide UI",
+    Description = "Tự động ẩn UI sau 3 giây khi bật",
+    Default = autoHideUIEnabled,
+    Callback = function(enabled)
+        autoHideUIEnabled = enabled
+        ConfigSystem.CurrentConfig.AutoHideUIEnabled = autoHideUIEnabled
+        ConfigSystem.SaveConfig()
+        if autoHideUIEnabled then
+            autoHideUI()
+        else
+            print("Auto Hide UI đã tắt")
+        end
+    end
 })
 
 -- Auto Save Config
